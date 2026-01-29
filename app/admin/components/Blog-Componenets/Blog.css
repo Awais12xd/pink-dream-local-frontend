@@ -1,0 +1,316 @@
+.Ck-Editor{
+  height: 640px;
+  overflow-y: scroll;
+}
+
+:root{
+  --bg: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --accent: #db2777;
+  --accent-soft: rgba(219,39,119,0.08);
+  --border: rgba(0,0,0,0.08);
+  --radius: 12px;
+  --measure: 95ch; /* comfortable reading width */
+  --content-gap: 1.25rem;
+}
+
+/* ================================
+   Base blog container — tuned for reading
+   ================================ */
+.blog-content{
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0 clamp(0.75rem, 2vw, 1.25rem);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  /* responsive base font size */
+  font-size: clamp(1rem, 0.9rem + 0.4vw, 1.06rem);
+  line-height: 1.62; /* tighter, but readable */
+  color: var(--text);
+  background: var(--bg);
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  word-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+/* reduce big vertical gaps between blocks to keep flow tight */
+.blog-content > * + * {
+  margin-top: 0.8rem;
+}
+
+/* ================================
+   Headings — compact and scalable
+   ================================ */
+.blog-content h1,
+.blog-content h2,
+.blog-content h3,
+.blog-content h4{
+  font-weight: 700;
+  line-height: 1.12;
+  margin: 0.7rem 0 0.6rem 0;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+/* scale headings with clamp for consistent visual rhythm */
+.blog-content h1{ font-size: clamp(1.7rem, 1.6rem + 1.2vw, 2.4rem); }
+.blog-content h2{ font-size: clamp(1.25rem, 1rem + 0.9vw, 1.6rem); }
+.blog-content h3{ font-size: clamp(1.05rem, 0.9rem + 0.6vw, 1.2rem); }
+.blog-content h4{ font-size: clamp(0.95rem, 0.85rem + 0.4vw, 1rem); }
+
+/* small subtitle/helper under H1 (if present) */
+.blog-content .subtitle {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* ================================
+   Paragraphs — tighter rhythm
+   ================================ */
+.blog-content p{
+  margin: 0 0 0.9rem 0;
+  color: var(--text);
+  line-height: 1.62;
+}
+
+/* lead paragraph variant */
+.blog-content p.lead{
+  font-size: clamp(1.03rem, 1rem + 0.35vw, 1.18rem);
+  color: var(--muted);
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+}
+
+/* ================================
+   Links
+   ================================ */
+.blog-content a{
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1.2px;
+  text-underline-offset: 4px;
+  transition: text-decoration-thickness .12s ease, opacity .12s ease;
+}
+
+.blog-content a:hover,
+.blog-content a:focus {
+  text-decoration-thickness: 2px;
+  opacity: .95;
+  outline: none;
+}
+
+/* ================================
+   Images & Figures
+   ================================ */
+.blog-content figure{ margin: 1rem 0; }
+.blog-content img,
+.blog-content video,
+.blog-content iframe{
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0.9rem auto;
+  border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgba(31,41,55,0.04);
+  object-fit: cover;
+}
+
+/* subtle full-bleed helper for hero-like images inside content */
+.blog-content .full-bleed{
+  width: calc(100% + 2rem);
+  margin-left: -1rem;
+  margin-right: -1rem;
+  border-radius: calc(var(--radius) + 2px);
+  overflow: hidden;
+}
+
+/* caption */
+.blog-content figcaption{
+  font-size: 0.88rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.45rem;
+}
+
+/* ================================
+   Lists — compact and tidy
+   ================================ */
+.blog-content ul,
+.blog-content ol{
+  margin: 0.6rem 0 1rem 1.25rem;
+  padding: 0;
+}
+
+.blog-content li{
+  margin-bottom: 0.45rem;
+  line-height: 1.5;
+}
+
+/* nested list spacing */
+.blog-content li ul,
+.blog-content li ol{
+  margin-top: 0.4rem;
+}
+
+/* ================================
+   Blockquotes — accent, but compact
+   ================================ */
+.blog-content blockquote{
+  margin: 1rem 0;
+  padding: 0.8rem 1rem;
+  border-left: 4px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 8px;
+  font-style: italic;
+  color: var(--text);
+}
+
+.blog-content blockquote p{ margin: 0; }
+
+/* ================================
+   Inline code & code blocks
+   ================================ */
+.blog-content code{
+  background: rgba(15,23,42,0.06);
+  padding: 0.18rem 0.4rem;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92em;
+  white-space: pre-wrap;
+}
+
+/* pre (code block) */
+.blog-content pre{
+  background: #0b1220; /* dark background for contrast */
+  color: #e6eef8;
+  padding: 0.9rem 1rem;
+  border-radius: calc(var(--radius) - 4px);
+  overflow-x: auto;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 1rem 0;
+  box-shadow: 0 8px 30px rgba(2,6,23,0.3);
+  border: 1px solid rgba(255,255,255,0.02);
+}
+
+/* optional copy button placeholder (requires JS) */
+.blog-content .pre-toolbar {
+  display:flex;
+  justify-content:flex-end;
+  margin-top: 0.4rem;
+}
+.blog-content .copy-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: inherit;
+  padding: 0.28rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+/* ================================
+   Tables — responsive & readable
+   ================================ */
+.blog-content .table-wrap{
+  width: 100%;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.blog-content table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  min-width: 480px;
+}
+
+.blog-content th,
+.blog-content td{
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.blog-content th{
+  background: #fafafa;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* subtle zebra for readability */
+.blog-content tbody tr:nth-child(odd){
+  background: rgba(0,0,0,0.01);
+}
+
+/* ================================
+   Horizontal rule
+   ================================ */
+.blog-content hr{
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: 2rem 0;
+}
+
+/* ================================
+   Misc helpers
+   ================================ */
+
+/* dropcap (optional) */
+.blog-content p:first-of-type.dropcap::first-letter{
+  float: left;
+  font-size: 3.2rem;
+  line-height: 1;
+  margin-right: 0.45rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+/* tiny meta inline markers (date, read-time) */
+.blog-content .meta {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* accessible focus for interactive in-content elements */
+.blog-content a:focus,
+.blog-content button:focus,
+.blog-content .copy-btn:focus{
+  outline: 3px solid rgba(219,39,119,0.14);
+  outline-offset: 3px;
+}
+
+/* ================================
+   Mobile and tablet tweaks
+   ================================ */
+@media (max-width: 1024px){
+  :root{ --measure: 72ch; } /* tighten for tablets */
+  .blog-content{ font-size: clamp(0.98rem, 0.9rem + 0.6vw, 1.04rem); }
+  .blog-content .full-bleed{ width: calc(100% + 1.5rem); margin-left: -0.75rem; margin-right: -0.75rem; }
+}
+
+@media (max-width: 640px){
+  :root{ --measure: 66ch; }
+  .blog-content{
+    font-size: 1rem;
+    padding: 0 0.75rem;
+    line-height: 1.58;
+  }
+
+  /* slightly smaller headings & margins on mobile */
+  .blog-content h1{ font-size: 1.4rem; margin-top: 0.5rem; margin-bottom: 0.45rem; }
+  .blog-content h2{ font-size: 1.15rem; }
+  .blog-content p{ margin-bottom: 0.7rem; }
+  .blog-content img{ margin: 0.8rem auto; border-radius: 10px; }
+
+  /* tables become scrollable container, remove min-width pressure */
+  .blog-content table{ min-width: 100%; }
+}

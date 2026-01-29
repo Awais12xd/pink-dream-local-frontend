@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/admin/:path*",
+      "destination": "https://pink-dream-backend-p01zo7pz3-alis-projects-c20b7fc8.vercel.app/:path*"
+    }
+  ]
+}
