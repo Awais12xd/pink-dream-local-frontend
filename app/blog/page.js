@@ -219,7 +219,6 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
       const data = await response.json();
 
       if (data.success) {
-        console.log(data)
          if (isLoadMore) {
           setPosts( prev => [...prev, ...data.blogs]);
         } else {
@@ -451,7 +450,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
               <span className="font-medium text-gray-800">
                 {post.author.name}
               </span>
-             <p className="text-sm text-gray-500 truncate max-w-[200px]">{post.author.bio}</p>
+             {/* <p className="text-sm text-gray-500 truncate max-w-[200px]">{post.author.bio}</p> */}
            </div>
            
           </div>

@@ -77,6 +77,7 @@ const AddBlogPage = () => {
     // Additional
     trending: false,
     featured: false,
+    commentsEnabled: true,
     publishedAt: null,
     readTime: 0,
     status: "draft", // draft, published, archived
@@ -948,6 +949,23 @@ const AddBlogPage = () => {
                       className="text-sm font-medium text-gray-700"
                     >
                       Trending
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-3 py-2">
+                    <input
+                      type="checkbox"
+                      id="commentsEnabled"
+                      checked={newBlog.commentsEnabled}
+                      onChange={(e) =>
+                        updateBlogField("commentsEnabled", e.target.checked)
+                      }
+                      className="w-4 h-4 text-pink-600 bg-gray-100 border-pink-300 rounded focus:ring-pink-500"
+                    />
+                    <label
+                      htmlFor="commentsEnabled"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Comments Enabled
                     </label>
                   </div>
 

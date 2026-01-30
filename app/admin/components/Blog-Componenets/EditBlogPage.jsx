@@ -33,6 +33,7 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
     status: "draft",
     featured: false,
     trending: false,
+    commentsEnabled: true,
   });
   const [blogContent , setBlogContent] = useState(blog?.content)
 
@@ -109,6 +110,7 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         category: blog.category ,
         featured: blog.featured,
         trending: blog.trending,
+        commentsEnabled: blog.commentsEnabled,
       };
       setFormData(blogData);
       setHasChanges(false);
@@ -125,6 +127,7 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         formData.content !== (blog.content || "") ||
         formData.featured !== blog.featured ||
         formData.trending !== blog.trending ||
+        formData.commentsEnabled !== blog.commentsEnabled ||
         formData.status !== blog.status || 
         formData.image !== blog.image
 
@@ -243,6 +246,7 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         image: formData.image,
         featured: formData.featured,
         trending: formData.trending,
+        commentsEnabled: formData.commentsEnabled,
         status: formData.status,
         oldStatus: blog?.status,
       };
@@ -479,6 +483,20 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
                 />
                 <span className="text-sm font-medium text-gray-700">
                   Trending
+                </span>
+              </label>
+            </div>
+            <div className="">
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  name="commentsEnabled"
+                  checked={formData.commentsEnabled}
+                  onChange={handleInputChange}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Comments Enabled
                 </span>
               </label>
             </div>
