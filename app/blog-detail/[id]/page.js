@@ -326,7 +326,7 @@ export default function BlogDetail() {
                 {/* compact meta - mobile */}
                 <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between bg-white/80 backdrop-blur rounded-lg p-3 shadow-sm lg:hidden">
                   <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-100">
+                    {/* <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-100">
                       <img
                         src={author?.profileImage || ""}
                         alt={author?.name || "Author"}
@@ -335,6 +335,18 @@ export default function BlogDetail() {
                           e.target.src =
                             "https://placehold.co/80x80/FFB6C1/FFFFFF?text=U";
                         }}
+                      />
+                    </div> */}
+                    <div className="relative rounded-full overflow-hidden bg-gray-100 w-9 h-9">
+                      <Image
+                        src={author?.profileImage}
+                        alt={author?.name}
+                        fill
+                        sizes="(max-width: 640px) 100vw,
+           (max-width: 1024px) 100vw,
+           50vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        priority={false}
                       />
                     </div>
                     <div className="text-xs">
@@ -482,7 +494,7 @@ export default function BlogDetail() {
               <div className="sticky top-36 space-y-4">
                 <div className="bg-white border rounded-lg p-4 shadow-sm">
                   <div className="flex flex-col items-center space-y-4">
-                    <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100">
+                    {/* <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100">
                       <img
                         src={author?.profileImage || ""}
                         alt={author?.name || "Author"}
@@ -491,6 +503,18 @@ export default function BlogDetail() {
                           e.target.src =
                             "https://placehold.co/80x80/FFB6C1/FFFFFF?text=U";
                         }}
+                      />
+                    </div> */}
+                    <div className="relative rounded-full overflow-hidden bg-gray-100 w-14 h-14">
+                      <Image
+                        src={author?.profileImage}
+                        alt={author?.name}
+                        fill
+                        sizes="(max-width: 640px) 100vw,
+           (max-width: 1024px) 100vw,
+           50vw"
+                        className="object-cover border transition-transform duration-300 group-hover:scale-105"
+                        priority={false}
                       />
                     </div>
                     <div>
