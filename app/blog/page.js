@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -15,6 +15,7 @@ import {
   TrendingUp,
   BookOpen,
   Filter,
+  Loader2,
 } from "lucide-react";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
@@ -190,23 +191,43 @@ const Blog = () => {
   const [showFilters, setShowFilters] = useState(false);
 const [categoryCounts, setCategoryCounts] = useState({});
 const [totalPublishedCount, setTotalPublishedCount] = useState(0);
+ const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(5)
+  const [totalBlogs, setTotalBlogs] = useState(0)
+  const [hasMoreBlogs, setHasMoreBlogs] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   let totalCategoriesBlogs = 0;
 
-  const fetchBlogs = async () => {
-    setLoading(true);
+  const fetchBlogs = async (page = 1, isLoadMore = false) => {
+    if (isLoadMore) {
+        setLoadingMore(true)
+      } else {
+        // setProductsLoading(true)
+        setLoading(true);
+      }
     try {
       const params = new URLSearchParams({
         search: searchTerm,
         category: selectedCategory,
         status: "published",
+         page: page.toString(),
+        limit: itemsPerPage.toString(),
       });
 
       const response = await fetch(`${API_BASE}/all-blogs?${params}`);
       const data = await response.json();
 
       if (data.success) {
-        setPosts(data.blogs || []);
+        console.log(data)
+         if (isLoadMore) {
+          setPosts( prev => [...prev, ...data.blogs]);
+        } else {
+          setPosts(data.blogs || []);
+        }
+        setTotalBlogs(data.pagination?.totalBlogs || 0)
+        setHasMoreBlogs(data.pagination?.hasNextPage || false)
+        setCurrentPage(page)
       } else {
         setPosts([]);
       }
@@ -215,13 +236,22 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
       setPosts([]);
     } finally {
       setLoading(false);
+      setLoadingMore(false)
     }
   };
 
   // Filter posts based on category and search
   useEffect(() => {
-    fetchBlogs();
+    setCurrentPage(1)
+    setPosts([])
+    setHasMoreBlogs(false)
+    fetchBlogs(1, false);
   }, [selectedCategory, searchTerm]);
+
+  const handleLoadMore = useCallback(() => {
+      const nextPage = currentPage + 1
+      fetchBlogs(nextPage, true)
+    }, [currentPage])
 
   useEffect(() => {
   let mounted = true;
@@ -410,7 +440,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
 
       <div className={`p-6 ${featured ? "md:p-8" : ""}`}>
         {/* Author & Meta */}
-        <div className="flex gap-2 mb-4 justify-between items-center w-full ">
+        <div className="flex sm:flex-row flex-col gap-2 mb-4 justify-between sm:items-center w-full ">
           <div className="flex items-center gap-3 ">
             <img
             src={post.author.profileImage}
@@ -425,7 +455,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
            </div>
            
           </div>
-            <div className="flex flex-col items-center gap-2 text-xs text-gray-600  justify-end">
+            <div className="flex flex-row sm:flex-col items-center gap-2 text-xs text-gray-600  justify-end">
               <span>{formatDate(post.publishedAt)}</span>
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
@@ -659,7 +689,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
                   {selectedCategory === "all" ? "All Posts" : selectedCategory}
                 </h2>
                 <span className="text-gray-600">
-                  {posts?.length} {posts?.length === 1 ? "post" : "posts"}
+                   Showing {posts?.length} of {totalBlogs || 0} Posts
                 </span>
               </div>
             </motion.div>
@@ -704,6 +734,21 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
                 </div>
               </div>
             )}
+
+           { hasMoreBlogs && <button
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                        className="bg-pink-500 mt-4  hover:bg-pink-600 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto"
+                      >
+                        {loadingMore ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span>Loading...</span>
+                          </>
+                        ) : (
+                          <span>Load More Products</span>
+                        )}
+                      </button>}
 
             {/* No Results */}
             {!loading && posts.length === 0 && (

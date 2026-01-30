@@ -1,7 +1,14 @@
-.Ck-Editor{
-  height: 640px;
-  overflow-y: scroll;
+.Ck-Editor .ck-editor__editable {
+  height: 640px ;
+  overflow-y: auto;
+  /* height: auto;  */
 }
+
+/* taller editable area */
+/* .ck-editor__editable_inline {
+  min-height: 500px;
+  height: auto; 
+} */
 
 :root{
   --bg: #ffffff;
@@ -13,6 +20,15 @@
   --radius: 12px;
   --measure: 95ch; /* comfortable reading width */
   --content-gap: 1.25rem;
+  /* CkEditor styles  */
+  /* --ck-color-focus-border: hsl(263, 59%, 52%);
+	--ck-color-toolbar-background: hsl(210, 33%, 99%);
+	--ck-color-button-on-background: hsl(210, 8%, 95%); */
+	--ck-color-button-on-color: hsl(263, 59%, 52%);
+	--ck-font-size-base: 16px;
+	--ck-spacing-unit: 1em;
+	--ck-border-radius: 16px;
+	--ck-height: 640px;
 }
 
 /* ================================

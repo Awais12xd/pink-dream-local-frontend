@@ -331,7 +331,7 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
       <div className="bg-white rounded-lg shadow-sm border-b mb-6">
         <div className="p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex sm:items-center sm:flex-row flex-col gap-4">
               <button
                 onClick={handleCancel}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
@@ -340,8 +340,8 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
                 Back to Blogs
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Edit Blog</h1>
-                <p className="text-gray-600">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Edit Blog</h1>
+                <p className="text-gray-600 text-xs sm:text-base">
                   Update blog content and settings
                 </p>
               </div>
@@ -358,7 +358,7 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
               <button
                 onClick={handleReset}
                 disabled={!hasChanges}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-2 sm:px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <RotateCcw className="w-4 h-4" />
                 Reset
@@ -484,12 +484,12 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-1 py-3 sm:p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Blog Information
           </h2>
 
-          <div className=" h-[700px] gap-6">
+          <div className=" h-[730px] gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Blog Content *
@@ -500,7 +500,7 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
                 onChange={setBlogContent}
                 style={{ height: "600px", width: "100%" }}
               /> */}
-              <CKEditorInput value={blogContent} onChange={setBlogContent} />
+              <CKEditorInput value={blogContent} onChange={setBlogContent}  />
               {errors.content && (
                 <p className="mt-1 text-sm text-red-600">{errors.content}</p>
               )}
@@ -572,20 +572,20 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
           <button
             type="button"
             onClick={handleCancel}
-            className="flex items-center gap-2 px-6 py-3 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-3 sm:px-6 py-3 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <X className="w-4 h-4" />
             Cancel
           </button>
 
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 sm:block hidden">
               Blog ID: {blog?._id}
             </span>
             <button
               type="submit"
               disabled={loading || !hasChanges}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-3 sm:px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

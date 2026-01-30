@@ -322,8 +322,8 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
       )}
 
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6 border ">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-lg shadow p-2 sm:p-6 border ">
+        <div className="flex sm:items-center justify-between sm:flex-row flex-col mb-4 gap-y-2">
           <button
             onClick={onBack}
             className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
@@ -331,24 +331,24 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to Blogs
           </button>
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <button
               onClick={fetchBlogDetails}
-              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-xs sm:text-base text-gray-600 hover:text-gray-900 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               Refresh
             </button>
             <button
               onClick={() => onEdit(blog)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
             >
               <Edit className="w-4 h-4" />
               Edit Blog
             </button>
             <button
               onClick={handleDeleteBlog}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-base"
             >
               <Trash2 className="w-4 h-4" />
               Delete
@@ -360,7 +360,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
           {/* Blog Image */}
 
           <div className="">
-            <div className="w-full aspect-video relative bg-gray-100 rounded-lg overflow-hidden h-[500px]">
+            <div className="w-full aspect-video relative bg-gray-100 rounded-lg overflow-hidden h-[300px] sm:h-[500px]">
               <img
                 src={getImageSrc(blog?.image)}
                 alt="blog"
@@ -405,7 +405,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow py-2 sm:p-3">
         <h3 className="text-lg font-semibold mb-4">Content</h3>
         <div
           className="blog-content"
@@ -418,7 +418,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
         <div className="bg-white rounded-lg shadow p-6 w-full">
           <h3 className="text-lg font-semibold mb-4">Author Details</h3>
           <div className="space-y-4 w-full mt-4">
-            <div className="grid grid-cols-2 gap-4 w-full">
+            <div className="flex sm:flex-row flex-col gap-2 sm:gap-4 w-full">
               <div className=" ">
                 <div className="flex items-center justify-center">
                   <img
@@ -441,7 +441,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
                 <div className="flex flex-col gap-2">
                   <label className="text-sm text-gray-600">Bio</label>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium capitalize">
+                    <span className="font-medium capitalize text-justify">
                       {blog.author.bio}
                     </span>
                   </div>

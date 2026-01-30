@@ -290,8 +290,8 @@ export default function BlogDetail() {
       </div>
 
       <main className="py-8 sm:py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="container mx-auto ">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:px-2">
             {/* Main content */}
             <article className="lg:col-span-8 bg-white rounded-lg shadow-sm overflow-hidden">
               {/* Hero */}
@@ -368,7 +368,7 @@ export default function BlogDetail() {
                 </div>
               </div>
 
-              <div className="p-6 sm:p-8 space-y-6">
+              <div className="p-3 sm:p-5 space-y-6">
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
                   {title}
                 </h1>

@@ -459,7 +459,7 @@ const AddBlogPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 py-8 sm:px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -561,7 +561,7 @@ const AddBlogPage = () => {
               </div>
 
               {/* Actual Content */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-pink-100 min-h-[650px] ">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-2 sm:p-6 border border-pink-100 min-h-[650px] ">
                 <h2 className="text-lg font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent mb-4 flex items-center">
                   <ImageIcon className="w-5 h-5 mr-2 text-pink-600" />
                   Content
