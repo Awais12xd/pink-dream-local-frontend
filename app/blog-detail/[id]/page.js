@@ -546,7 +546,7 @@ const handleReplySubmit = async (commentId) => {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col">
                     <div className="text-sm font-medium text-gray-800 truncate">{c?.user?.name || "Anonymous"}</div>
                     <div className="text-xs text-gray-400">{fmtDate(c?.createdAt)}</div>
                   </div>
