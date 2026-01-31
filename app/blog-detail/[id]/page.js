@@ -43,6 +43,20 @@ export default function BlogDetail() {
   const [replyingTo, setReplyingTo] = useState(null); // commentId currently replying to
   const [replyText, setReplyText] = useState("");
   const [replyLoading, setReplyLoading] = useState(false);
+  // new state (add near other useState declarations)
+  const [openReplies, setOpenReplies] = useState({}); // { [commentId]: true }
+  const toggleReplies = (commentId) => {
+    setOpenReplies((prev) => ({ ...prev, [commentId]: !prev[commentId] }));
+  };
+  // small date formatter helper (optional — keeps JSX cleaner)
+  const fmtDate = (iso) => {
+    if (!iso) return "";
+    try {
+      return new Date(iso).toLocaleString();
+    } catch {
+      return iso;
+    }
+  };
 
   useEffect(() => {
     if (blogId) fetchBlog();
@@ -197,65 +211,67 @@ export default function BlogDetail() {
     }
   };
 
-  const handleReplySubmit = async (commentId) => {
-    if (!user) return toast.error("Log in to reply to this comment.");
-    if (!blog?.commentsEnabled) return toast.error("Comments are disabled.");
-    if (!replyText.trim()) return toast.error("Reply cannot be empty.");
+const handleReplySubmit = async (commentId) => {
+  if (!user) return toast.error("Log in to reply to this comment.");
+  if (!blog?.commentsEnabled) return toast.error("Comments are disabled.");
+  if (!replyText.trim()) return toast.error("Reply cannot be empty.");
 
-    try {
-      setReplyLoading(true);
+  try {
+    setReplyLoading(true);
 
-      const payload = {
-        text: replyText.trim(),
-        user: user, // your backend expects a user object
-      };
+    const payload = {
+      text: replyText.trim(),
+      user: user,
+    };
 
-      const res = await fetch(
-        `${API_BASE}/blogs/${blog?._id}/comments/${commentId}/reply`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
+    const res = await fetch(
+      `${API_BASE}/blogs/${blog?._id}/comments/${commentId}/reply`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
 
-      const result = await res.json();
-      if (!res.ok || !result.success) {
-        throw new Error(result.message || "Failed to post reply");
-      }
-
-      // Optimistically update local comment list so we don't re-fetch whole blog (better UX)
-      setBlog((prev) => {
-        if (!prev) return prev;
-        const updated = { ...prev };
-        updated.comments = (updated.comments || []).map((c) => {
-          if (String(c._id) === String(commentId)) {
-            // backend returns nothing (or you can return the new reply). We'll append a minimal reply object
-            const newReply = {
-              _id: result.replyId || new Date().toISOString(), // prefer backend id, fallback temporary id
-              user: user,
-              text: replyText.trim(),
-              createdAt: new Date().toISOString(),
-            };
-            // ensure replies array exists
-            const replies = c.replies ? [...c.replies, newReply] : [newReply];
-            return { ...c, replies };
-          }
-          return c;
-        });
-        return updated;
-      });
-
-      setReplyText("");
-      setReplyingTo(null);
-      toast.success("Reply posted");
-    } catch (err) {
-      console.error("Reply err:", err);
-      toast.error("Failed to post reply");
-    } finally {
-      setReplyLoading(false);
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      throw new Error(result.message || "Failed to post reply");
     }
-  };
+
+    // Optimistically update local comment list so we don't re-fetch whole blog (better UX)
+    setBlog((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev };
+      updated.comments = (updated.comments || []).map((c) => {
+        if (String(c._id) === String(commentId)) {
+          const newReply = result.reply || {
+            _id: result.replyId || `tmp-${Date.now()}`,
+            user,
+            text: replyText.trim(),
+            createdAt: new Date().toISOString(),
+          };
+          const replies = c.replies ? [...c.replies, newReply] : [newReply];
+          return { ...c, replies };
+        }
+        return c;
+      });
+      return updated;
+    });
+
+    // ensure the replies are expanded so user sees their reply
+    setOpenReplies((prev) => ({ ...prev, [commentId]: true }));
+
+    setReplyText("");
+    setReplyingTo(null);
+    toast.success("Reply posted");
+  } catch (err) {
+    console.error("Reply err:", err);
+    toast.error("Failed to post reply");
+  } finally {
+    setReplyLoading(false);
+  }
+};
+
 
   if (loading) {
     return (
@@ -353,7 +369,7 @@ export default function BlogDetail() {
       </div>
 
       <main className="py-8 sm:py-12">
-        <div className="container mx-auto ">
+        <div className=" container mx-auto ">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:px-2">
             {/* Main content */}
             <article className="lg:col-span-8 bg-white rounded-lg shadow-sm overflow-hidden">
@@ -486,158 +502,153 @@ export default function BlogDetail() {
                   />
                 </div>
 
-                {/* comments */}
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-3">
-                    Comments ({comments.length})
-                  </h3>
+<div className="space-y-6">
+  {/* comment form */}
+  {commentsEnabled ? (
+    <form onSubmit={handleSubmitComment} className="space-y-3">
+      <textarea
+        ref={commentInputRef}
+        value={commentText}
+        onChange={(e) => setCommentText(e.target.value)}
+        placeholder="Write your comment..."
+        className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
+        rows={3}
+      />
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-gray-500">Be respectful. Your comment will be visible to others.</div>
+        <button
+          type="submit"
+          disabled={isSubmittingComment}
+          className="bg-pink-600 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50"
+        >
+          {isSubmittingComment ? "Posting..." : "Post Comment"}
+        </button>
+      </div>
+    </form>
+  ) : (
+    <div className="p-3 bg-gray-50 rounded text-sm text-gray-600">Comments are disabled for this post.</div>
+  )}
 
-                  {/* comment form */}
-                  {commentsEnabled ? (
-                    <form
-                      onSubmit={handleSubmitComment}
-                      className="space-y-3 mb-4"
-                    >
-                      <textarea
-                        ref={commentInputRef}
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Write your comment..."
-                        className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
-                        rows={3}
-                      />
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs text-gray-500">
-                          Be respectful. Your comment will be visible to others.
-                        </div>
-                        <button
-                          type="submit"
-                          disabled={isSubmittingComment}
-                          className="bg-pink-600 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50"
-                        >
-                          {isSubmittingComment ? "Posting..." : "Post Comment"}
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="mb-4 text-sm text-gray-700 border rounded-lg bg-gray-100 py-3 px-2">
-                      Comments are disabled for this post.
-                    </div>
-                  )}
+  {/* comments list */}
+  <div className="space-y-4">
+    {comments.length === 0 && <p className="text-sm text-gray-600">No comments yet. Be the first to comment!</p>}
 
-                  {/* comments list */}
-                  <div className="space-y-3">
-                    {comments.length === 0 && (
-                      <p className="text-sm text-gray-600">
-                        No comments yet. Be the first to comment!
-                      </p>
-                    )}
+    {!isSubmittingComment &&
+      comments.map((c) => (
+        <div key={c._id} className="bg-white border rounded-lg p-3 w-full" aria-live="polite">
+          <div className="flex items-start gap-3">
+            {/* avatar */}
+            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <User className="w-4 h-4 text-gray-500" />
+            </div>
 
-                    {!isSubmittingComment &&
-                      comments.map((c) => (
-                        <div key={c._id} className="border rounded-lg p-3 w-full relative">
-                          <div className="flex items-start space-x-3">
-                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                              <User className="w-4 h-4 text-gray-500" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <div className="text-sm font-medium text-gray-800">
-                                  {c?.user?.name || "Anonymous"}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                  {new Date(c?.createdAt).toLocaleString()}
-                                </div>
-                              </div>
-
-                              <div className="text-sm text-gray-700 mt-1">
-                                {c?.text}
-                              </div>
-
-                              {/* reply controls */}
-                              <div className="mt-3 flex items-center gap-3">
-                                {commentsEnabled && (
-                                  <button
-                                    onClick={() =>
-                                      setReplyingTo(
-                                        replyingTo === c._id ? null : c._id,
-                                      )
-                                    }
-                                    className="text-xs text-pink-600 hover:underline"
-                                  >
-                                    Reply
-                                  </button>
-                                )}
-                                <div className="text-xs text-gray-400">
-                                  {/* keep like/time actions here if needed */}
-                                </div>
-                              </div>
-
-                              {/* reply input (single open at a time) */}
-                              {replyingTo === c._id && commentsEnabled && (
-                                <div className="mt-3">
-                                  <textarea
-                                    value={replyText}
-                                    onChange={(e) =>
-                                      setReplyText(e.target.value)
-                                    }
-                                    placeholder="Write your reply..."
-                                    className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
-                                    rows={2}
-                                  />
-                                  <div className="mt-2 flex items-center gap-2">
-                                    <button
-                                      onClick={() => handleReplySubmit(c._id)}
-                                      disabled={replyLoading}
-                                      className="bg-pink-600 text-white px-3 py-1 rounded text-sm disabled:opacity-60"
-                                    >
-                                      {replyLoading
-                                        ? "Posting..."
-                                        : "Post Reply"}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setReplyText("");
-                                        setReplyingTo(null);
-                                      }}
-                                      className="text-sm text-gray-500 px-3 py-1 rounded"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* replies list (single-level) */}
-                              {c.replies && c.replies.length > 0 && (
-                                <div className="mt-4 flex  w-full">
-                                <div className="border-l pl-2 sm:pl-4 space-y-3 w-[40%]">
-                                  {c.replies.map((r) => (
-                                    <div key={r._id} className="pb-2">
-                                      <div className="flex items-center justify-between">
-                                        <div className="sm:text-sm text-xs font-medium text-gray-800">
-                                          {r?.user?.name || "Anonymous"}
-                                        </div>
-                                        <div className="text-xs text-gray-400">
-                                          {new Date(
-                                            r?.createdAt,
-                                          ).toLocaleString()}
-                                        </div>
-                                      </div>
-                                      <div className="sm:text-sm text-xs text-gray-700 mt-1 whitespace-normal break-words w-[70%]">
-                                        {r?.text}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+            {/* content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-medium text-gray-800 truncate">{c?.user?.name || "Anonymous"}</div>
+                    <div className="text-xs text-gray-400">{fmtDate(c?.createdAt)}</div>
                   </div>
                 </div>
+
+                {/* actions (always rendered; never hidden) */}
+                <div className="flex items-center pr-3">
+                  {commentsEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // toggle reply input; ensure replies open so user sees the thread
+                        setReplyingTo(replyingTo === c._id ? null : c._id);
+                        setOpenReplies((prev) => ({ ...prev, [c._id]: true }));
+                      }}
+                      className="text-xs text-pink-600 hover:underline"
+                    >
+                      Reply
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* comment text (wraps properly) */}
+              <div className="text-sm text-gray-700 mt-2 break-words whitespace-pre-wrap max-w-full">
+                {c?.text}
+                </div>
+
+
+              <div className="mt-3 w-full flex justify-center">
+                 {c.replies?.length > 0 && (
+                    <button
+                      type="button"
+                      aria-expanded={!!openReplies[c._id]}
+                      onClick={() => toggleReplies(c._id)}
+                      className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                    >
+                      <span className="inline">{openReplies[c._id] ? "Hide replies" : "View replies"}</span>
+                      <span className="text-pink-600 font-medium mr-1">{c.replies.length}</span>
+                      <span className={`transform transition-transform ${openReplies[c._id] ? "rotate-90" : ""}`}>
+                        <ChevronRight className="w-3 h-3" />
+                      </span>
+                    </button>
+                  )}
+                 </div>
+
+              {/* reply input (single open at a time) */}
+              {replyingTo === c._id && commentsEnabled && (
+                <div className="mt-3">
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Write your reply..."
+                    className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
+                    rows={2}
+                  />
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      onClick={() => handleReplySubmit(c._id)}
+                      disabled={replyLoading}
+                      className="bg-pink-600 text-white px-3 py-1 rounded text-sm disabled:opacity-60"
+                    >
+                      {replyLoading ? "Posting..." : "Post Reply"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setReplyText("");
+                        setReplyingTo(null);
+                      }}
+                      className="text-sm text-gray-500 px-3 py-1 rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* replies (collapsible) */}
+              {c.replies && c.replies.length > 0 && openReplies[c._id] && (
+                <div className="mt-3 ml-0 sm:ml-6 border-l pl-3 sm:pl-4 space-y-3">
+                  {c.replies.map((r) => (
+                    <div key={r._id} className="pb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-800">{r?.user?.name || "Anonymous"}</div>
+                          <div className="text-xs text-gray-400">{fmtDate(r?.createdAt)}</div>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-700 mt-1 break-words whitespace-pre-wrap max-w-full">
+                        {r?.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+  </div>
+</div>
+
               </div>
             </article>
 

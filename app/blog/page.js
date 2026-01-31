@@ -439,28 +439,28 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
 
       <div className={`p-6 ${featured ? "md:p-8" : ""}`}>
         {/* Author & Meta */}
-        <div className="flex sm:flex-row flex-col gap-2 mb-4 justify-between sm:items-center w-full ">
-          <div className="flex items-center gap-3 ">
+        <div className="flex  mb-4 justify-start  w-full ">
+          <div className="flex items-center gap-2 ">
             <img
             src={post.author.profileImage}
             alt={post.author.name}
             className="w-10 h-10 rounded-full object-cover"
           />
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-y-0.5 ">
               <span className="font-medium text-gray-800">
                 {post.author.name}
               </span>
-             {/* <p className="text-sm text-gray-500 truncate max-w-[200px]">{post.author.bio}</p> */}
-           </div>
-           
-          </div>
-            <div className="flex flex-row sm:flex-col items-center gap-2 text-xs text-gray-600  justify-end">
+              <div className="flex  items-center gap-2 text-xs text-gray-400  justify-start">
               <span>{formatDate(post.publishedAt)}</span>
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 <span>{post.readTime} min read</span>
               </div>
             </div>
+             {/* <p className="text-sm text-gray-500 truncate max-w-[200px]">{post.author.bio}</p> */}
+           </div>
+           
+          </div>
         </div>
 
         {/* Title & Excerpt */}
