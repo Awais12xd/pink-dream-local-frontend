@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import Link from 'next/link'
 import {
   Plus,
@@ -45,10 +45,14 @@ import {
   Gift,
   InfoIcon,
   Book,
-  Newspaper
+  Newspaper,
+  Settings2
 } from 'lucide-react';
 // import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
 import dynamic from 'next/dynamic';
+import SettingsManager from './components/SettingsManager';
+import { SettingContext } from '../context/SettingContext';
+import Image from 'next/image';
 
 // client-only admin sub-pages
 const AddProductPage = dynamic(() => import('./components/AddProduct'), { ssr: false });
@@ -67,6 +71,8 @@ const EditBlogPage = dynamic(() => import('./components/Blog-Componenets/EditBlo
 
 
 const AdminPanel = () => {
+  //Settings
+  const {settings} = useContext(SettingContext)
   // ALL STATES FIRST - Before any conditional logic
   // Authentication states
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -752,7 +758,25 @@ const AdminPanel = () => {
           {/* Header */}
           <div className={`p-6 border-b border-gray-100 ${sidebarCollapsed ? 'px-3' : 'px-6'}`}>
             <div className="flex items-center gap-3">
-              <div className="relative">
+              {
+                settings.branding.adminLogo.url ? (
+                  <Link
+              href="/"
+              className="relative flex items-center justify-center w-36 h-12 sm:w-60 sm:h-16 flex-shrink-0  sm:ml-3"
+            >
+            <Image
+              src={settings?.branding?.adminLogo?.url}
+              alt={settings.branding.adminLogo.alt}
+              className="object-contain"
+              fill
+              sizes="(max-width: 640px) 100vw,
+           (max-width: 1024px) 100vw,
+           100vw"
+            />
+            </Link>
+                ) : (
+                  <>
+                  <div className="relative">
                 <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg">
                   <span className="text-white text-2xl font-bold">P</span>
                 </div>
@@ -770,6 +794,9 @@ const AdminPanel = () => {
                   <p className="text-xs text-gray-500 font-medium">Admin Panel</p>
                 </div>
               )}
+                  </>
+                )
+              }
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1025,6 +1052,22 @@ const AdminPanel = () => {
                 </div>
               )}
             </div>
+
+             {/* Analytics */}
+            <button
+              onClick={() => {
+                setActiveTab('settings');
+                setSidebarOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === 'analytics'
+                ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-200'
+                : 'text-gray-700 hover:bg-gray-100'
+                } ${sidebarCollapsed ? 'justify-center' : ''}`}
+              title={sidebarCollapsed ? 'Analytics' : ''}
+            >
+              <Settings2 className={`w-5 h-5 flex-shrink-0 ${activeTab === 'settings' ? '' : 'group-hover:scale-110'} transition-transform`} />
+              {!sidebarCollapsed && <span className="font-medium">Settings</span>}
+            </button>
           </nav>
 
           {/* Bottom Section */}
@@ -1116,7 +1159,7 @@ const AdminPanel = () => {
         </header>
 
         {/* Content */}
-        <main className="p-6">
+        <main className="p-2 sm:p-6">
           {activeTab === 'dashboard' && <Dashboard />}
 
           {activeTab === 'products' && (
@@ -1138,6 +1181,7 @@ const AdminPanel = () => {
           {activeTab === 'categories' && <CategoriesPage />}
 
           {activeTab === 'blog-categories' && <BlogCategoriesPage />}
+          {activeTab === 'settings' && <SettingsManager />}
 
           {activeTab === 'add-blog' && <AddBlogPage />}
 
