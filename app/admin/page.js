@@ -59,10 +59,12 @@ import Image from "next/image";
 import Authorized from "../components/Authorized";
 import { useNotifications } from "../context/NotificationContext";
 import NotificationBell from "./components/NotificationBell";
-import NotificationsManager from "./components/Notifications";
 
 // client-only admin sub-pages
 const RolesManager = dynamic(() => import("./components/RolesManager"), {
+  ssr: false,
+});
+const NotificationsManager = dynamic(() => import("./components/NotificationsManager"), {
   ssr: false,
 });
 const TeamManager = dynamic(() => import("./components/teamManager"), {
