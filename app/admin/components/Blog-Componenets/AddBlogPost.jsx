@@ -201,11 +201,9 @@ const AddBlogPage = () => {
         const combined = [...dynamicCategoryNames, ...uniqueStaticCategories];
         setAllCategories(combined);
 
-        alert("Categories refreshed successfully!");
       }
     } catch (error) {
       console.error("Error refreshing categories:", error);
-      alert("Failed to refresh categories. Using cached categories.");
     } finally {
       setLoadingCategories(false);
     }
@@ -439,7 +437,6 @@ const AddBlogPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        alert("✅ Blog added successfully!");
 
         // Reset form
         setNewBlog({

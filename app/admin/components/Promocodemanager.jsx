@@ -138,7 +138,6 @@ const PromoCodeManager = () => {
       const data = await response.json();
 
       if (data.success) {
-        alert("✅ Promo code created successfully!");
         setShowAddModal(false);
         resetForm();
         fetchPromoCodes();
@@ -183,7 +182,6 @@ const PromoCodeManager = () => {
       const data = await response.json();
 
       if (data.success) {
-        alert("✅ Promo code updated successfully!");
         setShowEditModal(false);
         setSelectedPromo(null);
         resetForm();
@@ -212,7 +210,6 @@ const PromoCodeManager = () => {
       const data = await response.json();
 
       if (data.success) {
-        alert("✅ Promo code deleted successfully!");
         fetchPromoCodes();
         fetchStats();
       } else {

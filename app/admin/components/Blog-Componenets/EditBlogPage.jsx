@@ -74,9 +74,8 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         });
              const data = await response.json();
      
-             console.log(data)
              if (data.success && data.blogCategories && data.blogCategories.length > 0) {
-               // Sort dynamic categories by order and name
+        
                const sortedDynamicCategories = data.blogCategories?.sort((a, b) => {
                  if (a.order !== b.order) return a.order - b.order;
                  return a.name.localeCompare(b.name);
@@ -86,14 +85,12 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
      
                setBlogCategories(sortedDynamicCategories);
              } else {
-               // If no dynamic categories, use only static categories
                console.warn(
                  "No active categories found from backend, in view blogs",
                );
              }
            } catch (error) {
              console.error("Error fetching categories:", error);
-             // On error, fallback to static categories
              console.log("Using static categories as fallback");
            } finally {
              setLoadingCategories(false);
@@ -215,7 +212,6 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
           image: data.imageUrl,
         }));
         setImagePreview(data.imageUrl);
-        console.log("✅ Image uploaded:", data.imageUrl);
       } else {
         alert(data.message || "Failed to upload image");
       }
@@ -272,7 +268,6 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
       const data = await response.json();
 
       if (data.success) {
-        alert("Blog updated successfully!");
         onSave();
       } else {
         throw new Error(data.message || "Failed to update blog");

@@ -181,7 +181,6 @@ import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
         const combined = [...dynamicCategoryNames, ...uniqueStaticCategories];
         setAllCategories(combined);
         
-        alert('Categories refreshed successfully!');
       }
     } catch (error) {
       console.error('Error refreshing categories:', error);
@@ -358,7 +357,6 @@ import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
       const data = await response.json();
       
       if (data.success) {
-        alert('✅ Product added successfully!');
         
         // Reset form
         setNewProduct({

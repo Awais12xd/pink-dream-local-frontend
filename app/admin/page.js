@@ -59,7 +59,6 @@ import dynamic from "next/dynamic";
 import { SettingContext } from "../context/SettingContext";
 import Image from "next/image";
 import Authorized from "../components/Authorized";
-import { useNotifications } from "../context/NotificationContext";
 import NotificationBell from "./components/NotificationBell";
 import NotificationsManager from "./components/Notifications";
 
@@ -123,8 +122,6 @@ const EditBlogPage = dynamic(
 const AdminPanel = () => {
   //Settings
   const { settings } = useContext(SettingContext);
-  const ctx = useNotifications();
-  console.log(ctx);
   // ALL STATES FIRST - Before any conditional logic
   // Authentication states
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -421,7 +418,6 @@ const AdminPanel = () => {
           });
 
           if (response.ok) {
-            alert("blog deleted successfully");
             if (activeTab === "blogs") {
               window.location.reload();
             } else if (activeTab === "blog-details") {
@@ -467,7 +463,6 @@ const AdminPanel = () => {
           });
 
           if (response.ok) {
-            alert("Product deleted successfully");
             if (activeTab === "products") {
               window.location.reload();
             } else if (activeTab === "product-details") {

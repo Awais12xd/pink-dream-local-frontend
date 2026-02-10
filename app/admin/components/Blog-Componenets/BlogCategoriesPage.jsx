@@ -147,7 +147,6 @@ const BlogCategoriesPage = () => {
           image: data.imageUrl,
         }));
         setImagePreview(data.imageUrl);
-        console.log("✅ Image uploaded:", data.imageUrl);
       } else {
         alert(data.message || "Failed to upload image");
       }
@@ -216,7 +215,6 @@ const BlogCategoriesPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        alert("Category created successfully!");
         resetForm();
         fetchCategories();
       } else {
@@ -256,7 +254,6 @@ const BlogCategoriesPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        alert("Category updated successfully!");
         resetForm();
         fetchCategories();
       } else {
@@ -337,7 +334,6 @@ const BlogCategoriesPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        alert("Category deleted successfully!");
         fetchCategories();
       } else {
         alert(data.message || "Failed to delete category");

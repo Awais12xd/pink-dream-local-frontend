@@ -334,14 +334,11 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
           const data = await response.json();
   
           if (data.success && data.blogCategories && data.blogCategories.length > 0) {
-            // Sort dynamic categories by order and name
             const sortedDynamicCategories = data.blogCategories?.sort((a, b) => {
               if (a.order !== b.order) return a.order - b.order;
               return a.name.localeCompare(b.name);
             });
 
-            
-  
             setBlogCategories(sortedDynamicCategories);
           } else {
             // If no dynamic categories, use only static categories

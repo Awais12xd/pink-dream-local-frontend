@@ -256,7 +256,6 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
       const data = await response.json();
       
       if (data.success) {
-        alert('Product updated successfully!');
         onSave();
       } else {
         throw new Error(data.message || 'Failed to update product');

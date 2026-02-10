@@ -170,7 +170,6 @@ const AdminOrders = () => {
         ...(date && { date })
       });
 
-      console.log('Fetching orders with params:', params.toString());
 
       const response = await fetch(`${API_BASE}/admin/orders?${params}` , {
           headers: {
@@ -179,7 +178,6 @@ const AdminOrders = () => {
         });
       const data = await response.json();
 
-      console.log('Orders response:', data);
 
       if (data.success) {
         setOrders(data.orders);
@@ -200,7 +198,6 @@ const AdminOrders = () => {
   // Fetch order statistics
   const fetchOrderStats = useCallback(async () => {
     try {
-      console.log('Fetching order stats...');
       const response = await fetch(`${API_BASE}/admin/orders/stats` , {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -208,11 +205,9 @@ const AdminOrders = () => {
         });
       const data = await response.json();
 
-      console.log('Stats response:', data);
 
       if (data.success) {
         setOrderStats(data.stats);
-        console.log('Order stats updated:', data.stats);
       } else {
         console.error('Failed to fetch stats:', data);
       }
@@ -237,7 +232,6 @@ const AdminOrders = () => {
       });
 
       const data = await response.json();
-      console.log('Status update response:', data);
 
       if (data.success) {
         showNotification(`Order status updated to ${newStatus}`, 'success');
@@ -270,7 +264,6 @@ const AdminOrders = () => {
   const deleteOrder = async (orderId) => {
     try {
       setDeletingOrder(true);
-      console.log(`Deleting order ${orderId}`);
       
       const response = await fetch(`${API_BASE}/admin/orders/${orderId}`, {
         method: 'DELETE',
@@ -281,7 +274,6 @@ const AdminOrders = () => {
       });
 
       const data = await response.json();
-      console.log('Delete response:', data);
 
       if (data.success) {
         showNotification('Order deleted successfully', 'success');
@@ -311,7 +303,6 @@ const AdminOrders = () => {
   const deleteAllOrders = async () => {
     try {
       setDeletingAll(true);
-      console.log('Deleting ALL orders');
       
       const response = await fetch(`${API_BASE}/admin/orders/delete-all/confirm`, {
         method: 'DELETE',
@@ -322,7 +313,6 @@ const AdminOrders = () => {
       });
 
       const data = await response.json();
-      console.log('Delete all response:', data);
 
       if (data.success) {
         showNotification(`Successfully deleted ${data.deletedCount} orders`, 'success');
@@ -350,7 +340,6 @@ const AdminOrders = () => {
 
   // Load initial data
   useEffect(() => {
-    console.log('Loading initial data...');
     fetchOrders();
     fetchOrderStats();
   }, [fetchOrders, fetchOrderStats]);
