@@ -60,7 +60,7 @@ import Authorized from "../components/Authorized";
 import { useNotifications } from "../context/NotificationContext";
 import NotificationBell from "./components/NotificationBell";
 
-// client-only admin sub-pages
+
 const RolesManager = dynamic(() => import("./components/RolesManager"), {
   ssr: false,
 });
