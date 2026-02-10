@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Search, 
-  Eye, 
-  EyeOff, 
-  Save, 
-  X, 
-  AlertCircle, 
-  Check, 
-  Loader, 
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Eye,
+  EyeOff,
+  Save,
+  X,
+  AlertCircle,
+  Check,
+  Loader,
   Tag,
   ImageIcon,
   Upload,
@@ -18,13 +18,16 @@ import {
   List,
   ChevronUp,
   ChevronDown,
-  Package
-} from 'lucide-react';
+  Package,
+} from "lucide-react";
+import Authorized from "@/app/components/Authorized";
 
 const CategoriesPage = () => {
+      const token = localStorage.getItem("staffUserToken");
+
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [showActiveOnly, setShowActiveOnly] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -34,54 +37,59 @@ const CategoriesPage = () => {
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
-    inactive: 0
+    inactive: 0,
   });
 
   // Form state
   const [categoryForm, setCategoryForm] = useState({
-    name: '',
-    description: '',
-    image: '',
-    icon: '',
+    name: "",
+    description: "",
+    image: "",
+    icon: "",
     isActive: true,
     parentCategory: null,
-    metaTitle: '',
-    metaDescription: ''
+    metaTitle: "",
+    metaDescription: "",
   });
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
   // Fetch categories
   const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
-      const url = showActiveOnly 
-        ? `${API_BASE}/categories?active=true` 
+      const url = showActiveOnly
+        ? `${API_BASE}/categories?active=true`
         : `${API_BASE}/categories`;
-      
-      const response = await fetch(url);
+
+      const response = await fetch(url , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
       const data = await response.json();
-      
+
       if (data.success) {
         // Sort by order and then by name
         const sortedCategories = data.categories?.sort((a, b) => {
           if (a.order !== b.order) return a.order - b.order;
           // return a.name.localeCompare(b.name);
         });
-        console.log(data)
         setCategories(sortedCategories);
-        
+
         // Calculate stats
-        const activeCount = sortedCategories?.filter(cat => cat.isActive).length;
+        const activeCount = sortedCategories?.filter(
+          (cat) => cat.isActive,
+        ).length;
         setStats({
           total: sortedCategories.length,
           active: activeCount,
-          inactive: sortedCategories.length - activeCount
+          inactive: sortedCategories.length - activeCount,
         });
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
-      alert('Failed to fetch categories');
+      console.error("Error fetching categories:", error);
+      alert("Failed to fetch categories");
     } finally {
       setLoading(false);
     }
@@ -97,44 +105,53 @@ const CategoriesPage = () => {
     if (!file) return;
 
     // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
     if (!validTypes.includes(file.type)) {
-      alert('Please upload a valid image file (JPEG, PNG, WEBP, or GIF)');
+      alert("Please upload a valid image file (JPEG, PNG, WEBP, or GIF)");
       return;
     }
 
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB');
+      alert("Image size must be less than 5MB");
       return;
     }
 
     setUploadingImage(true);
-    
+
     try {
       const formData = new FormData();
-      formData.append('categoryImage', file);
+      formData.append("categoryImage", file);
 
       const response = await fetch(`${API_BASE}/upload/category-image`, {
-        method: 'POST',
-        body: formData
+        method: "POST",
+        body: formData,
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setCategoryForm(prev => ({
+        setCategoryForm((prev) => ({
           ...prev,
-          image: data.imageUrl
+          image: data.imageUrl,
         }));
         setImagePreview(data.imageUrl);
-        console.log('✅ Image uploaded:', data.imageUrl);
+        console.log("✅ Image uploaded:", data.imageUrl);
       } else {
-        alert(data.message || 'Failed to upload image');
+        alert(data.message || "Failed to upload image");
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
-      alert('Failed to upload image');
+      console.error("Error uploading image:", error);
+      alert("Failed to upload image");
     } finally {
       setUploadingImage(false);
     }
@@ -142,17 +159,17 @@ const CategoriesPage = () => {
 
   // Handle form input change
   const handleFormChange = (field, value) => {
-    setCategoryForm(prev => ({
+    setCategoryForm((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   // Remove uploaded image
   const handleRemoveImage = () => {
-    setCategoryForm(prev => ({
+    setCategoryForm((prev) => ({
       ...prev,
-      image: ''
+      image: "",
     }));
     setImagePreview(null);
   };
@@ -160,14 +177,14 @@ const CategoriesPage = () => {
   // Reset form
   const resetForm = () => {
     setCategoryForm({
-      name: '',
-      description: '',
-      image: '',
-      icon: '',
+      name: "",
+      description: "",
+      image: "",
+      icon: "",
       isActive: true,
       parentCategory: null,
-      metaTitle: '',
-      metaDescription: ''
+      metaTitle: "",
+      metaDescription: "",
     });
     setImagePreview(null);
     setIsAddingCategory(false);
@@ -177,34 +194,35 @@ const CategoriesPage = () => {
   // Handle create category
   const handleCreateCategory = async (e) => {
     e.preventDefault();
-    
+
     if (!categoryForm.name.trim()) {
-      alert('Category name is required');
+      alert("Category name is required");
       return;
     }
 
     setSaving(true);
     try {
       const response = await fetch(`${API_BASE}/categories`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(categoryForm)
+        body: JSON.stringify(categoryForm),
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
-        alert('Category created successfully!');
+        alert("Category created successfully!");
         resetForm();
         fetchCategories();
       } else {
-        alert(data.message || 'Failed to create category');
+        alert(data.message || "Failed to create category");
       }
     } catch (error) {
-      console.error('Error creating category:', error);
-      alert('Failed to create category');
+      console.error("Error creating category:", error);
+      alert("Failed to create category");
     } finally {
       setSaving(false);
     }
@@ -213,34 +231,38 @@ const CategoriesPage = () => {
   // Handle update category
   const handleUpdateCategory = async (e) => {
     e.preventDefault();
-    
+
     if (!categoryForm.name.trim()) {
-      alert('Category name is required');
+      alert("Category name is required");
       return;
     }
 
     setSaving(true);
     try {
-      const response = await fetch(`${API_BASE}/categories/${editingCategory._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `${API_BASE}/categories/${editingCategory._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(categoryForm),
         },
-        body: JSON.stringify(categoryForm)
-      });
+      );
 
       const data = await response.json();
-      
+
       if (data.success) {
-        alert('Category updated successfully!');
+        alert("Category updated successfully!");
         resetForm();
         fetchCategories();
       } else {
-        alert(data.message || 'Failed to update category');
+        alert(data.message || "Failed to update category");
       }
     } catch (error) {
-      console.error('Error updating category:', error);
-      alert('Failed to update category');
+      console.error("Error updating category:", error);
+      alert("Failed to update category");
     } finally {
       setSaving(false);
     }
@@ -250,13 +272,13 @@ const CategoriesPage = () => {
   const handleEditCategory = (category) => {
     setCategoryForm({
       name: category.name,
-      description: category.description || '',
-      image: category.image || '',
-      icon: category.icon || '',
+      description: category.description || "",
+      image: category.image || "",
+      icon: category.icon || "",
       isActive: category.isActive,
       parentCategory: category.parentCategory || null,
-      metaTitle: category.metaTitle || '',
-      metaDescription: category.metaDescription || ''
+      metaTitle: category.metaTitle || "",
+      metaDescription: category.metaDescription || "",
     });
     setImagePreview(category.image || null);
     setEditingCategory(category);
@@ -266,52 +288,66 @@ const CategoriesPage = () => {
   // Handle toggle active status
   const handleToggleActive = async (categoryId) => {
     try {
-      const response = await fetch(`${API_BASE}/categories/${categoryId}/toggle-active`, {
-        method: 'PATCH'
-      });
+      const response = await fetch(
+        `${API_BASE}/categories/${categoryId}/toggle-active`,
+        {
+          method: "PATCH",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        },
+      );
 
       const data = await response.json();
-      
+
       if (data.success) {
         fetchCategories();
       } else {
-        alert(data.message || 'Failed to toggle category status');
+        alert(data.message || "Failed to toggle category status");
       }
     } catch (error) {
-      console.error('Error toggling category status:', error);
-      alert('Failed to toggle category status');
+      console.error("Error toggling category status:", error);
+      alert("Failed to toggle category status");
     }
   };
 
   // Handle delete category
   const handleDeleteCategory = async (categoryId, categoryName) => {
-    if (!window.confirm(`Are you sure you want to delete "${categoryName}"? This action cannot be undone.`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${categoryName}"? This action cannot be undone.`,
+      )
+    ) {
       return;
     }
 
     try {
       const response = await fetch(`${API_BASE}/categories/${categoryId}`, {
-        method: 'DELETE'
+        method: "DELETE",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
-        alert('Category deleted successfully!');
+        alert("Category deleted successfully!");
         fetchCategories();
       } else {
-        alert(data.message || 'Failed to delete category');
+        alert(data.message || "Failed to delete category");
       }
     } catch (error) {
-      console.error('Error deleting category:', error);
-      alert('Failed to delete category');
+      console.error("Error deleting category:", error);
+      alert("Failed to delete category");
     }
   };
 
   // Filter categories
-  const filteredCategories = categories?.filter(category => {
-    const matchesSearch = category?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         category.description?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredCategories = categories?.filter((category) => {
+    const matchesSearch =
+      category?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      category.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesActive = !showActiveOnly || category.isActive;
     return matchesSearch && matchesActive;
   });
@@ -328,13 +364,15 @@ const CategoriesPage = () => {
               </h1>
               <p className="text-gray-600">Organize your product categories</p>
             </div>
-            <button
-              onClick={() => setIsAddingCategory(true)}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:from-pink-600 hover:to-rose-600 transition-all shadow-lg"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Add Category</span>
-            </button>
+            <Authorized permission={"categories:create"}>
+              <button
+                onClick={() => setIsAddingCategory(true)}
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:from-pink-600 hover:to-rose-600 transition-all shadow-lg"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Add Category</span>
+              </button>
+            </Authorized>
           </div>
 
           {/* Stats Cards */}
@@ -343,27 +381,33 @@ const CategoriesPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Total Categories</p>
-                  <p className="text-3xl font-bold text-pink-600">{stats.total}</p>
+                  <p className="text-3xl font-bold text-pink-600">
+                    {stats.total}
+                  </p>
                 </div>
                 <Package className="w-12 h-12 text-pink-400" />
               </div>
             </div>
-            
+
             <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-green-100 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Active</p>
-                  <p className="text-3xl font-bold text-green-600">{stats.active}</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {stats.active}
+                  </p>
                 </div>
                 <Eye className="w-12 h-12 text-green-400" />
               </div>
             </div>
-            
+
             <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-red-100 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Inactive</p>
-                  <p className="text-3xl font-bold text-red-600">{stats.inactive}</p>
+                  <p className="text-3xl font-bold text-red-600">
+                    {stats.inactive}
+                  </p>
                 </div>
                 <EyeOff className="w-12 h-12 text-red-400" />
               </div>
@@ -377,7 +421,7 @@ const CategoriesPage = () => {
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-gradient-to-r from-pink-500 to-rose-500 text-white p-6 flex items-center justify-between rounded-t-2xl">
                 <h2 className="text-2xl font-bold">
-                  {editingCategory ? 'Edit Category' : 'Add New Category'}
+                  {editingCategory ? "Edit Category" : "Add New Category"}
                 </h2>
                 <button
                   onClick={resetForm}
@@ -387,7 +431,12 @@ const CategoriesPage = () => {
                 </button>
               </div>
 
-              <form onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory} className="p-6 space-y-6">
+              <form
+                onSubmit={
+                  editingCategory ? handleUpdateCategory : handleCreateCategory
+                }
+                className="p-6 space-y-6"
+              >
                 {/* Category Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -396,7 +445,7 @@ const CategoriesPage = () => {
                   <input
                     type="text"
                     value={categoryForm.name}
-                    onChange={(e) => handleFormChange('name', e.target.value)}
+                    onChange={(e) => handleFormChange("name", e.target.value)}
                     className="w-full px-4 py-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all"
                     placeholder="e.g., Dresses, Tops, Accessories"
                     required
@@ -410,7 +459,9 @@ const CategoriesPage = () => {
                   </label>
                   <textarea
                     value={categoryForm.description}
-                    onChange={(e) => handleFormChange('description', e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("description", e.target.value)
+                    }
                     rows="3"
                     className="w-full px-4 py-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all"
                     placeholder="Category description..."
@@ -422,12 +473,12 @@ const CategoriesPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Category Image
                   </label>
-                  
+
                   {/* Image Preview */}
                   {imagePreview && (
                     <div className="mb-4 relative">
-                      <img 
-                        src={imagePreview} 
+                      <img
+                        src={imagePreview}
                         alt="Category preview"
                         className="w-full h-48 object-cover rounded-lg border-2 border-pink-200"
                       />
@@ -451,7 +502,9 @@ const CategoriesPage = () => {
                         className="hidden"
                         disabled={uploadingImage}
                       />
-                      <div className={`flex items-center justify-center space-x-2 px-4 py-3 border-2 border-dashed border-pink-300 rounded-lg cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-all ${uploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                      <div
+                        className={`flex items-center justify-center space-x-2 px-4 py-3 border-2 border-dashed border-pink-300 rounded-lg cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-all ${uploadingImage ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
                         {uploadingImage ? (
                           <>
                             <Loader className="w-5 h-5 animate-spin text-pink-600" />
@@ -461,7 +514,7 @@ const CategoriesPage = () => {
                           <>
                             <Upload className="w-5 h-5 text-pink-600" />
                             <span className="text-pink-600">
-                              {imagePreview ? 'Change Image' : 'Upload Image'}
+                              {imagePreview ? "Change Image" : "Upload Image"}
                             </span>
                           </>
                         )}
@@ -481,7 +534,7 @@ const CategoriesPage = () => {
                   <input
                     type="text"
                     value={categoryForm.icon}
-                    onChange={(e) => handleFormChange('icon', e.target.value)}
+                    onChange={(e) => handleFormChange("icon", e.target.value)}
                     className="w-full px-4 py-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all"
                     placeholder="e.g., fa-dress, lucide-shirt"
                   />
@@ -495,7 +548,9 @@ const CategoriesPage = () => {
                   <input
                     type="text"
                     value={categoryForm.metaTitle}
-                    onChange={(e) => handleFormChange('metaTitle', e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("metaTitle", e.target.value)
+                    }
                     className="w-full px-4 py-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all"
                     placeholder="SEO friendly title"
                   />
@@ -508,7 +563,9 @@ const CategoriesPage = () => {
                   </label>
                   <textarea
                     value={categoryForm.metaDescription}
-                    onChange={(e) => handleFormChange('metaDescription', e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("metaDescription", e.target.value)
+                    }
                     rows="2"
                     className="w-full px-4 py-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all"
                     placeholder="SEO friendly description"
@@ -521,10 +578,15 @@ const CategoriesPage = () => {
                     type="checkbox"
                     id="isActive"
                     checked={categoryForm.isActive}
-                    onChange={(e) => handleFormChange('isActive', e.target.checked)}
+                    onChange={(e) =>
+                      handleFormChange("isActive", e.target.checked)
+                    }
                     className="w-5 h-5 text-pink-600 bg-gray-100 border-pink-300 rounded focus:ring-pink-500"
                   />
-                  <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="isActive"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Active (visible to customers)
                   </label>
                 </div>
@@ -551,7 +613,11 @@ const CategoriesPage = () => {
                     ) : (
                       <>
                         <Save className="w-5 h-5" />
-                        <span>{editingCategory ? 'Update Category' : 'Create Category'}</span>
+                        <span>
+                          {editingCategory
+                            ? "Update Category"
+                            : "Create Category"}
+                        </span>
                       </>
                     )}
                   </button>
@@ -574,7 +640,7 @@ const CategoriesPage = () => {
                 className="w-full pl-10 pr-4 py-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all"
               />
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -583,7 +649,10 @@ const CategoriesPage = () => {
                 onChange={(e) => setShowActiveOnly(e.target.checked)}
                 className="w-5 h-5 text-pink-600 bg-gray-100 border-pink-300 rounded focus:ring-pink-500"
               />
-              <label htmlFor="activeOnly" className="text-sm font-medium text-gray-700">
+              <label
+                htmlFor="activeOnly"
+                className="text-sm font-medium text-gray-700"
+              >
                 Show Active Only
               </label>
             </div>
@@ -613,82 +682,110 @@ const CategoriesPage = () => {
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-pink-500 to-rose-500 text-white">
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Image</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Name</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Description</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold">Status</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold">Actions</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">
+                      Image
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">
+                      Name
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">
+                      Description
+                    </th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-pink-100">
                   {filteredCategories?.map((category) => (
-                    <tr key={category._id} className="hover:bg-pink-50/50 transition-colors">
+                    <tr
+                      key={category._id}
+                      className="hover:bg-pink-50/50 transition-colors"
+                    >
                       <td className="px-6 py-4">
                         {category.image ? (
-                          <img 
-                            src={category.image} 
+                          <img
+                            src={category.image}
                             alt={category.name}
                             className="w-12 h-12 object-cover rounded-lg border-2 border-pink-200"
                             onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
+                              e.target.style.display = "none";
+                              e.target.nextSibling.style.display = "flex";
                             }}
                           />
                         ) : null}
-                        <div 
+                        <div
                           className="w-12 h-12 bg-gradient-to-br from-pink-100 to-rose-100 rounded-lg flex items-center justify-center border-2 border-pink-200"
-                          style={{ display: category.image ? 'none' : 'flex' }}
+                          style={{ display: category.image ? "none" : "flex" }}
                         >
                           <Tag className="w-6 h-6 text-pink-600" />
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900">{category.name}</div>
-                        <div className="text-sm text-gray-500">/{category.slug}</div>
+                        <div className="font-medium text-gray-900">
+                          {category.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          /{category.slug}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-600 max-w-md truncate">
-                          {category.description || 'No description'}
+                          {category.description || "No description"}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => handleToggleActive(category._id)}
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                            category.isActive
-                              ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                              : 'bg-red-100 text-red-800 hover:bg-red-200'
-                          }`}
-                        >
-                          {category.isActive ? (
-                            <>
-                              <Eye className="w-3 h-3 mr-1" />
-                              Active
-                            </>
-                          ) : (
-                            <>
-                              <EyeOff className="w-3 h-3 mr-1" />
-                              Inactive
-                            </>
-                          )}
-                        </button>
+                        <Authorized permission={"categories:update"}>
+                          <button
+                            onClick={() => handleToggleActive(category._id)}
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                              category.isActive
+                                ? "bg-green-100 text-green-800 hover:bg-green-200"
+                                : "bg-red-100 text-red-800 hover:bg-red-200"
+                            }`}
+                          >
+                            {category.isActive ? (
+                              <>
+                                <Eye className="w-3 h-3 mr-1" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <EyeOff className="w-3 h-3 mr-1" />
+                                Inactive
+                              </>
+                            )}
+                          </button>
+                        </Authorized>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center space-x-2">
-                          <button
-                            onClick={() => handleEditCategory(category)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                            title="Edit"
-                          >
-                            <Edit className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCategory(category._id, category.name)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
+                          <Authorized permission={"categories:update"}>
+                            <button
+                              onClick={() => handleEditCategory(category)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                              title="Edit"
+                            >
+                              <Edit className="w-5 h-5" />
+                            </button>
+                          </Authorized>
+                          <Authorized permission={"categories:delete"}>
+                            <button
+                              onClick={() =>
+                                handleDeleteCategory(
+                                  category._id,
+                                  category.name,
+                                )
+                              }
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </Authorized>
                         </div>
                       </td>
                     </tr>

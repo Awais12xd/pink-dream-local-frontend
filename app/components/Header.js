@@ -188,14 +188,14 @@ const Header = () => {
       <div className="container mx-auto px-2 sm:px-4">
         <div className="flex items-center justify-between py-3 sm:py-5 ">
           {/* Logo - responsive sizing */}
-          {settings.branding.siteLogo.url ? (
+          {settings?.branding.siteLogo.url ? (
              <Link
               href="/"
               className="relative flex items-center justify-center w-36 h-12 sm:w-60 sm:h-16 flex-shrink-0  sm:ml-3"
             >
             <Image
               src={settings?.branding?.siteLogo?.url}
-              alt={settings.branding.siteLogo.alt}
+              alt={settings?.branding.siteLogo.alt}
               className="object-contain"
               fill
               sizes="(max-width: 640px) 100vw,

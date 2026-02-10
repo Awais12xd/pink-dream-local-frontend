@@ -4,8 +4,10 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, User, Sparkles, AlertCircle, CheckCircle, Loader, Heart } from 'lucide-react';
 
 const AdminLogin = ({ onLoginSuccess }) => {
+      const token = localStorage.getItem("staffUserToken");
+
   const [credentials, setCredentials] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -35,17 +37,20 @@ const AdminLogin = ({ onLoginSuccess }) => {
 
       if (data.success) {
         // Store admin token and data
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminData', JSON.stringify(data.admin));
+        localStorage.setItem('staffUserToken', data.token);
+        localStorage.setItem('staffUserData', JSON.stringify(data.staffUser));
+        window.dispatchEvent(new Event("staff-auth-changed"));
+
         
         setSuccess('Login successful! Loading dashboard...');
         
         // Call success callback after short delay
         setTimeout(() => {
-          onLoginSuccess(data.admin);
+          onLoginSuccess(data.staffUser);
         }, 1000);
         
       } else {
+        
         setError(data.message || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
@@ -72,7 +77,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
   // Quick fill demo credentials
   const fillDemoCredentials = () => {
     setCredentials({
-      username: 'admin',
+      email: 'admin@gmail.com',
       password: 'admin123'
     });
   };
@@ -126,9 +131,9 @@ const AdminLogin = ({ onLoginSuccess }) => {
               <AlertCircle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-pink-800 mb-1">Demo Credentials</h3>
+              <h3 className="text-sm font-semibold text-pink-800 mb-1">Demo Super Admin Credentials</h3>
               <p className="text-xs text-pink-700 mb-2">
-                Username: <code className="bg-white px-2 py-0.5 rounded border border-pink-200 font-mono">admin</code>
+                Email: <code className="bg-white px-2 py-0.5 rounded border border-pink-200 font-mono">admin@gmail.com</code>
               </p>
               <p className="text-xs text-pink-700 mb-3">
                 Password: <code className="bg-white px-2 py-0.5 rounded border border-pink-200 font-mono">admin123</code>
@@ -167,22 +172,22 @@ const AdminLogin = ({ onLoginSuccess }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Username Field */}
           <div>
-            <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-2">
-              Username
+            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+              Email
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <User className="h-5 w-5 text-pink-400" />
               </div>
               <input
-                id="username"
-                name="username"
-                type="text"
-                value={credentials.username}
+                id="email"
+                name="email"
+                type="email"
+                value={credentials.email}
                 onChange={handleChange}
                 required
                 className="block w-full pl-10 pr-3 py-3 border-2 border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm hover:border-pink-300"
-                placeholder="Enter your username"
+                placeholder="Enter your email"
               />
             </div>
           </div>
@@ -223,7 +228,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
           {/* Login Button */}
           <button
             type="submit"
-            disabled={loading || !credentials.username || !credentials.password}
+            disabled={loading || !credentials.email || !credentials.password}
             className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-pink-500 via-pink-600 to-purple-600 hover:from-pink-600 hover:via-pink-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
           >
             {loading ? (

@@ -40,8 +40,11 @@ import {
   Timer,
 } from "lucide-react";
 import "./Blog.css";
+import Authorized from "@/app/components/Authorized";
 
 const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
+      const token = localStorage.getItem("staffUserToken");
+
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -110,7 +113,11 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/blog/${blogId}`);
+      const response = await fetch(`${API_BASE}/blog/${blogId}` , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
       const data = await response.json();
 
       if (data.success) {
@@ -133,6 +140,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           id: product.id,
@@ -164,6 +172,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             title: blog?.title,
@@ -339,6 +348,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
               <RefreshCw className="w-4 h-4" />
               Refresh
             </button>
+            <Authorized permission={"blogs:update"} >
             <button
               onClick={() => onEdit(blog)}
               className="flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
@@ -346,6 +356,8 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
               <Edit className="w-4 h-4" />
               Edit Blog
             </button>
+            </Authorized>
+            <Authorized permission={"blogs:delete"}>
             <button
               onClick={handleDeleteBlog}
               className="flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-base"
@@ -353,6 +365,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
               <Trash2 className="w-4 h-4" />
               Delete
             </button>
+            </Authorized>
           </div>
         </div>
 

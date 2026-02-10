@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 
 const EditProductPage = ({ product, onSave, onCancel }) => {
+      const token = localStorage.getItem("staffUserToken");
+
   const [formData, setFormData] = useState({
     id: '',
     name: '',
@@ -168,7 +170,10 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
         
         const response = await fetch(`${API_BASE}/upload`, {
           method: 'POST',
-          body: uploadFormData
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: uploadFormData,
         });
         const data = await response.json();
         
@@ -242,7 +247,8 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
       const response = await fetch(`${API_BASE}/updateproduct`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(updateData)
       });

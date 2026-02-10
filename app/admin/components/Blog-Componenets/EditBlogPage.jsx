@@ -23,6 +23,8 @@ import CKEditorInput from "./CkEditorInput";
 
 
 const EditBlogPage = ({ blog, onSave, onCancel }) => {
+  const token = localStorage.getItem("staffUserToken");
+
 
   const [formData, setFormData] = useState({
     title: "",
@@ -65,7 +67,11 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
          const fetchCategories = async () => {
            try {
              setLoadingCategories(true);
-             const response = await fetch(`${API_BASE}/blog-categories?active=true`);
+             const response = await fetch(`${API_BASE}/blog-categories?active=true` , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
              const data = await response.json();
      
              console.log(data)
@@ -196,6 +202,9 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
       const response = await fetch(`${API_BASE}/upload/blog-image`, {
         method: "POST",
         body: formData,
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
       });
 
       const data = await response.json();
@@ -255,6 +264,7 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(updateData),
       });

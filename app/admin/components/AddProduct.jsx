@@ -5,6 +5,8 @@ import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
 
  // Add Product Page Component with Dynamic + Static Categories
   const AddProductPage = () => { 
+      const token = localStorage.getItem("staffUserToken");
+
     // Static categories (fallback/default)
     const staticCategories = ['Dresses', 'Tops', 'Bottoms', 'Accessories', 'Shoes', 'Outerwear', 'Activewear', 'Swimwear'];
     
@@ -79,7 +81,11 @@ import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
     const fetchCategories = async () => {
       try {
         setLoadingCategories(true);
-        const response = await fetch(`${API_BASE}/categories?active=true`);
+        const response = await fetch(`${API_BASE}/categories?active=true` , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         const data = await response.json();
         
         if (data.success && data.categories && data.categories.length > 0) {
@@ -152,7 +158,11 @@ import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
   const refreshCategories = async () => {
     try {
       setLoadingCategories(true);
-      const response = await fetch(`${API_BASE}/categories?active=true`);
+      const response = await fetch(`${API_BASE}/categories?active=true` , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
       const data = await response.json();
       
       if (data.success && data.categories) {
@@ -216,6 +226,9 @@ import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
         const response = await fetch(`${API_BASE}/upload`, {
           method: 'POST',
           body: formData,
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
 
         const data = await response.json();
@@ -337,6 +350,7 @@ import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(cleanedProduct),
       });

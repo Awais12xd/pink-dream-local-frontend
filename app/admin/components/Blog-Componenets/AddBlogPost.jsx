@@ -25,8 +25,12 @@ const CKEditorInput = dynamic(() => import("./CkEditorInput.jsx"), {
   ssr: false,
 });
 
+
+
 // Add Product Page Component with Dynamic + Static Categories
 const AddBlogPage = () => {
+      const token = localStorage.getItem("staffUserToken");
+
   // Static categories (fallback/default)
   const staticCategories = [
     "Psychology",
@@ -90,7 +94,11 @@ const AddBlogPage = () => {
     const fetchCategories = async () => {
       try {
         setLoadingCategories(true);
-        const response = await fetch(`${API_BASE}/blog-categories?active=true`);
+        const response = await fetch(`${API_BASE}/blog-categories?active=true` , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         const data = await response.json();
 
         if (
@@ -168,7 +176,11 @@ const AddBlogPage = () => {
   const refreshCategories = async () => {
     try {
       setLoadingCategories(true);
-      const response = await fetch(`${API_BASE}/blog-categories?active=true`);
+      const response = await fetch(`${API_BASE}/blog-categories?active=true` ,  {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
       const data = await response.json();
 
       if (data.success && data.blogCategories) {
@@ -233,6 +245,9 @@ const AddBlogPage = () => {
       const response = await fetch(`${API_BASE}/upload/author-profile-image`, {
         method: "POST",
         body: formData,
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
       });
 
       const data = await response.json();
@@ -296,6 +311,9 @@ const AddBlogPage = () => {
       const response = await fetch(`${API_BASE}/upload/blog-image`, {
         method: "POST",
         body: formData,
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
       });
 
       const data = await response.json();
@@ -410,8 +428,10 @@ const AddBlogPage = () => {
 
       const response = await fetch(`${API_BASE}/add-blog`, {
         method: "POST",
+        
         headers: {
           "Content-Type": "application/json",
+           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(cleanedBlog),
       });

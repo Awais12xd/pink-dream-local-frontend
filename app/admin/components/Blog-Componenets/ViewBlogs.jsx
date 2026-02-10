@@ -13,9 +13,12 @@ import {
 import Pagination from "@/app/components/Pagination";;
 import Blog from "@/app/blog/page";
 import Image from "next/image";
+import Authorized from "@/app/components/Authorized";
 
 
 const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
+      const token = localStorage.getItem("staffUserToken");
+
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -293,7 +296,11 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
         sortOrder: sortOrder,
       });
 
-      const response = await fetch(`${API_BASE}/all-blogs?${params}`);
+      const response = await fetch(`${API_BASE}/all-blogs?${params}` , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
       const data = await response.json();
 
       if (data.success) {
@@ -319,7 +326,11 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
       const fetchCategories = async () => {
         try {
           setLoadingCategories(true);
-          const response = await fetch(`${API_BASE}/blog-categories?active=true`);
+          const response = await fetch(`${API_BASE}/blog-categories?active=true` , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
           const data = await response.json();
   
           if (data.success && data.blogCategories && data.blogCategories.length > 0) {
@@ -370,7 +381,8 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
         const response = await fetch(`${API_BASE}/delete-blog/${id}`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({ title })
         });
@@ -638,6 +650,8 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
                             </button>
                           )}
 
+                          <Authorized permission={"blogs:update"}>
+
                           {onEditBlog && (
                             <button
                               onClick={() => onEditBlog(blog)}
@@ -647,6 +661,9 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
                               <Edit className="w-4 h-4" />
                             </button>
                           )}
+                          </Authorized>
+
+                          <Authorized permission={"blogs:delete"}>
 
                           <button
                             onClick={() =>
@@ -657,6 +674,7 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
+                          </Authorized>
                         </div>
                       </td>
                     </tr>

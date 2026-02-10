@@ -8,14 +8,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-/**
- * Production-ready SettingsManager (frontend)
- * - Fetches admin settings on mount
- * - Uploads images to the provided upload endpoint
- * - Saves changes via PUT /api/admin/settings
- * - Uses Authorization: Bearer <adminToken> from localStorage
- */
-
 /* ---------------------------
    Minimal helpers
    --------------------------- */
@@ -67,13 +59,15 @@ const defaultSettings = {
       sunday: { day: 'sunday', open: '00:00', close: '00:00', closed: true },
     },
   },
-  email: {
-    from: 'noreply@pinkdreams.com',
-    admin: 'admin@pinkdreams.com',
-  },
+  // email: {
+  //   from: 'noreply@pinkdreams.com',
+  //   admin: 'admin@pinkdreams.com',
+  // },
 };
 
 const SettingsManager = () => {
+      const token = localStorage.getItem("staffUserToken");
+
     const API_BASE = process.env.NEXT_PUBLIC_API_URL;
   const [activeTab, setActiveTab] = useState('general');
   const [settings, setSettings] = useState(defaultSettings);
@@ -93,7 +87,7 @@ const SettingsManager = () => {
   // load settings on mount
   useEffect(() => {
     let mounted = true;
-    const token = (typeof window !== 'undefined') ? localStorage.getItem('adminToken') : null;
+    const token = (typeof window !== 'undefined') ? localStorage.getItem('staffUserToken') : null;
 
     const fetchSettings = async () => {
       setLoading(true);
@@ -146,7 +140,7 @@ const SettingsManager = () => {
      Upload helper (calls backend)
      --------------------------- */
   const uploadToServer = async (file, type) => {
-    const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem('staffUserToken');
     const formData = new FormData();
     formData.append('file', file);
 
@@ -262,10 +256,10 @@ const SettingsManager = () => {
      --------------------------- */
   const handleSave = async () => {
     // client-side validation: ensure at least one valid admin email (the admin notification)
-    if (settings.email && settings.email.admin && !isValidEmail(settings.email.admin)) {
-      showToast(setToast, 'error', 'Admin email is invalid.');
-      return;
-    }
+    // if (settings.email && settings.email.admin && !isValidEmail(settings.email.admin)) {
+    //   showToast(setToast, 'error', 'Admin email is invalid.');
+    //   return;
+    // }
     if (settings.contact && Array.isArray(settings.contact.emails)) {
       for (const e of settings.contact.emails) {
         if (e.email && !isValidEmail(e.email)) {
@@ -276,7 +270,7 @@ const SettingsManager = () => {
     }
 
     setSaving(true);
-    const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem('staffUserToken');
     try {
       const res = await fetch(`${API_BASE}/admin/settings`, {
         method: 'PUT',
@@ -310,31 +304,7 @@ const SettingsManager = () => {
     }
   };
 
-  /* ---------------------------
-     Test email (optional)
-     --------------------------- */
-  const handleTestEmail = async () => {
-    const token = localStorage.getItem('adminToken');
-    try {
-      const res = await fetch(`${API_BASE}/admin/settings/test-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({}) // server uses DB/ENV
-      });
-      const json = await res.json();
-      if (res.ok && json.success) {
-        showToast(setToast, 'success', 'Test email sent.');
-      } else {
-        showToast(setToast, 'error', json.message || 'Test email failed.');
-      }
-    } catch (err) {
-      console.error('Test email error', err);
-      showToast(setToast, 'error', 'Test email request failed.');
-    }
-  };
+ 
 
   /* ---------------------------
      Small UI render helpers
@@ -342,7 +312,7 @@ const SettingsManager = () => {
   const tabCards = [
     { id: 'general', title: 'General Settings', description: 'Branding, logos, and SEO configuration', icon: Sliders, gradient: 'from-pink-500 to-rose-500', bgGradient: 'from-pink-50 to-rose-50' },
     { id: 'contact', title: 'Contact Settings', description: 'Emails, phones, address & business hours', icon: Phone, gradient: 'from-blue-500 to-cyan-500', bgGradient: 'from-blue-50 to-cyan-50' },
-    { id: 'email', title: 'Email Settings', description: 'Delivery and notification settings', icon: Mail, gradient: 'from-purple-500 to-violet-500', bgGradient: 'from-purple-50 to-violet-50' },
+    // { id: 'email', title: 'Email Settings', description: 'Delivery and notification settings', icon: Mail, gradient: 'from-purple-500 to-violet-500', bgGradient: 'from-purple-50 to-violet-50' },
   ];
 
   // render loading state
@@ -357,9 +327,7 @@ const SettingsManager = () => {
     );
   }
 
-  /* ---------------------------
-     Full JSX (mostly unchanged from your UI)
-     --------------------------- */
+ 
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       {/* toast */}
@@ -391,12 +359,7 @@ const SettingsManager = () => {
             </h1>
             <p className="text-gray-600 mt-2">Configure your store settings, branding, and preferences</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={handleTestEmail}
-              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200">
-              Test Email
-            </button>
-
+          <div className="flex items-center">
             <button
               onClick={handleSave}
               disabled={saving}
@@ -461,7 +424,7 @@ const SettingsManager = () => {
                           {settings.generalSettings.branding.siteLogo ? (
                             <>
                               <img src={settings.generalSettings.branding.siteLogo.url} alt="Site Logo" className="max-h-20 max-w-full object-contain rounded-lg" />
-                              <p className="text-xs text-gray-500 mt-3 truncate max-w-full">{settings.generalSettings.branding.siteLogo.alt}</p>
+                              <p className="text-xs text-gray-500 mt-3 truncate max-w-full">Recommended size: 300×100 px (PNG, SVG or JPG up to 5MB)</p>
                               <div className="flex gap-2 mt-3">
                                 <label className="text-xs bg-pink-100 text-pink-600 px-3 py-1.5 rounded-lg hover:bg-pink-200 transition-colors font-medium cursor-pointer">
                                   {uploading.siteLogo ? 'Uploading...' : 'Change'}
@@ -471,10 +434,11 @@ const SettingsManager = () => {
                               </div>
                             </>
                           ) : (
+
                             <>
                               <Upload className="w-10 h-10 text-gray-400 mb-3" />
                               <p className="text-sm text-gray-500">Drop image here or click to upload</p>
-                              <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                              <p className="text-xs text-gray-400 mt-1"> Recommended size: 300×100 px (PNG, SVG or JPG up to 5MB)</p>
                               <label className="mt-3 text-sm bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors font-medium cursor-pointer">
                                 Upload Logo
                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageUpload('siteLogo', e.target.files[0])} />
@@ -493,7 +457,7 @@ const SettingsManager = () => {
                           {settings.generalSettings.branding.adminLogo ? (
                             <>
                               <img src={settings.generalSettings.branding.adminLogo.url} alt="Admin Logo" className="max-h-20 max-w-full object-contain rounded-lg" />
-                              <p className="text-xs text-gray-500 mt-3 truncate max-w-full">{settings.generalSettings.branding.adminLogo.alt}</p>
+                              <p className="text-xs text-gray-500 mt-3 truncate max-w-full">Recommended size: 300×100 px (PNG, SVG or JPG up to 5MB)</p>
                               <div className="flex gap-2 mt-3">
                                 <label className="text-xs bg-pink-100 text-pink-600 px-3 py-1.5 rounded-lg hover:bg-pink-200 transition-colors font-medium cursor-pointer">
                                   {uploading.adminLogo ? 'Uploading...' : 'Change'}
@@ -506,7 +470,7 @@ const SettingsManager = () => {
                             <>
                               <Upload className="w-10 h-10 text-gray-400 mb-3" />
                               <p className="text-sm text-gray-500">Drop image here or click to upload</p>
-                              <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                              <p className="text-xs text-gray-400 mt-1">Recommended size: 300×100 px (PNG, SVG or JPG up to 5MB)</p>
                               <label className="mt-3 text-sm bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors font-medium cursor-pointer">
                                 Upload Logo
                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageUpload('adminLogo', e.target.files[0])} />
@@ -783,7 +747,7 @@ const SettingsManager = () => {
             )}
 
             {/* Email tab */}
-            {activeTab === 'email' && (
+            {/* {activeTab === 'email' && (
               <div className="divide-y divide-gray-100">
                 <div className="p-8">
                   <div className="flex items-center gap-3 mb-6">
@@ -812,7 +776,7 @@ const SettingsManager = () => {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
           </motion.div>
         </AnimatePresence>
 

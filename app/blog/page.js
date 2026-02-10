@@ -384,7 +384,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
       day: "numeric",
     });
   };
-
+ 
 
   const BlogCard = ({ post, featured = false }) => (
     <motion.article

@@ -35,6 +35,8 @@ import {
 } from 'lucide-react';
 
 const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
+      const token = localStorage.getItem("staffUserToken");
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -94,7 +96,11 @@ const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/product/${productId}`);
+      const response = await fetch(`${API_BASE}/product/${productId}` , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
       const data = await response.json();
       
       if (data.success) {
@@ -115,7 +121,8 @@ const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
       const response = await fetch(`${API_BASE}/updateproduct`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           id: product.id,
@@ -142,7 +149,8 @@ const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
         const response = await fetch(`${API_BASE}/removeproduct`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             id: product.id,

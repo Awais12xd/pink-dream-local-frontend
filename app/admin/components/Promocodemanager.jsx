@@ -1,39 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Percent, Plus, Edit2, Trash2, Eye, EyeOff, Calendar, 
-  TrendingUp, Users, DollarSign, Tag, Search, Filter,
-  Check, X, AlertCircle, Copy, BarChart3, RefreshCw,
-  Gift, Clock, Target, Award
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import {
+  Percent,
+  Plus,
+  Edit2,
+  Trash2,
+  Eye,
+  EyeOff,
+  Calendar,
+  TrendingUp,
+  Users,
+  DollarSign,
+  Tag,
+  Search,
+  Filter,
+  Check,
+  X,
+  AlertCircle,
+  Copy,
+  BarChart3,
+  RefreshCw,
+  Gift,
+  Clock,
+  Target,
+  Award,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import Authorized from "@/app/components/Authorized";
 
 const PromoCodeManager = () => {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-  
+  const token = localStorage.getItem("staffUserToken");
+
   // States
   const [promoCodes, setPromoCodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedPromo, setSelectedPromo] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [stats, setStats] = useState(null);
 
   // Form state for new/edit promo code
   const [formData, setFormData] = useState({
-    code: '',
-    title: '',
-    description: '',
-    discountType: 'percentage',
-    discountValue: '',
-    minPurchaseAmount: '0',
-    maxDiscountAmount: '',
-    usageLimit: '',
-    usagePerUser: '1',
-    validFrom: '',
-    validUntil: '',
-    isActive: true
+    code: "",
+    title: "",
+    description: "",
+    discountType: "percentage",
+    discountValue: "",
+    minPurchaseAmount: "0",
+    maxDiscountAmount: "",
+    usageLimit: "",
+    usagePerUser: "1",
+    validFrom: "",
+    validUntil: "",
+    isActive: true,
   });
 
   // Fetch promo codes
@@ -41,15 +62,20 @@ const PromoCodeManager = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${API_BASE}/api/promo-codes/all?status=${filterStatus}&search=${searchTerm}`
+        `${API_BASE}/api/promo-codes/all?status=${filterStatus}&search=${searchTerm}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        },
       );
       const data = await response.json();
-      
+
       if (data.success) {
         setPromoCodes(data.promoCodes);
       }
     } catch (error) {
-      console.error('Error fetching promo codes:', error);
+      console.error("Error fetching promo codes:", error);
     } finally {
       setLoading(false);
     }
@@ -58,14 +84,18 @@ const PromoCodeManager = () => {
   // Fetch statistics
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/promo-codes/stats`);
+      const response = await fetch(`${API_BASE}/api/promo-codes/stats`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
-      
+
       if (data.success) {
         setStats(data.stats);
       }
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error("Error fetching stats:", error);
     }
   };
 
@@ -77,117 +107,143 @@ const PromoCodeManager = () => {
   // Create promo code
   const handleCreatePromo = async (e) => {
     e.preventDefault();
-    
+
     try {
       // Validate dates
       if (new Date(formData.validUntil) <= new Date(formData.validFrom)) {
-        alert('End date must be after start date');
+        alert("End date must be after start date");
         return;
       }
 
       const response = await fetch(`${API_BASE}/api/promo-codes/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         body: JSON.stringify({
           ...formData,
           discountValue: parseFloat(formData.discountValue),
           minPurchaseAmount: parseFloat(formData.minPurchaseAmount) || 0,
-          maxDiscountAmount: formData.maxDiscountAmount ? parseFloat(formData.maxDiscountAmount) : null,
-          usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : null,
-          usagePerUser: parseInt(formData.usagePerUser) || 1
-        })
+          maxDiscountAmount: formData.maxDiscountAmount
+            ? parseFloat(formData.maxDiscountAmount)
+            : null,
+          usageLimit: formData.usageLimit
+            ? parseInt(formData.usageLimit)
+            : null,
+          usagePerUser: parseInt(formData.usagePerUser) || 1,
+        }),
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
-        alert('✅ Promo code created successfully!');
+        alert("✅ Promo code created successfully!");
         setShowAddModal(false);
         resetForm();
         fetchPromoCodes();
         fetchStats();
       } else {
-        alert(data.message || 'Failed to create promo code');
+        alert(data.message || "Failed to create promo code");
       }
     } catch (error) {
-      console.error('Error creating promo code:', error);
-      alert('Failed to create promo code');
+      console.error("Error creating promo code:", error);
+      alert("Failed to create promo code");
     }
   };
 
   // Update promo code
   const handleUpdatePromo = async (e) => {
     e.preventDefault();
-    
+
     try {
-      const response = await fetch(`${API_BASE}/api/promo-codes/update/${selectedPromo._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          discountValue: parseFloat(formData.discountValue),
-          minPurchaseAmount: parseFloat(formData.minPurchaseAmount) || 0,
-          maxDiscountAmount: formData.maxDiscountAmount ? parseFloat(formData.maxDiscountAmount) : null,
-          usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : null,
-          usagePerUser: parseInt(formData.usagePerUser) || 1
-        })
-      });
+      const response = await fetch(
+        `${API_BASE}/api/promo-codes/update/${selectedPromo._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            ...formData,
+            discountValue: parseFloat(formData.discountValue),
+            minPurchaseAmount: parseFloat(formData.minPurchaseAmount) || 0,
+            maxDiscountAmount: formData.maxDiscountAmount
+              ? parseFloat(formData.maxDiscountAmount)
+              : null,
+            usageLimit: formData.usageLimit
+              ? parseInt(formData.usageLimit)
+              : null,
+            usagePerUser: parseInt(formData.usagePerUser) || 1,
+          }),
+        },
+      );
 
       const data = await response.json();
-      
+
       if (data.success) {
-        alert('✅ Promo code updated successfully!');
+        alert("✅ Promo code updated successfully!");
         setShowEditModal(false);
         setSelectedPromo(null);
         resetForm();
         fetchPromoCodes();
       } else {
-        alert(data.message || 'Failed to update promo code');
+        alert(data.message || "Failed to update promo code");
       }
     } catch (error) {
-      console.error('Error updating promo code:', error);
-      alert('Failed to update promo code');
+      console.error("Error updating promo code:", error);
+      alert("Failed to update promo code");
     }
   };
 
   // Delete promo code
   const handleDeletePromo = async (id) => {
-    if (!confirm('Are you sure you want to delete this promo code?')) return;
-    
+    if (!confirm("Are you sure you want to delete this promo code?")) return;
+
     try {
       const response = await fetch(`${API_BASE}/api/promo-codes/delete/${id}`, {
-        method: 'DELETE'
+        method: "DELETE",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
-        alert('✅ Promo code deleted successfully!');
+        alert("✅ Promo code deleted successfully!");
         fetchPromoCodes();
         fetchStats();
       } else {
-        alert(data.message || 'Failed to delete promo code');
+        alert(data.message || "Failed to delete promo code");
       }
     } catch (error) {
-      console.error('Error deleting promo code:', error);
-      alert('Failed to delete promo code');
+      console.error("Error deleting promo code:", error);
+      alert("Failed to delete promo code");
     }
   };
 
   // Toggle active status
   const handleToggleStatus = async (id) => {
     try {
-      const response = await fetch(`${API_BASE}/api/promo-codes/toggle-status/${id}`, {
-        method: 'PATCH'
-      });
+      const response = await fetch(
+        `${API_BASE}/api/promo-codes/toggle-status/${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        },
+      );
 
       const data = await response.json();
-      
+
       if (data.success) {
         fetchPromoCodes();
       }
     } catch (error) {
-      console.error('Error toggling status:', error);
+      console.error("Error toggling status:", error);
     }
   };
 
@@ -203,16 +259,16 @@ const PromoCodeManager = () => {
     setFormData({
       code: promo.code,
       title: promo.title,
-      description: promo.description || '',
+      description: promo.description || "",
       discountType: promo.discountType,
       discountValue: promo.discountValue.toString(),
       minPurchaseAmount: promo.minPurchaseAmount.toString(),
-      maxDiscountAmount: promo.maxDiscountAmount?.toString() || '',
-      usageLimit: promo.usageLimit?.toString() || '',
+      maxDiscountAmount: promo.maxDiscountAmount?.toString() || "",
+      usageLimit: promo.usageLimit?.toString() || "",
       usagePerUser: promo.usagePerUser.toString(),
-      validFrom: promo.validFrom.split('T')[0],
-      validUntil: promo.validUntil.split('T')[0],
-      isActive: promo.isActive
+      validFrom: promo.validFrom.split("T")[0],
+      validUntil: promo.validUntil.split("T")[0],
+      isActive: promo.isActive,
     });
     setShowEditModal(true);
   };
@@ -220,38 +276,53 @@ const PromoCodeManager = () => {
   // Reset form
   const resetForm = () => {
     setFormData({
-      code: '',
-      title: '',
-      description: '',
-      discountType: 'percentage',
-      discountValue: '',
-      minPurchaseAmount: '0',
-      maxDiscountAmount: '',
-      usageLimit: '',
-      usagePerUser: '1',
-      validFrom: '',
-      validUntil: '',
-      isActive: true
+      code: "",
+      title: "",
+      description: "",
+      discountType: "percentage",
+      discountValue: "",
+      minPurchaseAmount: "0",
+      maxDiscountAmount: "",
+      usageLimit: "",
+      usagePerUser: "1",
+      validFrom: "",
+      validUntil: "",
+      isActive: true,
     });
   };
 
   // Get status badge
   const getStatusBadge = (promo) => {
     if (!promo.isActive) {
-      return <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-700">Inactive</span>;
+      return (
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-700">
+          Inactive
+        </span>
+      );
     }
     if (promo.isExpired) {
-      return <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">Expired</span>;
+      return (
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
+          Expired
+        </span>
+      );
     }
     if (promo.isValidNow) {
-      return <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">Active</span>;
+      return (
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+          Active
+        </span>
+      );
     }
-    return <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">Scheduled</span>;
+    return (
+      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
+        Scheduled
+      </span>
+    );
   };
 
   return (
     <div className="space-y-6">
-      
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -259,18 +330,22 @@ const PromoCodeManager = () => {
             <Gift className="w-8 h-8 text-pink-500" />
             Promo Code Management
           </h1>
-          <p className="text-gray-600 mt-1">Create and manage promotional discount codes</p>
+          <p className="text-gray-600 mt-1">
+            Create and manage promotional discount codes
+          </p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowAddModal(true);
-          }}
-          className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all shadow-lg"
-        >
-          <Plus className="w-5 h-5" />
-          Create Promo Code
-        </button>
+        <Authorized permission={"promoCodes:create"}>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowAddModal(true);
+            }}
+            className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all shadow-lg"
+          >
+            <Plus className="w-5 h-5" />
+            Create Promo Code
+          </button>
+        </Authorized>
       </div>
 
       {/* Statistics Cards */}
@@ -387,7 +462,9 @@ const PromoCodeManager = () => {
           <div className="text-center py-12">
             <Gift className="w-16 h-16 mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500 text-lg">No promo codes found</p>
-            <p className="text-gray-400 mt-2">Create your first promo code to get started</p>
+            <p className="text-gray-400 mt-2">
+              Create your first promo code to get started
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -435,9 +512,13 @@ const PromoCodeManager = () => {
                             <Copy className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-gray-600 text-sm mt-1">{promo.title}</p>
+                        <p className="text-gray-600 text-sm mt-1">
+                          {promo.title}
+                        </p>
                         {promo.description && (
-                          <p className="text-gray-400 text-xs mt-1">{promo.description}</p>
+                          <p className="text-gray-400 text-xs mt-1">
+                            {promo.description}
+                          </p>
                         )}
                       </div>
                     </td>
@@ -448,8 +529,8 @@ const PromoCodeManager = () => {
                         </div>
                         <div>
                           <p className="font-semibold text-gray-800">
-                            {promo.discountType === 'percentage' 
-                              ? `${promo.discountValue}%` 
+                            {promo.discountType === "percentage"
+                              ? `${promo.discountValue}%`
                               : `$${promo.discountValue}`}
                           </p>
                           {promo.minPurchaseAmount > 0 && (
@@ -464,18 +545,22 @@ const PromoCodeManager = () => {
                       <div className="text-sm">
                         <div className="flex items-center gap-1 text-gray-600">
                           <Calendar className="w-4 h-4" />
-                          <span>{new Date(promo.validFrom).toLocaleDateString()}</span>
+                          <span>
+                            {new Date(promo.validFrom).toLocaleDateString()}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1 text-gray-600 mt-1">
                           <Clock className="w-4 h-4" />
-                          <span>{new Date(promo.validUntil).toLocaleDateString()}</span>
+                          <span>
+                            {new Date(promo.validUntil).toLocaleDateString()}
+                          </span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div>
                         <p className="text-gray-800 font-semibold">
-                          {promo.usageCount} 
+                          {promo.usageCount}
                           {promo.usageLimit && ` / ${promo.usageLimit}`}
                         </p>
                         {promo.usageLimit && (
@@ -488,38 +573,46 @@ const PromoCodeManager = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(promo)}
-                    </td>
+                    <td className="px-6 py-4">{getStatusBadge(promo)}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleToggleStatus(promo._id)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            promo.isActive
-                              ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                          title={promo.isActive ? 'Deactivate' : 'Activate'}
-                        >
-                          {promo.isActive ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                        </button>
-                        
-                        <button
-                          onClick={() => handleEditClick(promo)}
-                          className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
-                          title="Edit"
-                        >
-                          <Edit2 className="w-5 h-5" />
-                        </button>
-                        
-                        <button
-                          onClick={() => handleDeletePromo(promo._id)}
-                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        <Authorized permission="promoCodes:update">
+                          <button
+                            onClick={() => handleToggleStatus(promo._id)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              promo.isActive
+                                ? "bg-green-100 text-green-600 hover:bg-green-200"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                            title={promo.isActive ? "Deactivate" : "Activate"}
+                          >
+                            {promo.isActive ? (
+                              <Eye className="w-5 h-5" />
+                            ) : (
+                              <EyeOff className="w-5 h-5" />
+                            )}
+                          </button>
+                        </Authorized>
+
+                        <Authorized permission="promoCodes:update">
+                          <button
+                            onClick={() => handleEditClick(promo)}
+                            className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-5 h-5" />
+                          </button>
+                        </Authorized>
+
+                        <Authorized permission="promoCodes:delete">
+                          <button
+                            onClick={() => handleDeletePromo(promo._id)}
+                            className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </Authorized>
                       </div>
                     </td>
                   </motion.tr>
@@ -554,7 +647,7 @@ const PromoCodeManager = () => {
               <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 flex items-center justify-between z-10">
                 <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                   <Gift className="w-7 h-7 text-pink-500" />
-                  {showEditModal ? 'Edit Promo Code' : 'Create New Promo Code'}
+                  {showEditModal ? "Edit Promo Code" : "Create New Promo Code"}
                 </h2>
                 <button
                   onClick={() => {
@@ -568,19 +661,29 @@ const PromoCodeManager = () => {
                 </button>
               </div>
 
-              <form onSubmit={showEditModal ? handleUpdatePromo : handleCreatePromo} className="p-8 space-y-6">
-                
+              <form
+                onSubmit={showEditModal ? handleUpdatePromo : handleCreatePromo}
+                className="p-8 space-y-6"
+              >
                 {/* Basic Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Promo Code * <span className="text-xs text-gray-500">(e.g., BLACKFRIDAY)</span>
+                      Promo Code *{" "}
+                      <span className="text-xs text-gray-500">
+                        (e.g., BLACKFRIDAY)
+                      </span>
                     </label>
                     <input
                       type="text"
                       required
                       value={formData.code}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          code: e.target.value.toUpperCase(),
+                        })
+                      }
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent uppercase"
                       placeholder="SUMMER2025"
                     />
@@ -588,13 +691,18 @@ const PromoCodeManager = () => {
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Title * <span className="text-xs text-gray-500">(Display name)</span>
+                      Title *{" "}
+                      <span className="text-xs text-gray-500">
+                        (Display name)
+                      </span>
                     </label>
                     <input
                       type="text"
                       required
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                       placeholder="Summer Sale 2025"
                     />
@@ -603,11 +711,14 @@ const PromoCodeManager = () => {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Description <span className="text-xs text-gray-500">(Optional)</span>
+                    Description{" "}
+                    <span className="text-xs text-gray-500">(Optional)</span>
                   </label>
                   <textarea
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
                     rows="2"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                     placeholder="Special discount for summer season"
@@ -620,7 +731,7 @@ const PromoCodeManager = () => {
                     <Percent className="w-5 h-5 text-pink-500" />
                     Discount Settings
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -628,7 +739,12 @@ const PromoCodeManager = () => {
                       </label>
                       <select
                         value={formData.discountType}
-                        onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            discountType: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                       >
                         <option value="percentage">Percentage (%)</option>
@@ -644,12 +760,25 @@ const PromoCodeManager = () => {
                         type="number"
                         required
                         min="0"
-                        max={formData.discountType === 'percentage' ? '100' : undefined}
+                        max={
+                          formData.discountType === "percentage"
+                            ? "100"
+                            : undefined
+                        }
                         step="0.01"
                         value={formData.discountValue}
-                        onChange={(e) => setFormData({ ...formData, discountValue: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            discountValue: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                        placeholder={formData.discountType === 'percentage' ? '20' : '50.00'}
+                        placeholder={
+                          formData.discountType === "percentage"
+                            ? "20"
+                            : "50.00"
+                        }
                       />
                     </div>
 
@@ -662,7 +791,12 @@ const PromoCodeManager = () => {
                         min="0"
                         step="0.01"
                         value={formData.minPurchaseAmount}
-                        onChange={(e) => setFormData({ ...formData, minPurchaseAmount: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            minPurchaseAmount: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         placeholder="0.00"
                       />
@@ -672,14 +806,22 @@ const PromoCodeManager = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Max Discount Amount <span className="text-xs text-gray-500">(Optional)</span>
+                        Max Discount Amount{" "}
+                        <span className="text-xs text-gray-500">
+                          (Optional)
+                        </span>
                       </label>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         value={formData.maxDiscountAmount}
-                        onChange={(e) => setFormData({ ...formData, maxDiscountAmount: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            maxDiscountAmount: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         placeholder="Unlimited"
                       />
@@ -693,7 +835,12 @@ const PromoCodeManager = () => {
                         type="number"
                         min="1"
                         value={formData.usagePerUser}
-                        onChange={(e) => setFormData({ ...formData, usagePerUser: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            usagePerUser: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         placeholder="1"
                       />
@@ -707,17 +854,25 @@ const PromoCodeManager = () => {
                     <Calendar className="w-5 h-5 text-blue-500" />
                     Usage & Validity
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Total Usage Limit <span className="text-xs text-gray-500">(Optional)</span>
+                        Total Usage Limit{" "}
+                        <span className="text-xs text-gray-500">
+                          (Optional)
+                        </span>
                       </label>
                       <input
                         type="number"
                         min="1"
                         value={formData.usageLimit}
-                        onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            usageLimit: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         placeholder="Unlimited"
                       />
@@ -731,7 +886,12 @@ const PromoCodeManager = () => {
                         type="date"
                         required
                         value={formData.validFrom}
-                        onChange={(e) => setFormData({ ...formData, validFrom: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            validFrom: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                       />
                     </div>
@@ -744,7 +904,12 @@ const PromoCodeManager = () => {
                         type="date"
                         required
                         value={formData.validUntil}
-                        onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            validUntil: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                       />
                     </div>
@@ -757,10 +922,15 @@ const PromoCodeManager = () => {
                     type="checkbox"
                     id="isActive"
                     checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isActive: e.target.checked })
+                    }
                     className="w-5 h-5 text-pink-500 rounded focus:ring-pink-500"
                   />
-                  <label htmlFor="isActive" className="text-sm font-semibold text-gray-700">
+                  <label
+                    htmlFor="isActive"
+                    className="text-sm font-semibold text-gray-700"
+                  >
                     Activate promo code immediately
                   </label>
                 </div>
@@ -782,7 +952,7 @@ const PromoCodeManager = () => {
                     type="submit"
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all shadow-lg font-semibold"
                   >
-                    {showEditModal ? 'Update Promo Code' : 'Create Promo Code'}
+                    {showEditModal ? "Update Promo Code" : "Create Promo Code"}
                   </button>
                 </div>
               </form>

@@ -31,7 +31,6 @@ import Link from "next/link";
 
 export default function ModernFooter() {
   const { settings } = useContext(SettingContext);
-  console.log(settings);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [email, setEmail] = useState("");
 
@@ -107,25 +106,25 @@ export default function ModernFooter() {
   const socialLinks = [
     {
       icon: Facebook,
-      href: `${settings.contact.social.facebook}`,
+      href: `${settings?.contact.social.facebook}`,
       color: "hover:text-blue-600",
       count: "125K",
     },
     {
       icon: Instagram,
-      href: `${settings.contact.social.instagram}`,
+      href: `${settings?.contact.social.instagram}`,
       color: "hover:text-pink-600",
       count: "89K",
     },
     {
       icon: Twitter,
-      href: `${settings.contact.social.twitter}`,
+      href: `${settings?.contact.social.twitter}`,
       color: "hover:text-blue-400",
       count: "45K",
     },
     {
       icon: Youtube,
-      href: `${settings.contact.social.youtube}`,
+      href: `${settings?.contact.social.youtube}`,
       color: "hover:text-red-400",
       count: "23K",
     },
@@ -144,11 +143,11 @@ export default function ModernFooter() {
     "🏦 Bank Transfer",
     "💳 Visa/Master",
   ];
-  const supportEmail = settings.contact.emails.find((e) =>
+  const supportEmail = settings?.contact.emails.find((e) =>
     e.label?.toLowerCase().includes("support"),
   )?.email;
 
-  const supportNumber = settings.contact.phones.find((e) =>
+  const supportNumber = settings?.contact.phones.find((e) =>
     e.label.toLowerCase().includes("support"),
   );
 
@@ -277,14 +276,14 @@ export default function ModernFooter() {
           >
             {/* Brand */}
             <div className="flex items-center space-x-2">
-              {settings.branding.siteLogo.url ? (
+              {settings?.branding.siteLogo.url ? (
                 <Link
                   href="/"
                   className="relative flex items-center justify-start w-32 h-12 sm:w-48 sm:h-14 flex-shrink-0 "
                 >
                   <Image
                     src={settings?.branding?.siteLogo?.url}
-                    alt={settings.branding.siteLogo.alt}
+                    alt={settings?.branding.siteLogo.alt}
                     className="object-contain"
                     fill
                     sizes="(max-width: 640px) 100vw,
@@ -304,7 +303,7 @@ export default function ModernFooter() {
               )}
             </div>
             <p className="text-gray-600 text-sm leading-relaxed">
-              {settings.siteDescription ||
+              {settings?.siteDescription ||
                 "Your destination for trendy, high-quality fashion that makes every day feel special. Discover styles that speak to your unique personality."}
             </p>
 
@@ -416,8 +415,8 @@ export default function ModernFooter() {
                 <div>
                   <p className="text-gray-800 font-medium text-sm">Our Store</p>
                   <p className="text-gray-600 text-sm">
-                    {storeAddress.line1}, {storeAddress.line2},{" "}
-                    {storeAddress.city}, {storeAddress.country}
+                    {storeAddress?.line1}, {storeAddress?.line2},{" "}
+                    {storeAddress?.city}, {storeAddress?.country}
                   </p>
                 </div>
               </div>
@@ -430,12 +429,12 @@ export default function ModernFooter() {
                 <div>
                   <p className="text-gray-800 font-medium text-sm">Call Us</p>
                   <p className="text-gray-600 text-sm">
-                    {supportNumber.number}
+                    {supportNumber?.number}
                   </p>
                   <p className="text-gray-500 text-xs capitalize">
-                    {settings.contact.hours.weekdays.day}{" "}
-                    {settings.contact.hours.weekdays.open}-
-                    {settings.contact.hours.weekdays.close} PKT
+                    {settings?.contact.hours.weekdays.day}{" "}
+                    {settings?.contact.hours.weekdays.open}-
+                    {settings?.contact.hours.weekdays.close} PKT
                   </p>
                 </div>
               </div>

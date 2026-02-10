@@ -29,3 +29,62 @@
     @apply bg-gradient-to-r from-pink-500 to-pink-700 bg-clip-text text-transparent;
   }
 }
+
+
+/* Custom notification toast */
+.notif-toast {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: transparent;
+  font-family: inherit;
+  width: 100%;
+  padding-bottom: 5px;
+}
+
+.notif-toast__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: white;
+}
+.Toastify__toast--notif .Toastify__progress-bar {
+  background: linear-gradient(90deg, #f43f5e, #fb7185);
+}
+
+.notif-toast__icon.high {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+}
+
+.notif-toast__icon.critical {
+  background: linear-gradient(135deg, #ef4444, #be123c);
+}
+
+.notif-toast__body {
+  flex: 1;
+}
+
+.notif-toast__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #9d174d;
+  font-size: 0.95rem;
+}
+
+.notif-toast__msg {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+/* Only this toast type gets these container styles */
+.Toastify__toast--notif {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}

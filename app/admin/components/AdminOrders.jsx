@@ -29,8 +29,11 @@ import {
   Trash2
 } from 'lucide-react';
 import Pagination from '../../components/Pagination';
+import Authorized from '@/app/components/Authorized';
 
 const AdminOrders = () => {
+      const token = localStorage.getItem("staffUserToken");
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -169,7 +172,11 @@ const AdminOrders = () => {
 
       console.log('Fetching orders with params:', params.toString());
 
-      const response = await fetch(`${API_BASE}/admin/orders?${params}`);
+      const response = await fetch(`${API_BASE}/admin/orders?${params}` , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
       const data = await response.json();
 
       console.log('Orders response:', data);
@@ -194,7 +201,11 @@ const AdminOrders = () => {
   const fetchOrderStats = useCallback(async () => {
     try {
       console.log('Fetching order stats...');
-      const response = await fetch(`${API_BASE}/admin/orders/stats`);
+      const response = await fetch(`${API_BASE}/admin/orders/stats` , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
       const data = await response.json();
 
       console.log('Stats response:', data);
@@ -219,7 +230,8 @@ const AdminOrders = () => {
       const response = await fetch(`${API_BASE}/admin/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ status: newStatus })
       });
@@ -263,7 +275,8 @@ const AdminOrders = () => {
       const response = await fetch(`${API_BASE}/admin/orders/${orderId}`, {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
         }
       });
 
@@ -303,7 +316,8 @@ const AdminOrders = () => {
       const response = await fetch(`${API_BASE}/admin/orders/delete-all/confirm`, {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
         }
       });
 
@@ -378,7 +392,11 @@ const AdminOrders = () => {
   // View order details
   const viewOrderDetails = async (orderId) => {
     try {
-      const response = await fetch(`${API_BASE}/admin/orders/${orderId}`);
+      const response = await fetch(`${API_BASE}/admin/orders/${orderId}` , {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
       const data = await response.json();
 
       if (data.success) {
@@ -496,6 +514,8 @@ const AdminOrders = () => {
             <p className="text-gray-600">Manage and track all customer orders</p>
           </div>
           <div className="flex gap-2">
+         <Authorized permission={"orders:delete"}>
+            
             <button
               onClick={() => setDeleteAllConfirm(true)}
               disabled={loading || orders.length === 0}
@@ -505,6 +525,7 @@ const AdminOrders = () => {
               <Trash2 className="w-4 h-4" />
               Delete All
             </button>
+            </Authorized>
             <button
               onClick={() => {
                 fetchOrders(currentPage, searchTerm, statusFilter, dateFilter);
@@ -665,11 +686,14 @@ const AdminOrders = () => {
                         <div className="text-sm text-gray-500">{order.paymentMethod || 'N/A'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                          <Authorized permission={"orders:update"}>
+
                         <StatusUpdateDropdown
                           currentStatus={order.status}
                           orderId={order._id}
                           onUpdate={updateOrderStatus}
                         />
+                        </Authorized>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{dateTime.date}</div>
@@ -684,6 +708,7 @@ const AdminOrders = () => {
                             <Eye size={16} />
                             View
                           </button>
+                          <Authorized permission={"orders:delete"}>
                           <button
                             onClick={() => setDeleteConfirm({ show: true, orderId: order._id })}
                             className="text-red-600 hover:text-red-900 flex items-center gap-1"
@@ -691,6 +716,7 @@ const AdminOrders = () => {
                             <Trash2 size={16} />
                             Delete
                           </button>
+                          </Authorized>
                         </div>
                       </td>
                     </tr>
