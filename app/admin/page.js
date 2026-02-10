@@ -67,7 +67,7 @@ const RolesManager = dynamic(() => import("./components/RolesManager"), {
 const NotificationsManager = dynamic(() => import("./components/NotificationsManager"), {
   ssr: false,
 });
-const TeamManager = dynamic(() => import("./components/teamManager"), {
+const TeamManager = dynamic(() => import("./components/TeamManager"), {
   ssr: false,
 });
 const AddProductPage = dynamic(() => import("./components/AddProduct"), {
