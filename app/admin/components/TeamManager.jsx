@@ -591,20 +591,14 @@ const TeamManager = () => {
                       </span>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
-                      <span
+                      {/* <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${member.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
                       >
                         {member.status === "active" ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-500 hidden xl:table-cell">
-                      {formatDate(member.createdAt)}
-                    </td>
-                    <td className="px-4 sm:px-6 py-4">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
+                      </span> */}
+                      <button
                           onClick={() => toggleStatus(member._id)}
-                          className={`p-1.5 sm:p-2 rounded-lg transition-colors ${member.status === "active" ? "text-green-600 hover:bg-green-50" : "text-gray-400 hover:bg-gray-100"}`}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${member.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
                           title={
                             member.status === "active"
                               ? "Deactivate"
@@ -612,12 +606,17 @@ const TeamManager = () => {
                           }
                         >
                           {member.status === "active" ? (
-                            <Eye className="w-4 h-4" />
+                            "Active"
                           ) : (
-                            <EyeOff className="w-4 h-4" />
+                            "Inactive"
                           )}
                         </button>
-
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-500 hidden xl:table-cell">
+                      {formatDate(member.createdAt)}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4">
+                      <div className="flex items-center justify-end gap-1">
                         <Authorized permission="team:update">
                           <button
                             onClick={() => openEditModal(member)}
