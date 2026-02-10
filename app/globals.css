@@ -86,7 +86,7 @@
 
 /* Only this toast type gets these container styles */
 .Toastify__toast--notif {
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
+  background: white;
+  padding: 10px;
+  border-radius: 5px;
 }
