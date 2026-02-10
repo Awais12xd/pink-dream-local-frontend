@@ -59,12 +59,10 @@ import Image from "next/image";
 import Authorized from "../components/Authorized";
 import { useNotifications } from "../context/NotificationContext";
 import NotificationBell from "./components/NotificationBell";
+import NotificationsManager from "./components/Notifications";
 
-
+// client-only admin sub-pages
 const RolesManager = dynamic(() => import("./components/RolesManager"), {
-  ssr: false,
-});
-const NotificationsManager = dynamic(() => import("./components/Notifications"), {
   ssr: false,
 });
 const TeamManager = dynamic(() => import("./components/TeamManager"), {
@@ -909,7 +907,7 @@ const AdminPanel = () => {
 
       {/* Modern Sidebar - Pink Dreams Theme */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 bg-white shadow-2xl border-r border-gray-200 transform transition-all duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-50 bg-white shadow-2xl border-r border-gray-200 transform transition-all duration-300 ease-in-out ${
           sidebarCollapsed ? "w-20" : "w-72"
         } lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -924,7 +922,7 @@ const AdminPanel = () => {
               {settings?.branding?.adminLogo?.url ? (
                 <Link
                   href="/"
-                  className="relative sm:flex hidden items-center justify-center w-36 h-12 sm:w-60 sm:h-16 flex-shrink-0  sm:ml-3"
+                  className="relative md:flex hidden items-center justify-center w-36 h-12 lg:w-60 lg:h-16 flex-shrink-0  sm:ml-3"
                 >
                   <Image
                     src={settings?.branding?.adminLogo?.url}
@@ -961,12 +959,14 @@ const AdminPanel = () => {
                   )}
                 </>
               )}
-              <button
+             {
+             !sidebarCollapsed &&
+             <button
                 onClick={() => setSidebarOpen(false)}
                 className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5 text-gray-600" />
-              </button>
+              </button>}
             </div>
             {/* {!sidebarCollapsed && (
               <div className="mt-2 flex items-center gap-1 text-xs text-pink-600">
@@ -1423,7 +1423,7 @@ const AdminPanel = () => {
         className={`transition-all duration-300 min-h-screen bg-gradient-to-br from-gray-50 via-pink-50/20 to-rose-50/30 ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-72"}`}
       >
         {/* Header */}
-        <header className="relative z-50 bg-white/80 backdrop-blur-sm shadow-lg border-b border-pink-100">
+        <header className="relative z-40 bg-white/80 backdrop-blur-sm shadow-lg border-b border-pink-100">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 via-pink-500 to-rose-500 bg-clip-text text-transparent capitalize">
