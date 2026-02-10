@@ -64,7 +64,7 @@ import NotificationBell from "./components/NotificationBell";
 const RolesManager = dynamic(() => import("./components/RolesManager"), {
   ssr: false,
 });
-const NotificationsManager = dynamic(() => import("./components/NotificationsManager"), {
+const NotificationsManager = dynamic(() => import("./components/Notifications"), {
   ssr: false,
 });
 const TeamManager = dynamic(() => import("./components/TeamManager"), {
