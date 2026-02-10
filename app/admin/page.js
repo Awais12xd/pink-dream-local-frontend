@@ -50,6 +50,8 @@ import {
   ShieldIcon,
   User2,
   Bell,
+  User,
+  Users2Icon,
 } from "lucide-react";
 // import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
 import dynamic from "next/dynamic";
@@ -138,6 +140,7 @@ const AdminPanel = () => {
   const [stats, setStats] = useState({});
   const [ecommerceOpen, setEcommerceOpen] = useState(false);
   const [blogOpen, setBlogOpen] = useState(false);
+  const [roleOpen, setRoleOpen] = useState(false);
   const [selectedProductForDetails, setSelectedProductForDetails] =
     useState(null);
   const [selectedBlogForDetails, setSelectedBlogForDetails] = useState(null);
@@ -335,7 +338,6 @@ const AdminPanel = () => {
       setAdminData(null);
       setActiveTab("dashboard");
       window.dispatchEvent(new Event("staff-auth-changed"));
-
     }
   }, []);
 
@@ -959,14 +961,14 @@ const AdminPanel = () => {
                   )}
                 </>
               )}
-             {
-             !sidebarCollapsed &&
-             <button
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>}
+              {!sidebarCollapsed && (
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              )}
             </div>
             {/* {!sidebarCollapsed && (
               <div className="mt-2 flex items-center gap-1 text-xs text-pink-600">
@@ -1182,7 +1184,6 @@ const AdminPanel = () => {
               </button>
             </Authorized>
 
-
             {/* Notifications */}
             <Authorized permission="notifications:read">
               <button
@@ -1206,49 +1207,79 @@ const AdminPanel = () => {
               </button>
             </Authorized>
 
-            {/* Roles */}
+            {/* Roles and Permissions */}
             <Authorized permission="roles:read">
-              <button
-                onClick={() => {
-                  setActiveTab("roles");
-                  setSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                  activeTab === "roles"
-                    ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-200"
-                    : "text-gray-700 hover:bg-gray-100"
-                } ${sidebarCollapsed ? "justify-center" : ""}`}
-                title={sidebarCollapsed ? "roles" : ""}
-              >
-                <ShieldIcon
-                  className={`w-5 h-5 flex-shrink-0 ${activeTab === "roles" ? "" : "group-hover:scale-110"} transition-transform`}
-                />
-                {!sidebarCollapsed && (
-                  <span className="font-medium">Roles</span>
+              <div className={sidebarCollapsed ? "" : "space-y-1"}>
+                <button
+                  onClick={() => {
+                    if (!sidebarCollapsed) {
+                      setRoleOpen(!roleOpen);
+                    } else {
+                      setActiveTab("roles");
+                      setSidebarOpen(false);
+                    }
+                  }}
+                  className={`w-full flex gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                    ["roles", "team"].includes(activeTab)
+                      ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-200"
+                      : "text-gray-700 hover:bg-gray-100"
+                  } ${sidebarCollapsed ? "justify-center" : "justify-between"}`}
+                  title={sidebarCollapsed ? "Roles and Permissions" : ""}
+                >
+                  <div className="flex  gap-3">
+                    <Users2Icon
+                      className={`w-5 h-5 flex-shrink-0 ${["roles", "team"].includes(activeTab) ? "" : "group-hover:scale-110"} transition-transform`}
+                    />
+                    {!sidebarCollapsed && (
+                      <span className="font-medium whitespace-nowrap">
+                        Roles and Permissions
+                      </span>
+                    )}
+                  </div>
+                  {!sidebarCollapsed &&
+                    (roleOpen ? (
+                      <ChevronUp className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                    ))}
+                </button>
+
+                {/* E-commerce Submenu */}
+                {!sidebarCollapsed && roleOpen && (
+                  <div className="ml-6 pl-4 border-l-2 border-pink-200 space-y-1 mt-1 pr-2">
+                    <button
+                      onClick={() => {
+                        setActiveTab("roles");
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                        activeTab === "roles"
+                          ? "bg-pink-50 text-pink-700 font-semibold"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
+                    >
+                      <Shield className="w-4 h-4 flex-shrink-0" />
+                      <span>Roles</span>
+                    </button>
+                    <Authorized permission="team:read">
+                      <button
+                        onClick={() => {
+                          setActiveTab("team");
+                          setSidebarOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                          activeTab === "team"
+                            ? "bg-pink-50 text-pink-700 font-semibold"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                      >
+                        <User className="w-4 h-4 flex-shrink-0" />
+                        <span>Team</span>
+                      </button>
+                    </Authorized>
+                  </div>
                 )}
-              </button>
-            </Authorized>
-            {/* Team */}
-            <Authorized permission="team:read">
-              <button
-                onClick={() => {
-                  setActiveTab("team");
-                  setSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                  activeTab === "team"
-                    ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-200"
-                    : "text-gray-700 hover:bg-gray-100"
-                } ${sidebarCollapsed ? "justify-center" : ""}`}
-                title={sidebarCollapsed ? "team" : ""}
-              >
-                <User2
-                  className={`w-5 h-5 flex-shrink-0 ${activeTab === "team" ? "" : "group-hover:scale-110"} transition-transform`}
-                />
-                {!sidebarCollapsed && (
-                  <span className="font-medium">Teams</span>
-                )}
-              </button>
+              </div>
             </Authorized>
 
             {/* Blog Section */}
@@ -1270,14 +1301,14 @@ const AdminPanel = () => {
                       ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-200"
                       : "text-gray-700 hover:bg-gray-100"
                   } ${sidebarCollapsed ? "justify-center" : "justify-between"}`}
-                  title={sidebarCollapsed ? "E-commerce" : ""}
+                  title={sidebarCollapsed ? "Blog" : ""}
                 >
                   <div className="flex items-center gap-3">
                     <FileText
                       className={`w-5 h-5 flex-shrink-0 ${["blogs", "add-blog", "edit-blog", "blog-details"].includes(activeTab) ? "" : "group-hover:scale-110"} transition-transform`}
                     />
                     {!sidebarCollapsed && (
-                      <span className="font-medium">Blog Post</span>
+                      <span className="font-medium">Blog</span>
                     )}
                   </div>
                   {!sidebarCollapsed &&
@@ -1461,13 +1492,13 @@ const AdminPanel = () => {
                   </div>
                 )}
               </div> */}
-                <div className="flex items-center gap-3 ">
-                  <Authorized permission="notifications:read">
-                    <NotificationBell
-                      onViewAll={() => setActiveTab("notifications")}
-                    />
-                  </Authorized>
-                </div>
+              <div className="flex items-center gap-3 ">
+                <Authorized permission="notifications:read">
+                  <NotificationBell
+                    onViewAll={() => setActiveTab("notifications")}
+                  />
+                </Authorized>
+              </div>
             </div>
           </div>
         </header>
