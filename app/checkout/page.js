@@ -39,7 +39,27 @@ function CheckoutContent() {
         zipCode: '',
         country: 'US'
     })
-
+    
+     const [allowGuestCheckout, setAllowGuestCheckout] = useState(true);
+    
+      useEffect(() => {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/public`)
+          .then((r) => r.json())
+          .then((d) =>
+            setAllowGuestCheckout(d?.settings?.allowGuestCheckout ?? true),
+          )
+          .catch((err) => {
+            setAllowGuestCheckout(true)
+            console.log(err)
+          });
+      }, []);
+    
+      useEffect(() => {
+        if (!user && allowGuestCheckout === false) {
+          router.push(`/login?redirect=/checkout`);
+        }
+      }, [user, allowGuestCheckout, router]);
+    
     useEffect(() => {
         const newOrderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`
         setOrderId(newOrderId)

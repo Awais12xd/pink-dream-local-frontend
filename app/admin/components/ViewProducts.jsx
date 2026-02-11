@@ -7,12 +7,13 @@ import {
   ImageIcon,
   Loader,
   Info,
+  EyeOff,
 } from "lucide-react";
 import Pagination from "../../components/Pagination";
 import Authorized from "@/app/components/Authorized";
 
 const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
-      const token = localStorage.getItem("staffUserToken");
+  const token = localStorage.getItem("staffUserToken");
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -111,6 +112,29 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
       setSelectedProductImages(images);
       setCurrentImageIndex(0);
       setShowImageModal(true);
+    }
+  };
+
+   // Handle toggle active status
+  const handleToggleActive = async (productId) => {
+    try {
+      const response = await fetch(`${API_BASE}/product/${productId}/toggle-active`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        fetchProducts();
+      } else {
+        alert(data.message || "Failed to toggle product status");
+      }
+    } catch (error) {
+      console.error("Error toggling product status:", error);
+      alert("Failed to toggle product status");
     }
   };
 
@@ -290,11 +314,11 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
         sortOrder: sortOrder,
       });
 
-      const response = await fetch(`${API_BASE}/allproducts?${params}` , {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+      const response = await fetch(`${API_BASE}/allproducts?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
 
       if (data.success) {
@@ -336,7 +360,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ id, name }),
         });
@@ -573,15 +597,28 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
                           )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            product.available
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {product.available ? "Active" : "Inactive"}
-                        </span>
+                        <Authorized permission={"products:update"}>
+                          <button
+                            onClick={() => handleToggleActive(product._id)}
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                              product.available
+                                ? "bg-green-100 text-green-800 hover:bg-green-200"
+                                : "bg-red-100 text-red-800 hover:bg-red-200"
+                            }`}
+                          >
+                            {product.available ? (
+                              <>
+                                <Eye className="w-3 h-3 mr-1" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <EyeOff className="w-3 h-3 mr-1" />
+                                Inactive
+                              </>
+                            )}
+                          </button>
+                        </Authorized>
                         {product.featured && (
                           <span className="ml-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
                             Featured

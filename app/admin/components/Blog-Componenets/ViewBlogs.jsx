@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import {
@@ -9,15 +9,15 @@ import {
   ImageIcon,
   Loader,
   Info,
+  EyeOff,
 } from "lucide-react";
-import Pagination from "@/app/components/Pagination";;
+import Pagination from "@/app/components/Pagination";
 import Blog from "@/app/blog/page";
 import Image from "next/image";
 import Authorized from "@/app/components/Authorized";
 
-
 const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
-      const token = localStorage.getItem("staffUserToken");
+  const token = localStorage.getItem("staffUserToken");
 
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -30,8 +30,8 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
   const [status, setStatus] = useState("All");
   const [sortBy, setSortBy] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
-  const [loadingCategories , setLoadingCategories] = useState(false)
-  const [blogCategories , setBlogCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [blogCategories, setBlogCategories] = useState([]);
 
   // Image viewing states
   const [showImageModal, setShowImageModal] = useState(false);
@@ -52,235 +52,235 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
   // Image utility functions
-//   const getImageSrc = (
-//     imageSrc,
-//     fallback = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams",
-//   ) => {
-//     if (!imageSrc) return fallback;
+  //   const getImageSrc = (
+  //     imageSrc,
+  //     fallback = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams",
+  //   ) => {
+  //     if (!imageSrc) return fallback;
 
-//     const baseURL = API_BASE || "http://localhost:4000";
+  //     const baseURL = API_BASE || "http://localhost:4000";
 
-//     // Handle old Railway URLs
-//     if (imageSrc.includes("railway.app")) {
-//       const filename = imageSrc.split("/images/")[1];
-//       if (filename) {
-//         return `${baseURL}/images/${filename}`;
-//       }
-//     }
+  //     // Handle old Railway URLs
+  //     if (imageSrc.includes("railway.app")) {
+  //       const filename = imageSrc.split("/images/")[1];
+  //       if (filename) {
+  //         return `${baseURL}/images/${filename}`;
+  //       }
+  //     }
 
-//     if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
-//       return imageSrc;
-//     }
+  //     if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
+  //       return imageSrc;
+  //     }
 
-//     if (imageSrc.startsWith("/images/")) {
-//       return `${baseURL}${imageSrc}`;
-//     }
+  //     if (imageSrc.startsWith("/images/")) {
+  //       return `${baseURL}${imageSrc}`;
+  //     }
 
-//     if (
-//       !imageSrc.includes("/") &&
-//       /\.(jpg|jpeg|png|gif|webp)$/i.test(imageSrc)
-//     ) {
-//       return `${baseURL}/images/${imageSrc}`;
-//     }
+  //     if (
+  //       !imageSrc.includes("/") &&
+  //       /\.(jpg|jpeg|png|gif|webp)$/i.test(imageSrc)
+  //     ) {
+  //       return `${baseURL}/images/${imageSrc}`;
+  //     }
 
-//     if (imageSrc.startsWith("images/")) {
-//       return `${baseURL}/${imageSrc}`;
-//     }
+  //     if (imageSrc.startsWith("images/")) {
+  //       return `${baseURL}/${imageSrc}`;
+  //     }
 
-//     return `${baseURL}/${imageSrc}`;
-//   };
+  //     return `${baseURL}/${imageSrc}`;
+  //   };
 
-//   const handleImageError = (e) => {
-//     if (
-//       e.target.src !==
-//       "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image"
-//     ) {
-//       e.target.onerror = null;
-//       e.target.src = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image";
-//     }
-//   };
+  //   const handleImageError = (e) => {
+  //     if (
+  //       e.target.src !==
+  //       "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image"
+  //     ) {
+  //       e.target.onerror = null;
+  //       e.target.src = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image";
+  //     }
+  //   };
 
   // Handle multiple images display
-//   const handleViewImages = (product) => {
-//     let images = [];
+  //   const handleViewImages = (product) => {
+  //     let images = [];
 
-//     if (product.images && Array.isArray(product.images)) {
-//       images = product.images;
-//     } else if (product.image) {
-//       images = [product.image];
-//     }
+  //     if (product.images && Array.isArray(product.images)) {
+  //       images = product.images;
+  //     } else if (product.image) {
+  //       images = [product.image];
+  //     }
 
-//     images = images
-//       .filter((img) => img && img.trim() !== "")
-//       .map((img) => getImageSrc(img));
+  //     images = images
+  //       .filter((img) => img && img.trim() !== "")
+  //       .map((img) => getImageSrc(img));
 
-//     if (images.length > 0) {
-//       setSelectedProductImages(images);
-//       setCurrentImageIndex(0);
-//       setShowImageModal(true);
-//     }
-//   };
+  //     if (images.length > 0) {
+  //       setSelectedProductImages(images);
+  //       setCurrentImageIndex(0);
+  //       setShowImageModal(true);
+  //     }
+  //   };
 
   // Image Modal Component
-//   const ImageModal = () => {
-//     if (!showImageModal || selectedProductImages.length === 0) return null;
+  //   const ImageModal = () => {
+  //     if (!showImageModal || selectedProductImages.length === 0) return null;
 
-//     const nextImage = () => {
-//       setCurrentImageIndex((prev) =>
-//         prev === selectedProductImages.length - 1 ? 0 : prev + 1,
-//       );
-//     };
+  //     const nextImage = () => {
+  //       setCurrentImageIndex((prev) =>
+  //         prev === selectedProductImages.length - 1 ? 0 : prev + 1,
+  //       );
+  //     };
 
-//     const prevImage = () => {
-//       setCurrentImageIndex((prev) =>
-//         prev === 0 ? selectedProductImages.length - 1 : prev - 1,
-//       );
-//     };
+  //     const prevImage = () => {
+  //       setCurrentImageIndex((prev) =>
+  //         prev === 0 ? selectedProductImages.length - 1 : prev - 1,
+  //       );
+  //     };
 
-//     return (
-//       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-//         <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden">
-//           <div className="flex justify-between items-center p-4 border-b">
-//             <h3 className="text-lg font-semibold">
-//               Product Images ({currentImageIndex + 1} of{" "}
-//               {selectedProductImages.length})
-//             </h3>
-//             <button
-//               onClick={() => setShowImageModal(false)}
-//               className="text-gray-500 hover:text-gray-700"
-//             >
-//               <svg
-//                 className="w-6 h-6"
-//                 fill="none"
-//                 stroke="currentColor"
-//                 viewBox="0 0 24 24"
-//               >
-//                 <path
-//                   strokeLinecap="round"
-//                   strokeLinejoin="round"
-//                   strokeWidth={2}
-//                   d="M6 18L18 6M6 6l12 12"
-//                 />
-//               </svg>
-//             </button>
-//           </div>
+  //     return (
+  //       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+  //         <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden">
+  //           <div className="flex justify-between items-center p-4 border-b">
+  //             <h3 className="text-lg font-semibold">
+  //               Product Images ({currentImageIndex + 1} of{" "}
+  //               {selectedProductImages.length})
+  //             </h3>
+  //             <button
+  //               onClick={() => setShowImageModal(false)}
+  //               className="text-gray-500 hover:text-gray-700"
+  //             >
+  //               <svg
+  //                 className="w-6 h-6"
+  //                 fill="none"
+  //                 stroke="currentColor"
+  //                 viewBox="0 0 24 24"
+  //               >
+  //                 <path
+  //                   strokeLinecap="round"
+  //                   strokeLinejoin="round"
+  //                   strokeWidth={2}
+  //                   d="M6 18L18 6M6 6l12 12"
+  //                 />
+  //               </svg>
+  //             </button>
+  //           </div>
 
-//           <div className="relative">
-//             <img
-//               src={selectedProductImages[currentImageIndex]}
-//               alt={`Product image ${currentImageIndex + 1}`}
-//               className="w-full h-96 object-contain bg-gray-50"
-//               onError={handleImageError}
-//             />
+  //           <div className="relative">
+  //             <img
+  //               src={selectedProductImages[currentImageIndex]}
+  //               alt={`Product image ${currentImageIndex + 1}`}
+  //               className="w-full h-96 object-contain bg-gray-50"
+  //               onError={handleImageError}
+  //             />
 
-//             {selectedProductImages.length > 1 && (
-//               <>
-//                 <button
-//                   onClick={prevImage}
-//                   className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
-//                 >
-//                   <svg
-//                     className="w-6 h-6"
-//                     fill="none"
-//                     stroke="currentColor"
-//                     viewBox="0 0 24 24"
-//                   >
-//                     <path
-//                       strokeLinecap="round"
-//                       strokeLinejoin="round"
-//                       strokeWidth={2}
-//                       d="M15 19l-7-7 7-7"
-//                     />
-//                   </svg>
-//                 </button>
-//                 <button
-//                   onClick={nextImage}
-//                   className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
-//                 >
-//                   <svg
-//                     className="w-6 h-6"
-//                     fill="none"
-//                     stroke="currentColor"
-//                     viewBox="0 0 24 24"
-//                   >
-//                     <path
-//                       strokeLinecap="round"
-//                       strokeLinejoin="round"
-//                       strokeWidth={2}
-//                       d="M9 5l7 7-7 7"
-//                     />
-//                   </svg>
-//                 </button>
-//               </>
-//             )}
-//           </div>
+  //             {selectedProductImages.length > 1 && (
+  //               <>
+  //                 <button
+  //                   onClick={prevImage}
+  //                   className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+  //                 >
+  //                   <svg
+  //                     className="w-6 h-6"
+  //                     fill="none"
+  //                     stroke="currentColor"
+  //                     viewBox="0 0 24 24"
+  //                   >
+  //                     <path
+  //                       strokeLinecap="round"
+  //                       strokeLinejoin="round"
+  //                       strokeWidth={2}
+  //                       d="M15 19l-7-7 7-7"
+  //                     />
+  //                   </svg>
+  //                 </button>
+  //                 <button
+  //                   onClick={nextImage}
+  //                   className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+  //                 >
+  //                   <svg
+  //                     className="w-6 h-6"
+  //                     fill="none"
+  //                     stroke="currentColor"
+  //                     viewBox="0 0 24 24"
+  //                   >
+  //                     <path
+  //                       strokeLinecap="round"
+  //                       strokeLinejoin="round"
+  //                       strokeWidth={2}
+  //                       d="M9 5l7 7-7 7"
+  //                     />
+  //                   </svg>
+  //                 </button>
+  //               </>
+  //             )}
+  //           </div>
 
-//           {selectedProductImages.length > 1 && (
-//             <div className="p-4 border-t">
-//               <div className="flex gap-2 justify-center overflow-x-auto">
-//                 {selectedProductImages.map((image, index) => (
-//                   <button
-//                     key={index}
-//                     onClick={() => setCurrentImageIndex(index)}
-//                     className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-//                       index === currentImageIndex
-//                         ? "border-blue-500"
-//                         : "border-gray-200 hover:border-gray-300"
-//                     }`}
-//                   >
-//                     <img
-//                       src={image}
-//                       alt={`Thumbnail ${index + 1}`}
-//                       className="w-full h-full object-cover"
-//                       onError={handleImageError}
-//                     />
-//                   </button>
-//                 ))}
-//               </div>
-//             </div>
-//           )}
-//         </div>
-//       </div>
-//     );
-//   };
+  //           {selectedProductImages.length > 1 && (
+  //             <div className="p-4 border-t">
+  //               <div className="flex gap-2 justify-center overflow-x-auto">
+  //                 {selectedProductImages.map((image, index) => (
+  //                   <button
+  //                     key={index}
+  //                     onClick={() => setCurrentImageIndex(index)}
+  //                     className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+  //                       index === currentImageIndex
+  //                         ? "border-blue-500"
+  //                         : "border-gray-200 hover:border-gray-300"
+  //                     }`}
+  //                   >
+  //                     <img
+  //                       src={image}
+  //                       alt={`Thumbnail ${index + 1}`}
+  //                       className="w-full h-full object-cover"
+  //                       onError={handleImageError}
+  //                     />
+  //                   </button>
+  //                 ))}
+  //               </div>
+  //             </div>
+  //           )}
+  //         </div>
+  //       </div>
+  //     );
+  //   };
 
   // Product Image Display Component
-//   const ProductImageDisplay = ({ product }) => {
-//     let images = [];
+  //   const ProductImageDisplay = ({ product }) => {
+  //     let images = [];
 
-//     if (product.images && Array.isArray(product.images)) {
-//       images = product.images.filter((img) => img && img.trim() !== "");
-//     } else if (product.image) {
-//       images = [product.image];
-//     }
+  //     if (product.images && Array.isArray(product.images)) {
+  //       images = product.images.filter((img) => img && img.trim() !== "");
+  //     } else if (product.image) {
+  //       images = [product.image];
+  //     }
 
-//     if (images.length === 0) {
-//       return (
-//         <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center mr-3">
-//           <ImageIcon className="w-5 h-5 text-gray-400" />
-//         </div>
-//       );
-//     }
+  //     if (images.length === 0) {
+  //       return (
+  //         <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center mr-3">
+  //           <ImageIcon className="w-5 h-5 text-gray-400" />
+  //         </div>
+  //       );
+  //     }
 
-//     return (
-//       <div className="flex items-center mr-3">
-//         <div className="relative">
-//           <img
-//             src={getImageSrc(images[0])}
-//             alt={product.name}
-//             className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
-//             onClick={() => handleViewImages(product)}
-//             onError={handleImageError}
-//           />
-//           {images.length > 1 && (
-//             <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-//               {images.length}
-//             </span>
-//           )}
-//         </div>
-//       </div>
-//     );
-//   };
+  //     return (
+  //       <div className="flex items-center mr-3">
+  //         <div className="relative">
+  //           <img
+  //             src={getImageSrc(images[0])}
+  //             alt={product.name}
+  //             className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
+  //             onClick={() => handleViewImages(product)}
+  //             onError={handleImageError}
+  //           />
+  //           {images.length > 1 && (
+  //             <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+  //               {images.length}
+  //             </span>
+  //           )}
+  //         </div>
+  //       </div>
+  //     );
+  //   };
 
   // Fetch Blogs function
   const fetchBlogs = async () => {
@@ -294,13 +294,14 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
         status: status,
         sortBy: sortBy,
         sortOrder: sortOrder,
+        available : "all"
       });
 
-      const response = await fetch(`${API_BASE}/all-blogs?${params}` , {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+      const response = await fetch(`${API_BASE}/all-blogs?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
 
       if (data.success) {
@@ -321,43 +322,49 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
       setLoading(false);
     }
   };
- // fetch categories
+  // fetch categories
   useEffect(() => {
-      const fetchCategories = async () => {
-        try {
-          setLoadingCategories(true);
-          const response = await fetch(`${API_BASE}/blog-categories?active=true` , {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-          const data = await response.json();
-  
-          if (data.success && data.blogCategories && data.blogCategories.length > 0) {
-            const sortedDynamicCategories = data.blogCategories?.sort((a, b) => {
-              if (a.order !== b.order) return a.order - b.order;
-              return a.name.localeCompare(b.name);
-            });
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await fetch(
+          `${API_BASE}/blog-categories?active=true`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        const data = await response.json();
 
-            setBlogCategories(sortedDynamicCategories);
-          } else {
-            // If no dynamic categories, use only static categories
-            console.warn(
-              "No active categories found from backend, in view blogs",
-            );
-          }
-        } catch (error) {
-          console.error("Error fetching categories:", error);
-          // On error, fallback to static categories
-          console.log("Using static categories as fallback");
-        } finally {
-          setLoadingCategories(false);
+        if (
+          data.success &&
+          data.blogCategories &&
+          data.blogCategories.length > 0
+        ) {
+          const sortedDynamicCategories = data.blogCategories?.sort((a, b) => {
+            if (a.order !== b.order) return a.order - b.order;
+            return a.name.localeCompare(b.name);
+          });
+
+          setBlogCategories(sortedDynamicCategories);
+        } else {
+          // If no dynamic categories, use only static categories
+          console.warn(
+            "No active categories found from backend, in view blogs",
+          );
         }
-      };
-    
-      fetchCategories();
-    }, [API_BASE]);
-  
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        // On error, fallback to static categories
+        console.log("Using static categories as fallback");
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, [API_BASE]);
 
   // Handle search with proper debouncing
   const handleSearchChange = (value) => {
@@ -376,29 +383,52 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
       try {
         const response = await fetch(`${API_BASE}/delete-blog/${id}`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ title })
+          body: JSON.stringify({ title }),
         });
         const data = await response.json();
         if (data.success) {
           fetchBlogs();
-        //   if (onDeleteBlog) {
-        //     onDeleteBlog({ id, title });
-        //   }
+          //   if (onDeleteBlog) {
+          //     onDeleteBlog({ id, title });
+          //   }
         }
       } catch (error) {
-        console.error('Error deleting blog:', error);
+        console.error("Error deleting blog:", error);
       }
+    }
+  };
+
+  // Handle toggle active status
+  const handleToggleActive = async (blogId) => {
+    try {
+      const response = await fetch(`${API_BASE}/blog/${blogId}/toggle-active`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        fetchBlogs();
+      } else {
+        alert(data.message || "Failed to toggle blog status");
+      }
+    } catch (error) {
+      console.error("Error toggling blog status:", error);
+      alert("Failed to toggle blog status");
     }
   };
 
   useEffect(() => {
     fetchBlogs();
-  }, [currentPage, selectedCategory, sortBy, sortOrder, itemsPerPage , status]);
+  }, [currentPage, selectedCategory, sortBy, sortOrder, itemsPerPage, status]);
 
   useEffect(() => {
     return () => {
@@ -440,13 +470,12 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
                 {cat}
               </option>
             ))} */}
-            {
-                blogCategories && blogCategories.map((cat) => (
-              <option key={cat._id} value={cat.name}>
-                {cat.name}
-              </option>
-            ))
-            }
+            {blogCategories &&
+              blogCategories.map((cat) => (
+                <option key={cat._id} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
           </select>
 
           {/* <div className="flex gap-2">
@@ -562,14 +591,14 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
               ) : (
                 blogs.map((blog) => {
                   // Calculate number of images
-                //   let imageCount = 0;
-                //   if (product.images && Array.isArray(product.images)) {
-                //     imageCount = product.images.filter(
-                //       (img) => img && img.trim() !== "",
-                //     ).length;
-                //   } else if (product.image) {
-                //     imageCount = 1;
-                //   }
+                  //   let imageCount = 0;
+                  //   if (product.images && Array.isArray(product.images)) {
+                  //     imageCount = product.images.filter(
+                  //       (img) => img && img.trim() !== "",
+                  //     ).length;
+                  //   } else if (product.image) {
+                  //     imageCount = 1;
+                  //   }
 
                   return (
                     <tr key={blog._id} className="hover:bg-gray-50 ">
@@ -577,7 +606,7 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
                         <div className="flex flex-wrap items-center ">
                           {/* <ProductImageDisplay product={product} /> */}
                           <div className=" ">
-                          {/* <img src={blog.image} alt="blog" height={30} width={50} /> */}
+                            {/* <img src={blog.image} alt="blog" height={30} width={50} /> */}
                             <div className=" text-sm font-medium text-gray-900 break-words">
                               {blog.title}
                             </div>
@@ -600,10 +629,13 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
                           </span>
                         </button> */}
                         <div className="flex gap-2 items-center">
-                            <img src={blog.author.profileImage}   className="rounded-full h-10 w-10 object-cover" />
-                        <div className="text-sm font-medium text-gray-900">
-                          {blog.author.name}
-                        </div>
+                          <img
+                            src={blog.author.profileImage}
+                            className="rounded-full h-10 w-10 object-cover"
+                          />
+                          <div className="text-sm font-medium text-gray-900">
+                            {blog.author.name}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -623,12 +655,29 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
                           }`}>
                           {product.available ? 'Active' : 'Inactive'}
                         </span> */}
-                        
-                        <span
-                          className={`ml-1 px-2 py-1 text-xs font-medium ${blog.status === "draft" ? "bg-yellow-100 text-yellow-800" : blog.status === "published" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"} rounded-full`}
-                        >
-                          {blog.status}
-                        </span>
+
+                        <Authorized permission={"blogs:update"}>
+                          <button
+                            onClick={() => handleToggleActive(blog._id)}
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                              blog.available
+                                ? "bg-green-100 text-green-800 hover:bg-green-200"
+                                : "bg-red-100 text-red-800 hover:bg-red-200"
+                            }`}
+                          >
+                            {blog.available ? (
+                              <>
+                                <Eye className="w-3 h-3 mr-1" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <EyeOff className="w-3 h-3 mr-1" />
+                                Inactive
+                              </>
+                            )}
+                          </button>
+                        </Authorized>
                         {blog.featured && (
                           <span className="ml-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
                             Featured
@@ -648,29 +697,27 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
                           )}
 
                           <Authorized permission={"blogs:update"}>
-
-                          {onEditBlog && (
-                            <button
-                              onClick={() => onEditBlog(blog)}
-                              className="text-blue-600 hover:text-blue-900 transition-colors"
-                              title="Edit Blog"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                          )}
+                            {onEditBlog && (
+                              <button
+                                onClick={() => onEditBlog(blog)}
+                                className="text-blue-600 hover:text-blue-900 transition-colors"
+                                title="Edit Blog"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                            )}
                           </Authorized>
 
                           <Authorized permission={"blogs:delete"}>
-
-                          <button
-                            onClick={() =>
-                              handleDeleteProduct(blog._id, blog.title)
-                            }
-                            className="text-red-600 hover:text-red-900 transition-colors"
-                            title="Delete Product"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                            <button
+                              onClick={() =>
+                                handleDeleteProduct(blog._id, blog.title)
+                              }
+                              className="text-red-600 hover:text-red-900 transition-colors"
+                              title="Delete Product"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </Authorized>
                         </div>
                       </td>

@@ -694,9 +694,11 @@ const BlogCategoriesPage = () => {
                     <th className="px-6 py-4 text-left text-sm font-semibold">
                       Description
                     </th>
+                     <Authorized permission={"blogCategories:update"}>
                     <th className="px-6 py-4 text-center text-sm font-semibold">
                       Status
                     </th>
+                    </Authorized>
                     <th className="px-6 py-4 text-center text-sm font-semibold">
                       Actions
                     </th>

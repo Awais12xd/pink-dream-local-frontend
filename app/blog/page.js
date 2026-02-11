@@ -176,7 +176,6 @@ const samplePosts = [
 //   { id: "Psychology", name: "Psychology", count: 1 },
 //   { id: "Food & Health", name: "Food & Health", count: 1 },
 // ];
-
 const Blog = () => {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
@@ -198,6 +197,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false)
 
   let totalCategoriesBlogs = 0;
+  console.log(posts)
 
   const fetchBlogs = async (page = 1, isLoadMore = false) => {
     if (isLoadMore) {
@@ -211,6 +211,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
         search: searchTerm,
         category: selectedCategory,
         status: "published",
+        available: "true",
          page: page.toString(),
         limit: itemsPerPage.toString(),
       });
@@ -258,7 +259,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
   const fetchPublishedCounts = async () => {
     try {
       // Try to fetch all published blogs (adjust limit if your API supports it)
-      const resp = await fetch(`${API_BASE}/all-blogs?status=published`);
+      const resp = await fetch(`${API_BASE}/all-blogs?status=published&available=true`);
       const data = await resp.json();
 
       if (!mounted) return;

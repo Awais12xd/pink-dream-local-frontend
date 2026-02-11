@@ -124,7 +124,7 @@ const TeamManager = () => {
   const fetchRoles = async () => {
     setLoadingRoles(true);
     try {
-      const res = await fetch(`${API_BASE}/roles`, {
+      const res = await fetch(`${API_BASE}/roles?active=true`, {
         method: "GET",
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
