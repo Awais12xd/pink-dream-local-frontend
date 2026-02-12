@@ -1,324 +1,397 @@
-'use client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
-import ProductCard from '../components/ProductCard'
-import { Filter, Search, Grid, List, ChevronDown, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+"use client";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import ProductCard from "../components/ProductCard";
+import {
+  Filter,
+  Search,
+  Grid,
+  List,
+  ChevronDown,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 
 // API Configuration
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 // Static categories as fallback
-const STATIC_CATEGORIES = ['All',  'Tops', 'Bottoms', 'Accessories', 'Shoes', 'Outerwear', 'Activewear', 'Swimwear'];
+const STATIC_CATEGORIES = [
+  "All",
+  "Tops",
+  "Bottoms",
+  "Accessories",
+  "Shoes",
+  "Outerwear",
+  "Activewear",
+  "Swimwear",
+];
 
 // Debounce hook - optimized
 function useDebounce(value, delay) {
-  const [debouncedValue, setDebouncedValue] = useState(value)
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedValue(value)
-    }, delay)
+      setDebouncedValue(value);
+    }, delay);
 
     return () => {
-      clearTimeout(handler)
-    }
-  }, [value, delay])
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
 
-  return debouncedValue
+  return debouncedValue;
 }
 
 export default function Shop() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   // Product states
-  const [allProducts, setAllProducts] = useState([])
-  const [categories, setCategories] = useState(['All'])
-  const [dynamicCategories, setDynamicCategories] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [initialDataLoaded, setInitialDataLoaded] = useState(false)
-  const [loadingCategories, setLoadingCategories] = useState(false)
-  
+  const [allProducts, setAllProducts] = useState([]);
+  const [categories, setCategories] = useState(["All"]);
+  const [dynamicCategories, setDynamicCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
   // Filter states
-  const [selectedCategory, setSelectedCategory] = useState('All')
-  const [sortBy, setSortBy] = useState('date')
-  const [sortOrder, setSortOrder] = useState('desc')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [minPrice, setMinPrice] = useState(0)
-  const [maxPrice, setMaxPrice] = useState(1000)
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 })
-  
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(1000);
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
+
   // UI states
-  const [showFilters, setShowFilters] = useState(false)
-  const [viewMode, setViewMode] = useState('grid')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(12)
-  const [totalProducts, setTotalProducts] = useState(0)
-  const [hasMoreProducts, setHasMoreProducts] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [productsLoading, setProductsLoading] = useState(false)
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState("grid");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(12);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [hasMoreProducts, setHasMoreProducts] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [categoryCounts, setCategoryCounts] = useState({ All: 0 });
 
   // Optimized debounce with shorter delay
-  const debouncedSearchTerm = useDebounce(searchTerm, 500)
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const sortOptions = useMemo(() => [
-    { value: 'date-desc', label: 'Newest First' },
-    { value: 'date-asc', label: 'Oldest First' },
-    { value: 'name-asc', label: 'Name A-Z' },
-    { value: 'name-desc', label: 'Name Z-A' },
-    { value: 'new_price-asc', label: 'Price: Low to High' },
-    { value: 'new_price-desc', label: 'Price: High to Low' }
-  ], [])
+  const sortOptions = useMemo(
+    () => [
+      { value: "date-desc", label: "Newest First" },
+      { value: "date-asc", label: "Oldest First" },
+      { value: "name-asc", label: "Name A-Z" },
+      { value: "name-desc", label: "Name Z-A" },
+      { value: "new_price-asc", label: "Price: Low to High" },
+      { value: "new_price-desc", label: "Price: High to Low" },
+    ],
+    [],
+  );
 
   // Initialize from URL params only once
   useEffect(() => {
-    if (!initialDataLoaded) return
+    if (!initialDataLoaded) return;
 
-    const categoryFromUrl = searchParams.get('category')
-    const searchFromUrl = searchParams.get('search')
-    const sortFromUrl = searchParams.get('sort')
-    const minPriceFromUrl = searchParams.get('minPrice')
-    const maxPriceFromUrl = searchParams.get('maxPrice')
+    const categoryFromUrl = searchParams.get("category");
+    const searchFromUrl = searchParams.get("search");
+    const sortFromUrl = searchParams.get("sort");
+    const minPriceFromUrl = searchParams.get("minPrice");
+    const maxPriceFromUrl = searchParams.get("maxPrice");
 
-    let hasChanges = false
+    let hasChanges = false;
 
-    if (categoryFromUrl && decodeURIComponent(categoryFromUrl) !== selectedCategory) {
-      setSelectedCategory(decodeURIComponent(categoryFromUrl))
-      hasChanges = true
+    if (
+      categoryFromUrl &&
+      decodeURIComponent(categoryFromUrl) !== selectedCategory
+    ) {
+      setSelectedCategory(decodeURIComponent(categoryFromUrl));
+      hasChanges = true;
     }
 
     if (searchFromUrl && decodeURIComponent(searchFromUrl) !== searchTerm) {
-      setSearchTerm(decodeURIComponent(searchFromUrl))
-      hasChanges = true
+      setSearchTerm(decodeURIComponent(searchFromUrl));
+      hasChanges = true;
     }
 
     if (sortFromUrl) {
-      const [field, order] = sortFromUrl.split('-')
+      const [field, order] = sortFromUrl.split("-");
       if (field && order && (field !== sortBy || order !== sortOrder)) {
-        setSortBy(field)
-        setSortOrder(order)
-        hasChanges = true
+        setSortBy(field);
+        setSortOrder(order);
+        hasChanges = true;
       }
     }
 
     if (minPriceFromUrl) {
-      const minPriceValue = parseInt(minPriceFromUrl)
+      const minPriceValue = parseInt(minPriceFromUrl);
       if (!isNaN(minPriceValue) && minPriceValue !== minPrice) {
-        setMinPrice(minPriceValue)
-        hasChanges = true
+        setMinPrice(minPriceValue);
+        hasChanges = true;
       }
     }
 
     if (maxPriceFromUrl) {
-      const maxPriceValue = parseInt(maxPriceFromUrl)
+      const maxPriceValue = parseInt(maxPriceFromUrl);
       if (!isNaN(maxPriceValue) && maxPriceValue !== maxPrice) {
-        setMaxPrice(maxPriceValue)
-        hasChanges = true
+        setMaxPrice(maxPriceValue);
+        hasChanges = true;
       }
     }
 
     if (hasChanges) {
       const timer = setTimeout(() => {
-        resetAndFetchProducts()
-      }, 100)
-      return () => clearTimeout(timer)
+        resetAndFetchProducts();
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [searchParams, initialDataLoaded])
+  }, [searchParams, initialDataLoaded]);
 
   // Fetch initial data
   useEffect(() => {
-    fetchInitialData()
-  }, [])
+    fetchInitialData();
+  }, []);
 
   // Update URL when filters change - optimized
-  const updateURL = useCallback((updates = {}) => {
-    if (!initialDataLoaded) return
+  const updateURL = useCallback(
+    (updates = {}) => {
+      if (!initialDataLoaded) return;
 
-    const params = new URLSearchParams()
-    
-    const category = updates.category !== undefined ? updates.category : selectedCategory
-    const search = updates.search !== undefined ? updates.search : searchTerm
-    const sort = updates.sort !== undefined ? updates.sort : `${sortBy}-${sortOrder}`
-    const minPriceValue = updates.minPrice !== undefined ? updates.minPrice : minPrice
-    const maxPriceValue = updates.maxPrice !== undefined ? updates.maxPrice : maxPrice
+      const params = new URLSearchParams();
 
-    // Only add non-default parameters
-    if (category && category !== 'All') {
-      params.set('category', encodeURIComponent(category))
-    }
-    
-    if (search && search.trim()) {
-      params.set('search', encodeURIComponent(search.trim()))
-    }
-    
-    if (sort && sort !== 'date-desc') {
-      params.set('sort', sort)
-    }
-    
-    if (minPriceValue > priceRange.min) {
-      params.set('minPrice', minPriceValue.toString())
-    }
-    
-    if (maxPriceValue < priceRange.max) {
-      params.set('maxPrice', maxPriceValue.toString())
-    }
+      const category =
+        updates.category !== undefined ? updates.category : selectedCategory;
+      const search = updates.search !== undefined ? updates.search : searchTerm;
+      const sort =
+        updates.sort !== undefined ? updates.sort : `${sortBy}-${sortOrder}`;
+      const minPriceValue =
+        updates.minPrice !== undefined ? updates.minPrice : minPrice;
+      const maxPriceValue =
+        updates.maxPrice !== undefined ? updates.maxPrice : maxPrice;
 
-    const newUrl = params.toString() ? `/shop?${params.toString()}` : '/shop'
-    
-    window.history.pushState(null, '', newUrl)
-  }, [selectedCategory, searchTerm, sortBy, sortOrder, minPrice, maxPrice, priceRange, initialDataLoaded])
+      // Only add non-default parameters
+      if (category && category !== "All") {
+        params.set("category", encodeURIComponent(category));
+      }
+
+      if (search && search.trim()) {
+        params.set("search", encodeURIComponent(search.trim()));
+      }
+
+      if (sort && sort !== "date-desc") {
+        params.set("sort", sort);
+      }
+
+      if (minPriceValue > priceRange.min) {
+        params.set("minPrice", minPriceValue.toString());
+      }
+
+      if (maxPriceValue < priceRange.max) {
+        params.set("maxPrice", maxPriceValue.toString());
+      }
+
+      const newUrl = params.toString() ? `/shop?${params.toString()}` : "/shop";
+
+      window.history.pushState(null, "", newUrl);
+    },
+    [
+      selectedCategory,
+      searchTerm,
+      sortBy,
+      sortOrder,
+      minPrice,
+      maxPrice,
+      priceRange,
+      initialDataLoaded,
+    ],
+  );
 
   // Optimized product fetching when filters change
   useEffect(() => {
-    if (!initialDataLoaded) return
-    
+    if (!initialDataLoaded) return;
+
     const timer = setTimeout(() => {
-      resetAndFetchProducts()
-      updateURL()
-    }, 50)
-    
-    return () => clearTimeout(timer)
-  }, [selectedCategory, sortBy, sortOrder, minPrice, maxPrice])
+      resetAndFetchProducts();
+      updateURL();
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [selectedCategory, sortBy, sortOrder, minPrice, maxPrice]);
 
   // Search term handling
   useEffect(() => {
-    if (!initialDataLoaded || debouncedSearchTerm === searchTerm) return
-    
-    resetAndFetchProducts()
-    updateURL({ search: debouncedSearchTerm })
-  }, [debouncedSearchTerm])
+    if (!initialDataLoaded || debouncedSearchTerm === searchTerm) return;
+
+    resetAndFetchProducts();
+    updateURL({ search: debouncedSearchTerm });
+  }, [debouncedSearchTerm]);
+
+  const normalizeCategoryKey = (value) =>
+    String(value || "")
+      .trim()
+      .toLowerCase();
+
+  const buildCategoryData = (apiCategories = [], backendCounts = {}) => {
+    const normalizedCounts = {};
+    Object.entries(backendCounts || {}).forEach(([k, v]) => {
+      normalizedCounts[normalizeCategoryKey(k)] = Number(v) || 0;
+    });
+
+    const normalized = apiCategories
+      .map((cat) => {
+        if (typeof cat === "string") {
+          const key = normalizeCategoryKey(cat);
+          return { name: cat, productCount: normalizedCounts[key] || 0 };
+        }
+
+        if (cat && typeof cat === "object" && cat.name) {
+          const key = normalizeCategoryKey(cat.name);
+          const rowCount = Number(cat.productCount);
+          return {
+            name: cat.name,
+            productCount: Number.isFinite(rowCount)
+              ? rowCount
+              : normalizedCounts[key] || 0,
+          };
+        }
+
+        return null;
+      })
+      .filter((c) => c && c.name && c.name.toLowerCase() !== "women")
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const dynamicCategoryNames = normalized.map((c) => c.name);
+
+    const uniqueStaticCategories = STATIC_CATEGORIES.filter(
+      (staticCat) => !dynamicCategoryNames.includes(staticCat),
+    );
+
+    const combinedCategories = [
+      "All",
+      ...dynamicCategoryNames,
+      ...uniqueStaticCategories.filter((cat) => cat !== "All"),
+    ];
+
+    const counts = { All: 0 };
+
+    combinedCategories.forEach((name) => {
+      if (name === "All") return;
+      const key = normalizeCategoryKey(name);
+
+      const fromDynamic = normalized.find(
+        (item) => normalizeCategoryKey(item.name) === key,
+      )?.productCount;
+
+      const value =
+        typeof fromDynamic === "number"
+          ? fromDynamic
+          : normalizedCounts[key] || 0;
+
+      counts[name] = value;
+      counts.All += value;
+    });
+
+    return { dynamicCategoryNames, combinedCategories, counts };
+  };
 
   const fetchInitialData = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      
+      setLoading(true);
+      setError(null);
+
       // Parallel API calls for faster loading
       const [categoriesResponse, filtersResponse] = await Promise.all([
-        fetch(`${API_BASE}/categories?active=true`),
-        fetch(`${API_BASE}/product-filters`)
-      ])
-      
+        fetch(`${API_BASE}/categories?active=true&includeCounts=true`),
+        fetch(`${API_BASE}/product-filters`),
+      ]);
+
       const [categoriesData, filtersData] = await Promise.all([
         categoriesResponse.json(),
-        filtersResponse.json()
-      ])
-      
+        filtersResponse.json(),
+      ]);
+
       // Process categories - handle both dynamic and static
       if (categoriesData.success && categoriesData.categories) {
-        // Extract category names from dynamic categories
-        const dynamicCategoryNames = categoriesData.categories
-          .map(cat => {
-            // Handle both object and string formats
-            if (typeof cat === 'string') return cat;
-            if (cat && typeof cat === 'object' && cat.name) return cat.name;
-            return null;
-          })
-          .filter(name => name && name.toLowerCase() !== 'women')
-          .sort((a, b) => a.localeCompare(b));
-        
+        const { dynamicCategoryNames, combinedCategories, counts } =
+          buildCategoryData(
+            categoriesData.categories,
+            categoriesData.countsByCategory,
+          );
+
         setDynamicCategories(dynamicCategoryNames);
-        
-        // Combine dynamic and static categories (avoiding duplicates)
-        const uniqueStaticCategories = STATIC_CATEGORIES.filter(
-          staticCat => !dynamicCategoryNames.includes(staticCat)
-        );
-        
-        // Create combined list: All first, then dynamic, then unique static
-        const combinedCategories = [
-          'All',
-          ...dynamicCategoryNames,
-          ...uniqueStaticCategories.filter(cat => cat !== 'All')
-        ];
-        
         setCategories(combinedCategories);
-        
-        // Handle URL category
-        const categoryFromUrl = searchParams.get('category')
+        setCategoryCounts(counts);
+
+        const categoryFromUrl = searchParams.get("category");
         if (categoryFromUrl) {
-          const decodedCategory = decodeURIComponent(categoryFromUrl)
+          const decodedCategory = decodeURIComponent(categoryFromUrl);
           if (combinedCategories.includes(decodedCategory)) {
-            setSelectedCategory(decodedCategory)
+            setSelectedCategory(decodedCategory);
           } else {
-            router.replace('/shop')
-            setSelectedCategory('All')
+            router.replace("/shop");
+            setSelectedCategory("All");
           }
         }
       } else {
-        // Fallback to static categories if API fails
-        console.warn('No dynamic categories found, using static categories');
         setCategories(STATIC_CATEGORIES);
         setDynamicCategories([]);
+        setCategoryCounts({ All: 0 });
       }
 
       // Process price range
       if (filtersData.success && filtersData.filters.priceRange) {
-        const { minPrice: min, maxPrice: max } = filtersData.filters.priceRange
-        const roundedMin = Math.floor(min)
-        const roundedMax = Math.ceil(max)
-        setPriceRange({ min: roundedMin, max: roundedMax })
-        
-        const minPriceFromUrl = searchParams.get('minPrice')
-        const maxPriceFromUrl = searchParams.get('maxPrice')
-        
-        if (!minPriceFromUrl) setMinPrice(roundedMin)
-        if (!maxPriceFromUrl) setMaxPrice(roundedMax)
+        const { minPrice: min, maxPrice: max } = filtersData.filters.priceRange;
+        const roundedMin = Math.floor(min);
+        const roundedMax = Math.ceil(max);
+        setPriceRange({ min: roundedMin, max: roundedMax });
+
+        const minPriceFromUrl = searchParams.get("minPrice");
+        const maxPriceFromUrl = searchParams.get("maxPrice");
+
+        if (!minPriceFromUrl) setMinPrice(roundedMin);
+        if (!maxPriceFromUrl) setMaxPrice(roundedMax);
       }
 
-      setInitialDataLoaded(true)
-      
+      setInitialDataLoaded(true);
     } catch (error) {
-      console.error('Error fetching initial data:', error)
+      console.error("Error fetching initial data:", error);
       // Fallback to static categories on error
       setCategories(STATIC_CATEGORIES);
       setDynamicCategories([]);
-      setError('Failed to load some data, using default categories')
-      setInitialDataLoaded(true)
+      setError("Failed to load some data, using default categories");
+      setInitialDataLoaded(true);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Refresh categories function
   const refreshCategories = async () => {
     try {
       setLoadingCategories(true);
-      const response = await fetch(`${API_BASE}/categories?active=true`);
+      const response = await fetch(
+        `${API_BASE}/categories?active=true&includeCounts=true`,
+      );
       const data = await response.json();
-      
+
       if (data.success && data.categories) {
-        const dynamicCategoryNames = data.categories
-          .map(cat => {
-            if (typeof cat === 'string') return cat;
-            if (cat && typeof cat === 'object' && cat.name) return cat.name;
-            return null;
-          })
-          .filter(name => name && name.toLowerCase() !== 'women')
-          .sort((a, b) => a.localeCompare(b));
-        
+        const { dynamicCategoryNames, combinedCategories, counts } =
+          buildCategoryData(data.categories, data.countsByCategory);
+
         setDynamicCategories(dynamicCategoryNames);
-        
-        const uniqueStaticCategories = STATIC_CATEGORIES.filter(
-          staticCat => !dynamicCategoryNames.includes(staticCat)
-        );
-        
-        const combinedCategories = [
-          'All',
-          ...dynamicCategoryNames,
-          ...uniqueStaticCategories.filter(cat => cat !== 'All')
-        ];
-        
         setCategories(combinedCategories);
-        
-        alert('Categories refreshed successfully!');
+        setCategoryCounts(counts);
       }
     } catch (error) {
-      console.error('Error refreshing categories:', error);
-      alert('Failed to refresh categories');
+      console.error("Error refreshing categories:", error);
+      alert("Failed to refresh categories");
     } finally {
       setLoadingCategories(false);
     }
@@ -327,132 +400,148 @@ export default function Shop() {
   const fetchProducts = async (page = 1, isLoadMore = false) => {
     try {
       if (isLoadMore) {
-        setLoadingMore(true)
+        setLoadingMore(true);
       } else {
-        setProductsLoading(true)
+        setProductsLoading(true);
       }
 
       const params = new URLSearchParams({
         page: page.toString(),
         limit: itemsPerPage.toString(),
         sortBy: sortBy,
-        sortOrder: sortOrder
-      })
+        sortOrder: sortOrder,
+      });
 
       if (debouncedSearchTerm.trim()) {
-        params.append('search', debouncedSearchTerm.trim())
-      }
-      
-      if (selectedCategory && selectedCategory !== 'All') {
-        params.append('category', selectedCategory)
-      }
-      
-      if (minPrice > priceRange.min) {
-        params.append('minPrice', minPrice.toString())
-      }
-      
-      if (maxPrice < priceRange.max) {
-        params.append('maxPrice', maxPrice.toString())
+        params.append("search", debouncedSearchTerm.trim());
       }
 
-      const response = await fetch(`${API_BASE}/allproducts?${params}`)
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+      if (selectedCategory && selectedCategory !== "All") {
+        params.append("category", selectedCategory);
       }
-      
-      const data = await response.json()
-      
+
+      if (minPrice > priceRange.min) {
+        params.append("minPrice", minPrice.toString());
+      }
+
+      if (maxPrice < priceRange.max) {
+        params.append("maxPrice", maxPrice.toString());
+      }
+
+      const response = await fetch(`${API_BASE}/allproducts?${params}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
       if (data.success) {
         if (isLoadMore) {
-          setAllProducts(prev => [...prev, ...data.products])
+          setAllProducts((prev) => [...prev, ...data.products]);
         } else {
-          setAllProducts(data.products)
+          setAllProducts(data.products);
         }
-        
-        setTotalProducts(data.pagination?.totalProducts || 0)
-        setHasMoreProducts(data.pagination?.hasNextPage || false)
-        setCurrentPage(page)
+
+        setTotalProducts(data.pagination?.totalProducts || 0);
+        setHasMoreProducts(data.pagination?.hasNextPage || false);
+        setCurrentPage(page);
       } else {
-        throw new Error(data.message || 'Failed to fetch products')
+        throw new Error(data.message || "Failed to fetch products");
       }
     } catch (error) {
-      console.error('Error fetching products:', error)
+      console.error("Error fetching products:", error);
       if (!isLoadMore) {
-        setError(`Failed to load products: ${error.message}`)
+        setError(`Failed to load products: ${error.message}`);
       }
     } finally {
-      setLoading(false)
-      setLoadingMore(false)
-      setProductsLoading(false)
+      setLoading(false);
+      setLoadingMore(false);
+      setProductsLoading(false);
     }
-  }
+  };
 
   const resetAndFetchProducts = useCallback(() => {
-    setCurrentPage(1)
-    setAllProducts([])
-    setHasMoreProducts(false)
-    fetchProducts(1, false)
-  }, [selectedCategory, sortBy, sortOrder, minPrice, maxPrice, debouncedSearchTerm])
+    setCurrentPage(1);
+    setAllProducts([]);
+    setHasMoreProducts(false);
+    fetchProducts(1, false);
+  }, [
+    selectedCategory,
+    sortBy,
+    sortOrder,
+    minPrice,
+    maxPrice,
+    debouncedSearchTerm,
+  ]);
 
-  const handleCategoryFilter = useCallback((category) => {
-    if (category !== selectedCategory) {
-      setSelectedCategory(category)
-    }
-  }, [selectedCategory])
+  const handleCategoryFilter = useCallback(
+    (category) => {
+      if (category !== selectedCategory) {
+        setSelectedCategory(category);
+      }
+    },
+    [selectedCategory],
+  );
 
   const handleSort = useCallback((sortValue) => {
-    const [field, order] = sortValue.split('-')
-    setSortBy(field)
-    setSortOrder(order)
-  }, [])
+    const [field, order] = sortValue.split("-");
+    setSortBy(field);
+    setSortOrder(order);
+  }, []);
 
   const handleSearchChange = useCallback((e) => {
-    setSearchTerm(e.target.value)
-  }, [])
+    setSearchTerm(e.target.value);
+  }, []);
 
-  const handleMinPriceChange = useCallback((e) => {
-    const value = parseInt(e.target.value)
-    setMinPrice(value)
-    if (value > maxPrice) {
-      setMaxPrice(value)
-    }
-  }, [maxPrice])
+  const handleMinPriceChange = useCallback(
+    (e) => {
+      const value = parseInt(e.target.value);
+      setMinPrice(value);
+      if (value > maxPrice) {
+        setMaxPrice(value);
+      }
+    },
+    [maxPrice],
+  );
 
-  const handleMaxPriceChange = useCallback((e) => {
-    const value = parseInt(e.target.value)
-    setMaxPrice(value)
-    if (value < minPrice) {
-      setMinPrice(value)
-    }
-  }, [minPrice])
+  const handleMaxPriceChange = useCallback(
+    (e) => {
+      const value = parseInt(e.target.value);
+      setMaxPrice(value);
+      if (value < minPrice) {
+        setMinPrice(value);
+      }
+    },
+    [minPrice],
+  );
 
   const handleLoadMore = useCallback(() => {
-    const nextPage = currentPage + 1
-    fetchProducts(nextPage, true)
-  }, [currentPage])
+    const nextPage = currentPage + 1;
+    fetchProducts(nextPage, true);
+  }, [currentPage]);
 
   const clearAllFilters = useCallback(() => {
-    setSelectedCategory('All')
-    setSearchTerm('')
-    setMinPrice(priceRange.min)
-    setMaxPrice(priceRange.max)
-    setSortBy('date')
-    setSortOrder('desc')
-    setCurrentPage(1)
-    setAllProducts([])
-    setHasMoreProducts(false)
-    
-    window.history.pushState(null, '', '/shop')
-    
+    setSelectedCategory("All");
+    setSearchTerm("");
+    setMinPrice(priceRange.min);
+    setMaxPrice(priceRange.max);
+    setSortBy("date");
+    setSortOrder("desc");
+    setCurrentPage(1);
+    setAllProducts([]);
+    setHasMoreProducts(false);
+
+    window.history.pushState(null, "", "/shop");
+
     setTimeout(() => {
-      fetchProducts(1, false)
-    }, 50)
-  }, [priceRange])
+      fetchProducts(1, false);
+    }, 50);
+  }, [priceRange]);
 
   const categoryDisplayName = useMemo(() => {
-    return selectedCategory === 'All' ? 'Our Collection' : selectedCategory
-  }, [selectedCategory])
+    return selectedCategory === "All" ? "Our Collection" : selectedCategory;
+  }, [selectedCategory]);
 
   // Loading state
   if (loading && !initialDataLoaded) {
@@ -467,7 +556,7 @@ export default function Shop() {
         </div>
         <Footer />
       </div>
-    )
+    );
   }
 
   // Error state
@@ -478,9 +567,11 @@ export default function Shop() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Oops! Something went wrong</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Oops! Something went wrong
+            </h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <button 
+            <button
               onClick={fetchInitialData}
               className="bg-pink-600 text-white px-6 py-2 rounded-lg hover:bg-pink-700 transition-colors"
             >
@@ -490,32 +581,33 @@ export default function Shop() {
         </div>
         <Footer />
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
+
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-pink-500 to-pink-600 text-white py-16">
         <div className="container mx-auto px-4">
-          <motion.div 
+          <motion.div
             className="text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">{categoryDisplayName}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              {categoryDisplayName}
+            </h1>
             <p className="text-xl text-pink-100">
-              {selectedCategory === 'All' 
+              {selectedCategory === "All"
                 ? `Discover your perfect style from our curated selection of ${totalProducts} products`
-                : `Explore our ${selectedCategory.toLowerCase()} collection - ${totalProducts} products available`
-              }
+                : `Explore our ${selectedCategory.toLowerCase()} collection - ${totalProducts} products available`}
             </p>
-            {selectedCategory !== 'All' && (
+            {selectedCategory !== "All" && (
               <motion.button
-                onClick={() => handleCategoryFilter('All')}
+                onClick={() => handleCategoryFilter("All")}
                 className="mt-4 bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg transition-colors"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -533,8 +625,8 @@ export default function Shop() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar Filters */}
-            <motion.div 
-              className={`lg:w-1/4 space-y-6 ${showFilters ? 'block' : 'hidden lg:block'}`}
+            <motion.div
+              className={`lg:w-1/4 space-y-6 ${showFilters ? "block" : "hidden lg:block"}`}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
@@ -559,10 +651,12 @@ export default function Shop() {
                     className="text-pink-600 hover:text-pink-800 disabled:opacity-50"
                     title="Refresh categories"
                   >
-                    <RefreshCw className={`w-4 h-4 ${loadingCategories ? 'animate-spin' : ''}`} />
+                    <RefreshCw
+                      className={`w-4 h-4 ${loadingCategories ? "animate-spin" : ""}`}
+                    />
                   </button>
                 </div>
-                
+
                 {/* Category Stats */}
                 {/* {dynamicCategories.length > 0 && (
                   <div className="mb-3 flex gap-2 text-xs">
@@ -574,7 +668,7 @@ export default function Shop() {
                     </span>
                   </div>
                 )} */}
-                
+
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {categories.map((category) => {
                     const isDynamic = dynamicCategories.includes(category);
@@ -584,16 +678,20 @@ export default function Shop() {
                         onClick={() => handleCategoryFilter(category)}
                         className={`w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center justify-between ${
                           selectedCategory === category
-                            ? 'bg-pink-100 text-pink-700 font-semibold'
-                            : 'hover:bg-gray-50'
+                            ? "bg-pink-100 text-pink-700 font-semibold"
+                            : "hover:bg-gray-50"
                         }`}
                       >
                         <span>{category}</span>
-                        {isDynamic && category !== 'All' && (
-                          <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full">
-                            New
-                          </span>
-                        )}
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            selectedCategory === category
+                              ? "bg-white/80 text-pink-700"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {categoryCounts[category] ?? 0}
+                        </span>
                       </button>
                     );
                   })}
@@ -608,10 +706,10 @@ export default function Shop() {
                     <label className="block text-sm font-medium mb-2">
                       Min Price: ${minPrice}
                     </label>
-                    <input 
-                      type="range" 
-                      min={priceRange.min} 
-                      max={priceRange.max} 
+                    <input
+                      type="range"
+                      min={priceRange.min}
+                      max={priceRange.max}
                       step="1"
                       value={minPrice}
                       onChange={handleMinPriceChange}
@@ -622,10 +720,10 @@ export default function Shop() {
                     <label className="block text-sm font-medium mb-2">
                       Max Price: ${maxPrice}
                     </label>
-                    <input 
-                      type="range" 
-                      min={priceRange.min} 
-                      max={priceRange.max} 
+                    <input
+                      type="range"
+                      min={priceRange.min}
+                      max={priceRange.max}
                       step="1"
                       value={maxPrice}
                       onChange={handleMaxPriceChange}
@@ -642,7 +740,7 @@ export default function Shop() {
             {/* Main Content */}
             <div className="lg:w-3/4">
               {/* Controls */}
-              <motion.div 
+              <motion.div
                 className="bg-white rounded-xl p-6 shadow-lg mb-8"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -650,24 +748,24 @@ export default function Shop() {
               >
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                   <div className="flex items-center space-x-4">
-                    <button 
+                    <button
                       onClick={() => setShowFilters(!showFilters)}
                       className="lg:hidden bg-white border border-pink-600 text-pink-600 px-4 py-2 rounded-lg hover:bg-pink-50 transition-colors flex items-center space-x-2"
                     >
                       <Filter className="w-4 h-4" />
                       <span>Filters</span>
                     </button>
-                    
+
                     <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => setViewMode('grid')}
-                        className={`p-2 rounded transition-colors ${viewMode === 'grid' ? 'bg-pink-100 text-pink-600' : 'hover:bg-gray-100'}`}
+                      <button
+                        onClick={() => setViewMode("grid")}
+                        className={`p-2 rounded transition-colors ${viewMode === "grid" ? "bg-pink-100 text-pink-600" : "hover:bg-gray-100"}`}
                       >
                         <Grid className="w-4 h-4" />
                       </button>
-                      <button 
-                        onClick={() => setViewMode('list')}
-                        className={`p-2 rounded transition-colors ${viewMode === 'list' ? 'bg-pink-100 text-pink-600' : 'hover:bg-gray-100'}`}
+                      <button
+                        onClick={() => setViewMode("list")}
+                        className={`p-2 rounded transition-colors ${viewMode === "list" ? "bg-pink-100 text-pink-600" : "hover:bg-gray-100"}`}
                       >
                         <List className="w-4 h-4" />
                       </button>
@@ -676,7 +774,7 @@ export default function Shop() {
 
                   <div className="flex items-center space-x-4">
                     <div className="relative">
-                      <select 
+                      <select
                         value={`${sortBy}-${sortOrder}`}
                         onChange={(e) => handleSort(e.target.value)}
                         className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-pink-500"
@@ -689,9 +787,11 @@ export default function Shop() {
                       </select>
                       <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
                     </div>
-                    
+
                     <div className="text-sm text-gray-600">
-                      {productsLoading ? 'Loading...' : `Showing ${allProducts.length} of ${totalProducts} products`}
+                      {productsLoading
+                        ? "Loading..."
+                        : `Showing ${allProducts.length} of ${totalProducts} products`}
                     </div>
                   </div>
                 </div>
@@ -699,8 +799,8 @@ export default function Shop() {
                 {/* Search Bar */}
                 <div className="mt-4 relative">
                   <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Search products..."
                     value={searchTerm}
                     onChange={handleSearchChange}
@@ -711,14 +811,16 @@ export default function Shop() {
                       <Loader2 className="w-4 h-4 animate-spin text-pink-500" />
                     </div>
                   )}
-                  {searchTerm && searchTerm === debouncedSearchTerm && searchTerm.length > 0 && (
-                    <button
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      ✕
-                    </button>
-                  )}
+                  {searchTerm &&
+                    searchTerm === debouncedSearchTerm &&
+                    searchTerm.length > 0 && (
+                      <button
+                        onClick={() => setSearchTerm("")}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        ✕
+                      </button>
+                    )}
                 </div>
               </motion.div>
 
@@ -729,17 +831,22 @@ export default function Shop() {
                 </div>
               ) : allProducts.length > 0 ? (
                 <>
-                  <div className={`grid gap-6 ${
-                    viewMode === 'grid' 
-                      ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-                      : 'grid-cols-1'
-                  }`}>
+                  <div
+                    className={`grid gap-6 ${
+                      viewMode === "grid"
+                        ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                        : "grid-cols-1"
+                    }`}
+                  >
                     {allProducts.map((product, index) => (
                       <motion.div
                         key={`${product.id}-${index}`}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: (index % 12) * 0.05 }}
+                        transition={{
+                          duration: 0.3,
+                          delay: (index % 12) * 0.05,
+                        }}
                       >
                         <ProductCard product={product} />
                       </motion.div>
@@ -782,10 +889,9 @@ export default function Shop() {
                   transition={{ duration: 0.5 }}
                 >
                   <p className="text-gray-500 text-lg mb-4">
-                    {selectedCategory !== 'All' 
+                    {selectedCategory !== "All"
                       ? `No products found in ${selectedCategory} category.`
-                      : 'No products found matching your criteria.'
-                    }
+                      : "No products found matching your criteria."}
                   </p>
                   <button
                     onClick={clearAllFilters}
@@ -802,5 +908,5 @@ export default function Shop() {
 
       <Footer />
     </div>
-  )
+  );
 }

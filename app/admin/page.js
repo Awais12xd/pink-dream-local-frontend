@@ -153,18 +153,6 @@ const AdminPanel = () => {
   const [analyticsMonth, setAnalyticsMonth] = useState(
     new Date().getMonth() + 1,
   );
-
-  const [allowGuestCheckout, setAllowGuestCheckout] = useState(true);
-
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/public`)
-      .then((r) => r.json())
-      .then((d) =>
-        setAllowGuestCheckout(d?.settings?.allowGuestCheckout ?? true),
-      )
-      .catch(() => setAllowGuestCheckout(true));
-  }, []);
-
   // Constants
   const periods = ["daily", "weekly", "monthly", "yearly"];
   const months = [
@@ -1230,7 +1218,7 @@ const AdminPanel = () => {
                       ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-200"
                       : "text-gray-700 hover:bg-gray-100"
                   } ${sidebarCollapsed ? "justify-center" : "justify-between"}`}
-                  title={sidebarCollapsed ? "Roles and Permissions" : ""}
+                  title={sidebarCollapsed ? "Staff" : ""}
                 >
                   <div className="flex gap-3">
                     <Users2Icon
@@ -1238,7 +1226,7 @@ const AdminPanel = () => {
                     />
                     {!sidebarCollapsed && (
                       <span className="font-medium w-full text-start">
-                        Roles and Permissions
+                        Staff
                       </span>
                     )}
                   </div>

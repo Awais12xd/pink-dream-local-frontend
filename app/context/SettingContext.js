@@ -15,7 +15,6 @@ function setHeadFromSettings(settings) {
   const siteDescription = settings?.siteDescription || document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
   const faviconUrl = settings?.branding?.favicon?.url || '/favicon.ico';
   const ogImage = settings?.branding?.siteLogo?.url || '';
-  console.log(settings)
   // Title
   document.title = siteTitle;
 

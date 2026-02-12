@@ -1,34 +1,43 @@
-'use client'
-import { createContext, useContext } from 'react'
-import { PayPalScriptProvider } from '@paypal/react-paypal-js'
+"use client";
+import { createContext, useContext, useMemo } from "react";
+import { PayPalScriptProvider } from "@paypal/react-paypal-js";
+import { SettingContext } from "./SettingContext";
 
-const PayPalContext = createContext()
-
-export const usePayPal = () => {
-    const context = useContext(PayPalContext)
-    if (!context) {
-        throw new Error('usePayPal must be used within a PayPalProvider')
-    }
-    return context
-}
-
-const paypalOptions = {
-    "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
-    currency: "USD",
-    intent: "capture",
-    components: "buttons,messages",
-    commit: true,
-    "data-page-type": "checkout"
-}
+const PayPalContext = createContext({ clientId: "", ready: false });
 
 export const PayPalProvider = ({ children }) => {
-    console.log('🔵 PayPal Provider loaded:', process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? 'Client ID Found' : 'Client ID Missing')
+  const { settings } = useContext(SettingContext);
 
+  const clientId =
+    settings?.paymentSettings?.credentialsPublic?.paypal?.clientId || "";
+
+  // Hook must always run (before any conditional return)
+  const options = useMemo(
+    () => ({
+      "client-id": clientId,
+      currency: "USD",
+      intent: "capture",
+      components: "buttons,messages",
+      commit: true,
+    }),
+    [clientId],
+  );
+
+  if (!clientId) {
     return (
-        <PayPalContext.Provider value={{}}>
-            <PayPalScriptProvider options={paypalOptions}>
-                {children}
-            </PayPalScriptProvider>
-        </PayPalContext.Provider>
-    )
-}
+      <PayPalContext.Provider value={{ clientId: "", ready: false }}>
+        {children}
+      </PayPalContext.Provider>
+    );
+  }
+
+  return (
+    <PayPalContext.Provider value={{ clientId, ready: true }}>
+      <PayPalScriptProvider options={options}>
+        {children}
+      </PayPalScriptProvider>
+    </PayPalContext.Provider>
+  );
+};
+
+export const usePayPal = () => useContext(PayPalContext);

@@ -1,1599 +1,1560 @@
-import React, { useState, useRef, useEffect } from "react";
+"use client";
+
+import { useState, useRef, useEffect } from "react";
 import {
   Settings,
-  Sliders,
-  Mail,
-  Globe,
+  CreditCard,
+  Search as SearchIcon,
   Phone,
-  MapPin,
-  Clock,
-  Instagram,
-  Facebook,
-  Twitter,
   Plus,
   Trash2,
   Save,
   Upload,
   Eye,
-  Palette,
-  Shield,
-  Bell,
-  ChevronRight,
+  EyeOff,
+  X,
+  Check,
+  Info,
+  Loader,
+  Instagram,
+  Facebook,
+  Twitter,
+  Mail,
   Youtube,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-toastify";
 
-/* ---------------------------
-   Minimal helpers
-   --------------------------- */
-const isValidEmail = (email) => {
-  if (!email) return false;
-  // simple RFC-lite regex
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-};
-
-const showToast = (setToast, type, message) => {
-  setToast({ type, message });
-  setTimeout(() => setToast(null), 4000);
-};
-
-/* ---------------------------
-   Default (static) settings
-   --------------------------- */
-const defaultSettings = {
-  generalSettings: {
-    branding: {
-      siteLogo: {
-        public_id: "logo1",
-        url: "https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=200&h=80&fit=crop",
-        alt: "Site Logo",
-        uploadedAt: new Date(),
-      },
-      adminLogo: null,
-      favicon: {
-        public_id: "fav1",
-        url: "https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=32&h=32&fit=crop",
-        alt: "Favicon",
-        uploadedAt: new Date(),
-      },
+const EMPTY_UI_SETTINGS = {
+  general: {
+    branding: { siteLogo: null, adminLogo: null, favicon: null },
+    guestCheckout: true,
+  },
+  seo: {
+    siteTitle: "",
+    siteDescription: "",
+  },
+  payment: {
+    stripe: {
+      enabled: true,
+      publishableKey: "",
+      secretKey: "",
+      webhookSecret: "",
     },
-    seo: {
-      siteTitle: "Pink Dreams - Premium Fashion Store",
-      siteDescription:
-        "Discover the latest trends in fashion. Shop premium clothing, accessories, and more at Pink Dreams.",
-    },
+    paypal: { enabled: true, clientId: "", clientSecret: "" },
+    cod: { enabled: false },
+    bankTransfer: { enabled: false, instructions: "" },
   },
   contact: {
-    emails: [
-      { label: "General Inquiries", email: "hello@pinkdreams.com" },
-      { label: "Customer Support", email: "support@pinkdreams.com" },
+    emails: [],
+    phones: [],
+    addresses: [
+      { line1: "", line2: "", city: "", state: "", zip: "", country: "" },
     ],
-    phones: [
-      { label: "Main Line", number: "+1 (555) 123-4567" },
-      { label: "Support Hotline", number: "+1 (555) 987-6543" },
-    ],
-    address: {
-      line1: "123 Fashion Avenue",
-      line2: "Suite 456",
-      city: "New York",
-      state: "NY",
-      zip: "10001",
-      country: "United States",
-    },
-    social: {
-      instagram: "https://instagram.com/pinkdreams",
-      facebook: "https://facebook.com/pinkdreams",
-      twitter: "https://twitter.com/pinkdreams",
-      youtube: "https://youtube.com/pinkdreams",
-    },
+    social: { instagram: "", facebook: "", twitter: "", youtube: "" },
     hours: {
-      weekdays: {
-        day: "weekdays",
-        open: "09:00",
-        close: "18:00",
-        closed: false,
-      },
-      saturday: {
-        day: "saturday",
-        open: "10:00",
-        close: "16:00",
-        closed: false,
-      },
-      sunday: { day: "sunday", open: "00:00", close: "00:00", closed: true },
+      weekdays: { open: "09:00", close: "18:00", closed: false },
+      saturday: { open: "10:00", close: "16:00", closed: false },
+      sunday: { open: "", close: "", closed: true },
     },
   },
-  // email: {
-  //   from: 'noreply@pinkdreams.com',
-  //   admin: 'admin@pinkdreams.com',
-  // },
+};
+
+const EMPTY_META = {
+  stripe: {
+    secretKeySet: false,
+    webhookSecretSet: false,
+    secretKeyPreview: "",
+    webhookSecretPreview: "",
+  },
+  paypal: {
+    clientSecretSet: false,
+    clientSecretPreview: "",
+  },
+};
+
+const TABS = [
+  { id: "general", label: "General", icon: Settings },
+  { id: "payment", label: "Payment", icon: CreditCard },
+  { id: "seo", label: "SEO", icon: SearchIcon },
+  { id: "contact", label: "Contact", icon: Phone },
+];
+
+const toUiSettings = (apiSettings) => {
+  const s = apiSettings || {};
+  return {
+    general: {
+      branding: {
+        siteLogo: s?.generalSettings?.branding?.siteLogo || null,
+        adminLogo: s?.generalSettings?.branding?.adminLogo || null,
+        favicon: s?.generalSettings?.branding?.favicon || null,
+      },
+      guestCheckout: s?.allowGuestCheckout ?? true,
+    },
+    seo: {
+      siteTitle: s?.generalSettings?.seo?.siteTitle || "",
+      siteDescription: s?.generalSettings?.seo?.siteDescription || "",
+    },
+    payment: {
+      stripe: {
+        enabled: s?.paymentSettings?.methods?.stripe?.enabled ?? true,
+        publishableKey:
+          s?.paymentSettings?.credentials?.stripe?.publishableKey || "",
+        secretKey: "", // never hydrate plain secret
+        webhookSecret: "", // never hydrate plain secret
+      },
+      paypal: {
+        enabled: s?.paymentSettings?.methods?.paypal?.enabled ?? true,
+        clientId: s?.paymentSettings?.credentials?.paypal?.clientId || "",
+        clientSecret: "", // never hydrate plain secret
+      },
+      cod: {
+        enabled: s?.paymentSettings?.methods?.cod?.enabled ?? false,
+      },
+      bankTransfer: {
+        enabled: s?.paymentSettings?.methods?.bankTransfer?.enabled ?? false,
+        instructions:
+          s?.paymentSettings?.methods?.bankTransfer?.instructions || "",
+      },
+    },
+    contact: {
+      emails: s?.contact?.emails || [],
+      phones: s?.contact?.phones || [],
+      addresses: [
+        s?.contact?.address || EMPTY_UI_SETTINGS.contact.addresses[0],
+      ],
+      social: s?.contact?.social || EMPTY_UI_SETTINGS.contact.social,
+      hours: s?.contact?.hours || EMPTY_UI_SETTINGS.contact.hours,
+    },
+  };
+};
+
+const buildApiPayload = (uiSettings, secretsDraft) => {
+  const primaryAddress =
+    uiSettings?.contact?.addresses?.[0] ||
+    EMPTY_UI_SETTINGS.contact.addresses[0];
+
+  return {
+    allowGuestCheckout: uiSettings.general.guestCheckout,
+    generalSettings: {
+      branding: {
+        siteLogo: uiSettings.general.branding.siteLogo,
+        adminLogo: uiSettings.general.branding.adminLogo,
+        favicon: uiSettings.general.branding.favicon,
+      },
+      seo: {
+        siteTitle: uiSettings.seo.siteTitle,
+        siteDescription: uiSettings.seo.siteDescription,
+      },
+    },
+    contact: {
+      emails: uiSettings.contact.emails,
+      phones: uiSettings.contact.phones,
+      // backend model uses `contact.address` (singular)
+      address: primaryAddress,
+      social: uiSettings.contact.social,
+      hours: uiSettings.contact.hours,
+    },
+    paymentSettings: {
+      methods: {
+        stripe: { enabled: uiSettings.payment.stripe.enabled },
+        paypal: { enabled: uiSettings.payment.paypal.enabled },
+        cod: { enabled: uiSettings.payment.cod.enabled },
+        bankTransfer: {
+          enabled: uiSettings.payment.bankTransfer.enabled,
+          instructions: uiSettings.payment.bankTransfer.instructions,
+        },
+      },
+      credentials: {
+        stripe: {
+          publishableKey: uiSettings.payment.stripe.publishableKey,
+          // backend keeps unchanged when value is ""
+          secretKey: secretsDraft.stripeSecretKey || "",
+          webhookSecret: secretsDraft.stripeWebhookSecret || "",
+        },
+        paypal: {
+          clientId: uiSettings.payment.paypal.clientId,
+          // backend keeps unchanged when value is ""
+          clientSecret: secretsDraft.paypalClientSecret || "",
+        },
+      },
+    },
+  };
 };
 
 const SettingsManager = () => {
-  const token = localStorage.getItem("staffUserToken");
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("staffUserToken") : "";
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL;
   const [activeTab, setActiveTab] = useState("general");
-  const [settings, setSettings] = useState(defaultSettings);
+  const [settings, setSettings] = useState(EMPTY_UI_SETTINGS);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [notification, setNotification] = useState({ message: "", type: "" });
 
-  const [allowGuestCheckout, setAllowGuestCheckout] = useState(false);
-
-  // per-image uploading states
-  const [uploading, setUploading] = useState({
-    siteLogo: false,
-    adminLogo: false,
-    favicon: false,
+  const [visibleFields, setVisibleFields] = useState({});
+  const [credentialsMeta, setCredentialsMeta] = useState(EMPTY_META);
+  const [secretsDraft, setSecretsDraft] = useState({
+    stripeSecretKey: "",
+    stripeWebhookSecret: "",
+    paypalClientSecret: "",
+  });
+  const [testLoading, setTestLoading] = useState({
+    stripe: false,
+    paypal: false,
   });
 
-  // Image upload refs
   const siteLogoRef = useRef(null);
   const adminLogoRef = useRef(null);
   const faviconRef = useRef(null);
 
-  // load settings on mount
-  useEffect(() => {
-    let mounted = true;
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("staffUserToken")
-        : null;
-
-    const fetchSettings = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_BASE}/admin/settings`, {
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-        if (!res.ok) {
-          // fallback to defaultSettings but don't crash
-          const text = await res.text();
-          console.warn("Failed to fetch settings:", res.status, text);
-          if (mounted) {
-            setSettings(defaultSettings);
-            showToast(
-              setToast,
-              "error",
-              "Failed to load settings (using defaults).",
-            );
-          }
-          return;
-        }
-
-        const json = await res.json();
-        if (json && json.success && json.settings) {
-          if (mounted) {
-            setSettings(json.settings);
-          }
-        } else {
-          if (mounted) {
-            setSettings(defaultSettings);
-            showToast(
-              setToast,
-              "error",
-              "Settings response was unexpected (using defaults).",
-            );
-          }
-        }
-      } catch (err) {
-        console.error("fetchSettings error", err);
-        if (mounted) {
-          setSettings(defaultSettings);
-          showToast(setToast, "error", "Unable to fetch settings (offline?)");
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    fetchSettings();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  /* ---------------------------
-     Upload helper (calls backend)
-     --------------------------- */
-  const uploadToServer = async (file, type) => {
-    const token = localStorage.getItem("staffUserToken");
-    const formData = new FormData();
-    formData.append("file", file);
-
-    // optional: pass type so server can tag folder/name
-    const url = `${API_BASE}/admin/settings/upload?type=${encodeURIComponent(type)}`;
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const txt = await res.text();
-      throw new Error(`Upload failed: ${res.status} ${txt}`);
-    }
-
-    const json = await res.json();
-    if (!json.success) throw new Error(json.message || "Upload failed");
-    // Accept either imageUrl or upload.url
-    const imageUrl =
-      json.imageUrl ||
-      (json.upload && (json.upload.url || json.upload.secure_url)) ||
-      json.url ||
-      null;
-    const public_id =
-      json.public_id || (json.upload && json.upload.public_id) || null;
-    return { imageUrl, public_id };
+  const showNotification = (message, type = "success") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification({ message: "", type: "" }), 3000);
   };
 
-  /* ---------------------------
-     Image handlers
-     --------------------------- */
-  const handleImageFile = async (type, file) => {
-    if (!file) return;
-    // immediate local preview while uploading (optimistic)
-    const previewUrl = URL.createObjectURL(file);
-    setSettings((prev) => ({
-      ...prev,
-      generalSettings: {
-        ...prev.generalSettings,
-        branding: {
-          ...prev.generalSettings.branding,
-          [type]: {
-            public_id: `temp_${type}`,
-            url: previewUrl,
-            alt: file.name,
-            uploadedAt: new Date(),
-          },
-        },
-      },
-    }));
+  const authHeaders = () => ({
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  });
 
-    setUploading((prev) => ({ ...prev, [type]: true }));
-    try {
-      const { imageUrl, public_id } = await uploadToServer(file, type);
-      if (!imageUrl) throw new Error("No image URL returned from upload");
-
-      setSettings((prev) => ({
-        ...prev,
-        generalSettings: {
-          ...prev.generalSettings,
-          branding: {
-            ...prev.generalSettings.branding,
-            [type]: {
-              public_id: public_id || `uploaded_${type}`,
-              url: imageUrl,
-              alt: file.name,
-              uploadedAt: new Date(),
-            },
-          },
-        },
-      }));
-
-      showToast(setToast, "success", "Image uploaded.");
-    } catch (err) {
-      console.error("Image upload failed", err);
-      showToast(setToast, "error", "Image upload failed.");
-      // revert preview by reloading settings from server or clearing preview
-      // simple approach: clear that slot
-      setSettings((prev) => ({
-        ...prev,
-        generalSettings: {
-          ...prev.generalSettings,
-          branding: {
-            ...prev.generalSettings.branding,
-            [type]: null,
-          },
-        },
-      }));
-    } finally {
-      setUploading((prev) => ({ ...prev, [type]: false }));
-    }
-  };
-
-  // wrapper used by file input onChange
-  const handleImageUpload = (type, file) => {
-    // minimal mime check for favicon: allow png or ico, other images allowed for logos
-    if (!file) return;
-    if (type === "favicon") {
-      const allowed = [
-        "image/png",
-        "image/x-icon",
-        "image/vnd.microsoft.icon",
-        "image/svg+xml",
-      ];
-      if (!allowed.includes(file.type)) {
-        showToast(setToast, "error", "Favicon must be PNG/ICO/SVG.");
-        return;
-      }
-    }
-    handleImageFile(type, file);
-  };
-
-  const handleRemoveImage = (type) => {
-    if (!window.confirm("Remove image?")) return;
-    setSettings((prev) => ({
-      ...prev,
-      generalSettings: {
-        ...prev.generalSettings,
-        branding: {
-          ...prev.generalSettings.branding,
-          [type]: null,
-        },
-      },
-    }));
-  };
-
-  /* ---------------------------
-     Save settings
-     --------------------------- */
-  const handleSave = async () => {
-    // client-side validation: ensure at least one valid admin email (the admin notification)
-    // if (settings.email && settings.email.admin && !isValidEmail(settings.email.admin)) {
-    //   showToast(setToast, 'error', 'Admin email is invalid.');
-    //   return;
-    // }
-    if (settings.contact && Array.isArray(settings.contact.emails)) {
-      for (const e of settings.contact.emails) {
-        if (e.email && !isValidEmail(e.email)) {
-          showToast(setToast, "error", `Invalid contact email: ${e.email}`);
-          return;
-        }
-      }
-    }
-
-    setSaving(true);
-    const token = localStorage.getItem("staffUserToken");
+  const loadAdminSettings = async () => {
+    setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/admin/settings`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(settings),
+        headers: authHeaders(),
       });
+      const data = await res.json();
 
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Save failed: ${res.status} ${txt}`);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to fetch settings");
       }
 
-      const json = await res.json();
-      if (json && json.success) {
-        // showToast(setToast, 'success', 'Settings saved.');
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 2500);
-        // update local copy with whatever server returned (if provided)
-        if (json.settings) setSettings(json.settings);
-      } else {
-        throw new Error(json.message || "Save failed");
-      }
+      setSettings(toUiSettings(data.settings));
+      setCredentialsMeta(
+        data?.settings?.paymentSettings?.credentialsMeta || EMPTY_META,
+      );
+      setSecretsDraft({
+        stripeSecretKey: "",
+        stripeWebhookSecret: "",
+        paypalClientSecret: "",
+      });
     } catch (err) {
-      console.error("Save settings error", err);
-      showToast(setToast, "error", "Failed to save settings.");
+      showNotification(err.message || "Failed to load settings", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAdminSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const saveSettings = async ({ silent = false } = {}) => {
+    setSaving(true);
+    try {
+      const payload = buildApiPayload(settings, secretsDraft);
+
+      const res = await fetch(`${API_BASE}/admin/settings`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Save failed");
+      }
+
+      await loadAdminSettings();
+      if (!silent) showNotification("Settings saved successfully", "success");
+      return true;
+    } catch (err) {
+      if (!silent)
+        showNotification(err.message || "Failed to save settings", "error");
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
-  /* ---------------------------
-     Small UI render helpers
-     --------------------------- */
-  const tabCards = [
-    {
-      id: "general",
-      title: "General Settings",
-      description: "Branding, logos, and SEO configuration",
-      icon: Sliders,
-      gradient: "from-pink-500 to-rose-500",
-      bgGradient: "from-pink-50 to-rose-50",
-    },
-    {
-      id: "contact",
-      title: "Contact Settings",
-      description: "Emails, phones, address & business hours",
-      icon: Phone,
-      gradient: "from-blue-500 to-cyan-500",
-      bgGradient: "from-blue-50 to-cyan-50",
-    },
-    // { id: 'email', title: 'Email Settings', description: 'Delivery and notification settings', icon: Mail, gradient: 'from-purple-500 to-violet-500', bgGradient: 'from-purple-50 to-violet-50' },
-  ];
+  const handleSave = async () => {
+    await saveSettings();
+  };
 
-  // render loading state
+  const handleTestConnection = async (provider) => {
+    const key = provider === "stripe" ? "stripe" : "paypal";
+    setTestLoading((p) => ({ ...p, [key]: true }));
+
+    try {
+      // test endpoint checks DB credentials, so save first
+      const saved = await saveSettings({ silent: true });
+      if (!saved) throw new Error("Save failed before test");
+
+      const res = await fetch(
+        `${API_BASE}/admin/settings/test-payment/${provider}`,
+        {
+          method: "POST",
+          headers: authHeaders(),
+        },
+      );
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || `Failed to test ${provider}`);
+      }
+
+      // showNotification(
+      //   data.message || `${provider} connection successful`,
+      //   "success",
+      // );
+      toast.success(`${provider} connection successful`)
+
+    } catch (err) {
+      // showNotification(err.message || `Failed to test ${provider}`, "error");
+      toast.error(`${provider} connection Failed`)
+
+    } finally {
+      setTestLoading((p) => ({ ...p, [key]: false }));
+    }
+  };
+
+  const uploadImageToServer = async (file, type) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${API_BASE}/admin/settings/upload?type=${type}`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.message || "Upload failed");
+    }
+
+    return {
+      public_id: data.public_id || "",
+      url: data.imageUrl || "",
+      alt: file.name || "",
+      uploadedAt: new Date().toISOString(),
+      name: file.name || "",
+    };
+  };
+
+  const handleImageUpload = async (key, file) => {
+    if (!file) return;
+    try {
+      const uploaded = await uploadImageToServer(file, key);
+      setSettings((prev) => ({
+        ...prev,
+        general: {
+          ...prev.general,
+          branding: {
+            ...prev.general.branding,
+            [key]: uploaded,
+          },
+        },
+      }));
+      showNotification("Image uploaded", "success");
+    } catch (err) {
+      showNotification(err.message || "Upload failed", "error");
+    }
+  };
+
+  const removeImage = (key) => {
+    setSettings((prev) => ({
+      ...prev,
+      general: {
+        ...prev.general,
+        branding: {
+          ...prev.general.branding,
+          [key]: null,
+        },
+      },
+    }));
+  };
+
+  // Contact list helpers
+  const addEmail = () =>
+    setSettings((p) => ({
+      ...p,
+      contact: {
+        ...p.contact,
+        emails: [...p.contact.emails, { label: "", email: "" }],
+      },
+    }));
+  const removeEmail = (i) =>
+    setSettings((p) => ({
+      ...p,
+      contact: {
+        ...p.contact,
+        emails: p.contact.emails.filter((_, idx) => idx !== i),
+      },
+    }));
+  const addPhone = () =>
+    setSettings((p) => ({
+      ...p,
+      contact: {
+        ...p.contact,
+        phones: [...p.contact.phones, { label: "", number: "" }],
+      },
+    }));
+  const removePhone = (i) =>
+    setSettings((p) => ({
+      ...p,
+      contact: {
+        ...p.contact,
+        phones: p.contact.phones.filter((_, idx) => idx !== i),
+      },
+    }));
+  const addAddress = () =>
+    setSettings((p) => ({
+      ...p,
+      contact: {
+        ...p.contact,
+        addresses: [
+          ...p.contact.addresses,
+          { line1: "", line2: "", city: "", state: "", zip: "", country: "" },
+        ],
+      },
+    }));
+  const removeAddress = (i) =>
+    setSettings((p) => ({
+      ...p,
+      contact: {
+        ...p.contact,
+        addresses: p.contact.addresses.filter((_, idx) => idx !== i),
+      },
+    }));
+
+  const toggleFieldVisibility = (key) => {
+    setVisibleFields((p) => ({ ...p, [key]: !p[key] }));
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen grid place-items-center">
-        <div className="text-center p-8 bg-white rounded-xl shadow-xl">
-          <div className="animate-spin w-10 h-10 border-b-2 border-pink-500 rounded-full mx-auto mb-4"></div>
-          <div className="text-gray-700 font-medium">Loading settings...</div>
+      <div className="p-6">
+        <div className="flex items-center gap-2 text-gray-600">
+          <Loader className="w-4 h-4 animate-spin" />
+          Loading settings...
         </div>
       </div>
     );
   }
 
+  // ─── Masked input component ─────────────────────────────────────
+  const SecretInput = ({ label, value, fieldKey, onChange, placeholder }) => (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          type={visibleFields[fieldKey] ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+          placeholder={placeholder}
+        />
+        <button
+          type="button"
+          onClick={() => toggleFieldVisibility(fieldKey)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+        >
+          {visibleFields[fieldKey] ? (
+            <EyeOff className="w-4 h-4" />
+          ) : (
+            <Eye className="w-4 h-4" />
+          )}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ─── Upload box component ───────────────────────────────────────
+  const UploadBox = ({
+    label,
+    recommendation,
+    imageData,
+    fileRef,
+    onUpload,
+    onRemove,
+  }) => (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        {label}
+      </label>
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-pink-400 transition-colors bg-gray-50/50 min-h-[140px] flex flex-col items-center justify-center">
+        {imageData ? (
+          <>
+            <img
+              src={imageData.url}
+              alt={label}
+              className="max-h-16 max-w-full object-contain rounded mb-2"
+            />
+            <p className="text-xs text-gray-500 truncate max-w-full">
+              {imageData.name}
+            </p>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="text-xs px-3 py-1 bg-pink-100 text-pink-600 rounded hover:bg-pink-200 font-medium"
+              >
+                Change
+              </button>
+              <button
+                onClick={onRemove}
+                className="text-xs px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 font-medium"
+              >
+                Remove
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <Upload className="w-7 h-7 text-gray-400 mb-2" />
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="text-xs px-4 py-1.5 bg-pink-500 text-white rounded hover:bg-pink-600 font-medium"
+            >
+              Upload
+            </button>
+          </>
+        )}
+      </div>
+      {recommendation && (
+        <p className="text-xs text-gray-400 mt-1.5">{recommendation}</p>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
+      />
+    </div>
+  );
+
+  // ─── Toggle switch component ────────────────────────────────────
+  const Toggle = ({ enabled, onChange, label, hint }) => (
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-700">{label}</p>
+        {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(!enabled)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${enabled ? "bg-pink-500" : "bg-gray-300"}`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow ${enabled ? "translate-x-6" : "translate-x-1"}`}
+        />
+      </button>
+    </div>
+  );
+
+  // ═══════════════════════════════════════════════════════════════
+  // RENDER
+  // ═══════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
-      {/* toast */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-white ${toast.type === "error" ? "bg-red-500" : "bg-green-500"}`}
-          >
-            {toast.message}
-          </motion.div>
-        )}
+    <div className="space-y-6">
+      {/* Notification */}
+      {notification.message && (
+        <div
+          className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-2 ${notification.type === "success" ? "bg-green-500" : "bg-red-500"} text-white max-w-md`}
+        >
+          {notification.type === "success" ? (
+            <Check size={20} />
+          ) : (
+            <X size={20} />
+          )}
+          <span className="text-sm">{notification.message}</span>
+          <button onClick={() => setNotification({ message: "", type: "" })}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
-        {showSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="fixed top-20 right-6 z-50 px-5 py-3 rounded-xl bg-green-600 text-white"
-          >
-            Settings saved successfully
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      {/* Header */}
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <div className="bg-gradient-to-br from-pink-500 to-pink-600 p-2.5 rounded-xl shadow-lg shadow-pink-200">
-                <Settings className="w-7 h-7 text-white" />
-              </div>
-              Settings Management
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Configure your store settings, branding, and preferences
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+              Settings
+            </h2>
+            <p className="text-gray-600 text-sm">
+              Configure your store preferences
             </p>
           </div>
-          <div className="flex items-center">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-2.5 rounded-xl hover:from-pink-600 hover:to-pink-700 transition-all shadow-lg disabled:opacity-70 font-semibold"
-            >
-              {saving ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  Save Changes
-                </>
-              )}
-            </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all disabled:opacity-50 text-sm font-medium shadow"
+          >
+            {saving ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      </div>
+
+      {/* Horizontal Tab Navigation */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="overflow-x-auto">
+          <div className="flex border-b border-gray-200 min-w-max">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                    isActive
+                      ? "border-pink-500 text-pink-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {tabCards.map((tab, index) => (
-            <motion.div
-              key={tab.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              onClick={() => setActiveTab(tab.id)}
-              className={`relative cursor-pointer bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border-2 ${activeTab === tab.id ? "border-pink-500 ring-4 ring-pink-100" : "border-transparent hover:border-gray-200"}`}
-            >
-              <div className="flex items-start justify-between">
-                <div
-                  className={`bg-gradient-to-br ${tab.gradient} p-3.5 rounded-xl shadow-lg`}
-                >
-                  <tab.icon className="w-7 h-7 text-white" />
+        {/* TAB CONTENT */}
+        <div className="p-4 sm:p-6">
+          {/* ═══ GENERAL TAB ═══════════════════════════════════════ */}
+          {activeTab === "general" && (
+            <div className="space-y-8">
+              {/* Branding */}
+              <section>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Branding
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <UploadBox
+                    label="Site Logo"
+                    recommendation="Recommended: 200×60px, PNG or SVG with transparent background. Max 2MB."
+                    imageData={settings.general.branding.siteLogo}
+                    fileRef={siteLogoRef}
+                    onUpload={(f) => handleImageUpload("siteLogo", f)}
+                    onRemove={() => removeImage("siteLogo")}
+                  />
+                  <UploadBox
+                    label="Admin Logo"
+                    recommendation="Recommended: 180×50px, PNG or SVG. This appears in the admin sidebar. Max 2MB."
+                    imageData={settings.general.branding.adminLogo}
+                    fileRef={adminLogoRef}
+                    onUpload={(f) => handleImageUpload("adminLogo", f)}
+                    onRemove={() => removeImage("adminLogo")}
+                  />
+                  <UploadBox
+                    label="Favicon"
+                    recommendation="Recommended: 32×32px or 64×64px, PNG or ICO format. Max 1MB."
+                    imageData={settings.general.branding.favicon}
+                    fileRef={faviconRef}
+                    onUpload={(f) => handleImageUpload("favicon", f)}
+                    onRemove={() => removeImage("favicon")}
+                  />
                 </div>
-                {activeTab === tab.id && (
-                  <div className="bg-pink-500 text-white p-1.5 rounded-full">
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                )}
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mt-4">
-                {tab.title}
+              </section>
+
+              {/* Guest Checkout */}
+              <section className="bg-gray-50 rounded-lg p-4 sm:p-5">
+                <Toggle
+                  enabled={settings.general.guestCheckout}
+                  onChange={(v) =>
+                    setSettings((p) => ({
+                      ...p,
+                      general: { ...p.general, guestCheckout: v },
+                    }))
+                  }
+                  label="Guest Checkout"
+                  hint="Allow customers to place orders without creating an account."
+                />
+              </section>
+            </div>
+          )}
+
+          {/* ═══ PAYMENT TAB ══════════════════════════════════════ */}
+          {activeTab === "payment" && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Payment Methods
               </h3>
-              <p className="text-gray-500 text-sm mt-2">{tab.description}</p>
-            </motion.div>
-          ))}
-        </div>
 
-        {/* Content area */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.25 }}
-            className="bg-white rounded-2xl shadow-xl overflow-hidden"
-          >
-            {/* General (branding & SEO) */}
-            {activeTab === "general" && (
-              <div className="divide-y divide-gray-100">
-                <div className="p-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="bg-gradient-to-br from-pink-500 to-rose-500 p-2 rounded-lg">
-                      <Palette className="w-5 h-5 text-white" />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* Stripe */}
+                <div
+                  className={`border rounded-lg overflow-hidden transition-colors ${settings.payment.stripe.enabled ? "border-pink-200 bg-pink-50/30" : "border-gray-200"}`}
+                >
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <CreditCard className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-800 text-sm">
+                          Stripe
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Credit & debit cards
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-800">
-                        Branding
-                      </h2>
-                      <p className="text-gray-500 text-sm">
-                        Upload your logos and favicon
-                      </p>
-                    </div>
+                    <Toggle
+                      enabled={settings.payment.stripe.enabled}
+                      onChange={(v) =>
+                        setSettings((p) => ({
+                          ...p,
+                          payment: {
+                            ...p.payment,
+                            stripe: { ...p.payment.stripe, enabled: v },
+                          },
+                        }))
+                      }
+                      label=""
+                    />
                   </div>
+                  {settings.payment.stripe.enabled && (
+                    <div className="p-4 pt-0 space-y-3 border-t border-pink-100">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Publishable Key
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.payment.stripe.publishableKey}
+                          onChange={(e) =>
+                            setSettings((p) => ({
+                              ...p,
+                              payment: {
+                                ...p.payment,
+                                stripe: {
+                                  ...p.payment.stripe,
+                                  publishableKey: e.target.value,
+                                },
+                              },
+                            }))
+                          }
+                          placeholder="pk_live_..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                        />
+                      </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="">
-                      <label
-                        htmlFor="guestCheckout"
-                        className="block text-sm font-semibold text-gray-700"
-                      >
-                        Guest Checkout
-                      </label>
-                      <input
-                        type="checkbox"
-                        name="guestCheckout"
-                        id="guestCheckout"
-                        checked={!!settings?.allowGuestCheckout}
+                      <SecretInput
+                        label="Secret Key"
+                        value={secretsDraft.stripeSecretKey}
+                        fieldKey="stripe_sk"
+                        placeholder={
+                          credentialsMeta?.stripe?.secretKeySet
+                            ? `Saved (${credentialsMeta.stripe.secretKeyPreview})`
+                            : "sk_live_..."
+                        }
                         onChange={(e) =>
-                          setSettings((prev) => ({
-                            ...prev,
-                            allowGuestCheckout: e.target.checked,
+                          setSecretsDraft((p) => ({
+                            ...p,
+                            stripeSecretKey: e.target.value,
                           }))
                         }
                       />
-                    </div>
-                    {/* Site Logo */}
-                    <div className="space-y-3">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Site Logo
-                      </label>
-                      <div className="relative group">
-                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-pink-400 transition-colors bg-gray-50/50 min-h-[160px] flex flex-col items-center justify-center">
-                          {settings.generalSettings.branding.siteLogo ? (
-                            <>
-                              <img
-                                src={
-                                  settings.generalSettings.branding.siteLogo.url
-                                }
-                                alt="Site Logo"
-                                className="max-h-20 max-w-full object-contain rounded-lg"
-                              />
-                              <p className="text-xs text-gray-500 mt-3 truncate max-w-full">
-                                Recommended size: 300×100 px (PNG, SVG or JPG up
-                                to 5MB)
-                              </p>
-                              <div className="flex gap-2 mt-3">
-                                <label className="text-xs bg-pink-100 text-pink-600 px-3 py-1.5 rounded-lg hover:bg-pink-200 transition-colors font-medium cursor-pointer">
-                                  {uploading.siteLogo
-                                    ? "Uploading..."
-                                    : "Change"}
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) =>
-                                      e.target.files?.[0] &&
-                                      handleImageUpload(
-                                        "siteLogo",
-                                        e.target.files[0],
-                                      )
-                                    }
-                                  />
-                                </label>
-                                <button
-                                  onClick={() => handleRemoveImage("siteLogo")}
-                                  className="text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-10 h-10 text-gray-400 mb-3" />
-                              <p className="text-sm text-gray-500">
-                                Drop image here or click to upload
-                              </p>
-                              <p className="text-xs text-gray-400 mt-1">
-                                {" "}
-                                Recommended size: 300×100 px (PNG, SVG or JPG up
-                                to 5MB)
-                              </p>
-                              <label className="mt-3 text-sm bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors font-medium cursor-pointer">
-                                Upload Logo
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) =>
-                                    e.target.files?.[0] &&
-                                    handleImageUpload(
-                                      "siteLogo",
-                                      e.target.files[0],
-                                    )
-                                  }
-                                />
-                              </label>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Admin Logo */}
-                    <div className="space-y-3">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Admin Panel Logo
-                      </label>
-                      <div className="relative group">
-                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-pink-400 transition-colors bg-gray-50/50 min-h-[160px] flex flex-col items-center justify-center">
-                          {settings.generalSettings.branding.adminLogo ? (
-                            <>
-                              <img
-                                src={
-                                  settings.generalSettings.branding.adminLogo
-                                    .url
-                                }
-                                alt="Admin Logo"
-                                className="max-h-20 max-w-full object-contain rounded-lg"
-                              />
-                              <p className="text-xs text-gray-500 mt-3 truncate max-w-full">
-                                Recommended size: 300×100 px (PNG, SVG or JPG up
-                                to 5MB)
-                              </p>
-                              <div className="flex gap-2 mt-3">
-                                <label className="text-xs bg-pink-100 text-pink-600 px-3 py-1.5 rounded-lg hover:bg-pink-200 transition-colors font-medium cursor-pointer">
-                                  {uploading.adminLogo
-                                    ? "Uploading..."
-                                    : "Change"}
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) =>
-                                      e.target.files?.[0] &&
-                                      handleImageUpload(
-                                        "adminLogo",
-                                        e.target.files[0],
-                                      )
-                                    }
-                                  />
-                                </label>
-                                <button
-                                  onClick={() => handleRemoveImage("adminLogo")}
-                                  className="text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-10 h-10 text-gray-400 mb-3" />
-                              <p className="text-sm text-gray-500">
-                                Drop image here or click to upload
-                              </p>
-                              <p className="text-xs text-gray-400 mt-1">
-                                Recommended size: 300×100 px (PNG, SVG or JPG up
-                                to 5MB)
-                              </p>
-                              <label className="mt-3 text-sm bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors font-medium cursor-pointer">
-                                Upload Logo
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) =>
-                                    e.target.files?.[0] &&
-                                    handleImageUpload(
-                                      "adminLogo",
-                                      e.target.files[0],
-                                    )
-                                  }
-                                />
-                              </label>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                      <SecretInput
+                        label="Webhook Secret (optional)"
+                        value={secretsDraft.stripeWebhookSecret}
+                        fieldKey="stripe_wh"
+                        placeholder={
+                          credentialsMeta?.stripe?.webhookSecretSet
+                            ? `Saved (${credentialsMeta.stripe.webhookSecretPreview})`
+                            : "whsec_..."
+                        }
+                        onChange={(e) =>
+                          setSecretsDraft((p) => ({
+                            ...p,
+                            stripeWebhookSecret: e.target.value,
+                          }))
+                        }
+                      />
 
-                    {/* Favicon */}
-                    <div className="space-y-3">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Favicon
-                      </label>
-                      <div className="relative group">
-                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-pink-400 transition-colors bg-gray-50/50 min-h-[160px] flex flex-col items-center justify-center">
-                          {settings.generalSettings.branding.favicon ? (
-                            <>
-                              <div className="bg-gray-100 p-4 rounded-xl">
-                                <img
-                                  src={
-                                    settings.generalSettings.branding.favicon
-                                      .url
-                                  }
-                                  alt="Favicon"
-                                  className="w-12 h-12 object-contain"
-                                />
-                              </div>
-                              <p className="text-xs text-gray-500 mt-3">
-                                32x32 or 64x64 recommended
-                              </p>
-                              <div className="flex gap-2 mt-3">
-                                <label className="text-xs bg-pink-100 text-pink-600 px-3 py-1.5 rounded-lg hover:bg-pink-200 transition-colors font-medium cursor-pointer">
-                                  {uploading.favicon
-                                    ? "Uploading..."
-                                    : "Change"}
-                                  <input
-                                    type="file"
-                                    accept="image/*,.ico"
-                                    className="hidden"
-                                    onChange={(e) =>
-                                      e.target.files?.[0] &&
-                                      handleImageUpload(
-                                        "favicon",
-                                        e.target.files[0],
-                                      )
-                                    }
-                                  />
-                                </label>
-                                <button
-                                  onClick={() => handleRemoveImage("favicon")}
-                                  className="text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-10 h-10 text-gray-400 mb-3" />
-                              <p className="text-sm text-gray-500">
-                                Upload favicon
-                              </p>
-                              <p className="text-xs text-gray-400 mt-1">
-                                ICO, PNG 32x32
-                              </p>
-                              <label className="mt-3 text-sm bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors font-medium cursor-pointer">
-                                Upload Icon
-                                <input
-                                  type="file"
-                                  accept="image/*,.ico"
-                                  className="hidden"
-                                  onChange={(e) =>
-                                    e.target.files?.[0] &&
-                                    handleImageUpload(
-                                      "favicon",
-                                      e.target.files[0],
-                                    )
-                                  }
-                                />
-                              </label>
-                            </>
-                          )}
-                        </div>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleTestConnection("stripe")}
+                        disabled={testLoading.stripe}
+                        className="text-xs px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 font-medium transition-colors disabled:opacity-60"
+                      >
+                        {testLoading.stripe ? "Testing..." : "Test Connection"}
+                      </button>
                     </div>
-                  </div>
+                  )}
                 </div>
 
-                {/* SEO */}
-                <div className="p-8 bg-gradient-to-r from-pink-50/50 to-transparent">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-2 rounded-lg">
-                      <Globe className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-800">
-                        SEO Settings
-                      </h2>
-                      <p className="text-gray-500 text-sm">
-                        Optimize your store for search engines
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6 max-w-3xl">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Site Title
-                        <span className="text-gray-400 font-normal ml-2">
-                          (
-                          {
-                            (settings.generalSettings.seo.siteTitle || "")
-                              .length
-                          }
-                          /60 characters)
+                {/* PayPal */}
+                <div
+                  className={`border rounded-lg overflow-hidden transition-colors ${settings.payment.paypal.enabled ? "border-pink-200 bg-pink-50/30" : "border-gray-200"}`}
+                >
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <span className="text-blue-600 font-bold text-xs">
+                          PP
                         </span>
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.generalSettings.seo.siteTitle || ""}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-800 text-sm">
+                          PayPal
+                        </p>
+                        <p className="text-xs text-gray-500">PayPal payments</p>
+                      </div>
+                    </div>
+                    <Toggle
+                      enabled={settings.payment.paypal.enabled}
+                      onChange={(v) =>
+                        setSettings((p) => ({
+                          ...p,
+                          payment: {
+                            ...p.payment,
+                            paypal: { ...p.payment.paypal, enabled: v },
+                          },
+                        }))
+                      }
+                      label=""
+                    />
+                  </div>
+                  {settings.payment.paypal.enabled && (
+                    <div className="p-4 pt-0 space-y-3 border-t border-pink-100">
+                      <SecretInput
+                        label="Client ID"
+                        value={settings.payment.paypal.clientId}
+                        fieldKey="paypal_id"
+                        placeholder="Your PayPal Client ID"
                         onChange={(e) =>
-                          setSettings((prev) => ({
-                            ...prev,
-                            generalSettings: {
-                              ...prev.generalSettings,
-                              seo: {
-                                ...prev.generalSettings.seo,
-                                siteTitle: e.target.value,
+                          setSettings((p) => ({
+                            ...p,
+                            payment: {
+                              ...p.payment,
+                              paypal: {
+                                ...p.payment.paypal,
+                                clientId: e.target.value,
                               },
                             },
                           }))
                         }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
-                        placeholder="Enter site title"
-                        maxLength={60}
                       />
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Site Description
-                        <span className="text-gray-400 font-normal ml-2">
-                          (
-                          {
-                            (settings.generalSettings.seo.siteDescription || "")
-                              .length
-                          }
-                          /160 characters)
-                        </span>
-                      </label>
-                      <textarea
-                        value={
-                          settings.generalSettings.seo.siteDescription || ""
+                      <SecretInput
+                        label="Client Secret"
+                        value={secretsDraft.paypalClientSecret}
+                        fieldKey="paypal_secret"
+                        placeholder={
+                          credentialsMeta?.paypal?.clientSecretSet
+                            ? `Saved (${credentialsMeta.paypal.clientSecretPreview})`
+                            : "Your PayPal Client Secret"
                         }
                         onChange={(e) =>
-                          setSettings((prev) => ({
-                            ...prev,
-                            generalSettings: {
-                              ...prev.generalSettings,
-                              seo: {
-                                ...prev.generalSettings.seo,
-                                siteDescription: e.target.value,
+                          setSecretsDraft((p) => ({
+                            ...p,
+                            paypalClientSecret: e.target.value,
+                          }))
+                        }
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => handleTestConnection("paypal")}
+                        disabled={testLoading.paypal}
+                        className="text-xs px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 font-medium transition-colors disabled:opacity-60"
+                      >
+                        {testLoading.paypal ? "Testing..." : "Test Connection"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Cash on Delivery */}
+                <div
+                  className={`border rounded-lg overflow-hidden transition-colors ${settings.payment.cod.enabled ? "border-pink-200 bg-pink-50/30" : "border-gray-200"}`}
+                >
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <span className="text-green-600 font-bold text-sm">
+                          $
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-800 text-sm">
+                          Cash on Delivery
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Pay when the order arrives
+                        </p>
+                      </div>
+                    </div>
+                    <Toggle
+                      enabled={settings.payment.cod.enabled}
+                      onChange={(v) =>
+                        setSettings((p) => ({
+                          ...p,
+                          payment: {
+                            ...p.payment,
+                            cod: { ...p.payment.cod, enabled: v },
+                          },
+                        }))
+                      }
+                      label=""
+                    />
+                  </div>
+                  {settings.payment.cod.enabled && (
+                    <div className="p-4 pt-0 border-t border-pink-100">
+                      <div className="flex items-start gap-2 text-xs text-gray-500 bg-green-50 p-3 rounded">
+                        <Info className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>No additional configuration required.</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bank Transfer */}
+                {/* <div
+                  className={`border rounded-lg overflow-hidden transition-colors ${settings.payment.bankTransfer.enabled ? "border-pink-200 bg-pink-50/30" : "border-gray-200"}`}
+                >
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                        <span className="text-amber-600 font-bold text-xs">
+                          BT
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-800 text-sm">
+                          Bank Transfer
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Direct bank/wire transfer
+                        </p>
+                      </div>
+                    </div>
+                    <Toggle
+                      enabled={settings.payment.bankTransfer.enabled}
+                      onChange={(v) =>
+                        setSettings((p) => ({
+                          ...p,
+                          payment: {
+                            ...p.payment,
+                            bankTransfer: {
+                              ...p.payment.bankTransfer,
+                              enabled: v,
+                            },
+                          },
+                        }))
+                      }
+                      label=""
+                    />
+                  </div>
+                  {settings.payment.bankTransfer.enabled && (
+                    <div className="p-4 pt-0 border-t border-pink-100">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Transfer Instructions
+                      </label>
+                      <textarea
+                        value={settings.payment.bankTransfer.instructions}
+                        onChange={(e) =>
+                          setSettings((p) => ({
+                            ...p,
+                            payment: {
+                              ...p.payment,
+                              bankTransfer: {
+                                ...p.payment.bankTransfer,
+                                instructions: e.target.value,
                               },
                             },
                           }))
                         }
                         rows={3}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none"
-                        placeholder="Enter site meta description"
-                        maxLength={160}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm resize-none"
+                        placeholder={
+                          "Bank Name: ABC Bank\nAccount #: 12345678\nRouting #: 87654321"
+                        }
                       />
                     </div>
+                  )}
+                </div> */}
+              </div>
+            </div>
+          )}
 
-                    {/* SEO Preview */}
-                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                      <p className="text-xs text-gray-500 mb-3 flex items-center gap-2">
-                        <Eye className="w-4 h-4" /> Search Engine Preview
-                      </p>
-                      <div className="space-y-1">
-                        <p className="text-blue-600 text-lg hover:underline cursor-pointer truncate">
-                          {settings.generalSettings.seo.siteTitle ||
-                            "Your Site Title"}
-                        </p>
-                        <p className="text-green-700 text-sm">
-                          www.pinkdreams.com
-                        </p>
-                        <p className="text-gray-600 text-sm line-clamp-2">
-                          {settings.generalSettings.seo.siteDescription ||
-                            "Your site description will appear here..."}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+          {/* ═══ SEO TAB ═══════════════════════════════════════════ */}
+          {activeTab === "seo" && (
+            <div className="space-y-6 max-w-2xl">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Search Engine Optimization
+              </h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Site Title
+                  <span className="text-gray-400 font-normal ml-1.5">
+                    ({settings.seo.siteTitle.length}/60)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={settings.seo.siteTitle}
+                  onChange={(e) =>
+                    setSettings((p) => ({
+                      ...p,
+                      seo: { ...p.seo, siteTitle: e.target.value },
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                  placeholder="Your store name"
+                  maxLength={60}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Appears as the main title in browser tabs and search results.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Meta Description
+                  <span className="text-gray-400 font-normal ml-1.5">
+                    ({settings.seo.siteDescription.length}/160)
+                  </span>
+                </label>
+                <textarea
+                  value={settings.seo.siteDescription}
+                  onChange={(e) =>
+                    setSettings((p) => ({
+                      ...p,
+                      seo: { ...p.seo, siteDescription: e.target.value },
+                    }))
+                  }
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm resize-none"
+                  placeholder="A brief description of your store..."
+                  maxLength={160}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Shown below the title in search results. Keep it concise.
+                </p>
+              </div>
+
+              {/* Google Preview */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-xs text-gray-500 mb-3 flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5" />
+                  Search Preview
+                </p>
+                <div>
+                  <p className="text-blue-700 text-base sm:text-lg hover:underline cursor-pointer truncate">
+                    {settings.seo.siteTitle || "Your Site Title"}
+                  </p>
+                  <p className="text-green-700 text-xs sm:text-sm">
+                    www.pinkdreams.com
+                  </p>
+                  <p className="text-gray-600 text-xs sm:text-sm mt-0.5 line-clamp-2">
+                    {settings.seo.siteDescription ||
+                      "Your site description will appear here..."}
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Contact tab (unchanged structure except API-backed state) */}
-            {activeTab === "contact" && (
-              <div className="divide-y divide-gray-100">
-                <div className="p-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-2 rounded-lg">
-                        <Mail className="w-5 h-5 text-white" />
+          {/* ═══ CONTACT TAB ══════════════════════════════════════ */}
+          {activeTab === "contact" && (
+            <div className="space-y-8">
+              {/* Emails */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Email Addresses
+                  </h3>
+                  <button
+                    onClick={addEmail}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white rounded-lg hover:bg-pink-600 text-xs font-medium"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {settings.contact.emails.map((em, i) => (
+                    <div
+                      key={i}
+                      className="flex gap-3 items-start bg-gray-50 p-3 rounded-lg"
+                    >
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          value={em.label}
+                          onChange={(e) => {
+                            const n = [...settings.contact.emails];
+                            n[i].label = e.target.value;
+                            setSettings((p) => ({
+                              ...p,
+                              contact: { ...p.contact, emails: n },
+                            }));
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          placeholder="Label (e.g. Support)"
+                        />
+                        <input
+                          type="email"
+                          value={em.email}
+                          onChange={(e) => {
+                            const n = [...settings.contact.emails];
+                            n[i].email = e.target.value;
+                            setSettings((p) => ({
+                              ...p,
+                              contact: { ...p.contact, emails: n },
+                            }));
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          placeholder="email@example.com"
+                        />
                       </div>
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-800">
-                          Email Addresses
-                        </h2>
-                        <p className="text-gray-500 text-sm">
-                          Manage your contact email addresses
-                        </p>
+                      <button
+                        onClick={() => removeEmail(i)}
+                        className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  {settings.contact.emails.length === 0 && (
+                    <div className="text-center py-8">
+                      <Mail className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-400">
+                        No email addresses added
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Phones */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Phone Numbers
+                  </h3>
+                  <button
+                    onClick={addPhone}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white rounded-lg hover:bg-pink-600 text-xs font-medium"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {settings.contact.phones.map((ph, i) => (
+                    <div
+                      key={i}
+                      className="flex gap-3 items-start bg-gray-50 p-3 rounded-lg"
+                    >
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          value={ph.label}
+                          onChange={(e) => {
+                            const n = [...settings.contact.phones];
+                            n[i].label = e.target.value;
+                            setSettings((p) => ({
+                              ...p,
+                              contact: { ...p.contact, phones: n },
+                            }));
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          placeholder="Label"
+                        />
+                        <input
+                          type="tel"
+                          value={ph.number}
+                          onChange={(e) => {
+                            const n = [...settings.contact.phones];
+                            n[i].number = e.target.value;
+                            setSettings((p) => ({
+                              ...p,
+                              contact: { ...p.contact, phones: n },
+                            }));
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          placeholder="+1 (555) 000-0000"
+                        />
+                      </div>
+                      <button
+                        onClick={() => removePhone(i)}
+                        className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  {settings.contact.phones.length === 0 && (
+                    <div className="text-center py-8">
+                      <Phone className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-400">
+                        No phone numbers added
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Addresses */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Addresses
+                  </h3>
+                  <button
+                    onClick={addAddress}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white rounded-lg hover:bg-pink-600 text-xs font-medium"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {settings.contact.addresses.map((addr, i) => (
+                    <div key={i} className="bg-gray-50 p-4 rounded-lg relative">
+                      <button
+                        onClick={() => removeAddress(i)}
+                        className="absolute top-3 right-3 p-1.5 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-8">
+                        <input
+                          type="text"
+                          value={addr.line1}
+                          onChange={(e) => {
+                            const n = [...settings.contact.addresses];
+                            n[i].line1 = e.target.value;
+                            setSettings((p) => ({
+                              ...p,
+                              contact: { ...p.contact, addresses: n },
+                            }));
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          placeholder="Street address"
+                        />
+                        <input
+                          type="text"
+                          value={addr.line2}
+                          onChange={(e) => {
+                            const n = [...settings.contact.addresses];
+                            n[i].line2 = e.target.value;
+                            setSettings((p) => ({
+                              ...p,
+                              contact: { ...p.contact, addresses: n },
+                            }));
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          placeholder="Apt, Suite (optional)"
+                        />
+                        <input
+                          type="text"
+                          value={addr.city}
+                          onChange={(e) => {
+                            const n = [...settings.contact.addresses];
+                            n[i].city = e.target.value;
+                            setSettings((p) => ({
+                              ...p,
+                              contact: { ...p.contact, addresses: n },
+                            }));
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          placeholder="City"
+                        />
+                        <input
+                          type="text"
+                          value={addr.state}
+                          onChange={(e) => {
+                            const n = [...settings.contact.addresses];
+                            n[i].state = e.target.value;
+                            setSettings((p) => ({
+                              ...p,
+                              contact: { ...p.contact, addresses: n },
+                            }));
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          placeholder="State / Province"
+                        />
+                        <input
+                          type="text"
+                          value={addr.zip}
+                          onChange={(e) => {
+                            const n = [...settings.contact.addresses];
+                            n[i].zip = e.target.value;
+                            setSettings((p) => ({
+                              ...p,
+                              contact: { ...p.contact, addresses: n },
+                            }));
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          placeholder="ZIP / Postal"
+                        />
+                        <input
+                          type="text"
+                          value={addr.country}
+                          onChange={(e) => {
+                            const n = [...settings.contact.addresses];
+                            n[i].country = e.target.value;
+                            setSettings((p) => ({
+                              ...p,
+                              contact: { ...p.contact, addresses: n },
+                            }));
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          placeholder="Country"
+                        />
                       </div>
                     </div>
-                    <button
-                      onClick={() =>
-                        setSettings((prev) => ({
-                          ...prev,
+                  ))}
+                  {settings.contact.addresses.length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-gray-400">
+                        No addresses added
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Social Media */}
+              <section>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                  Social Media
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className=" text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                      <Instagram className="w-4 h-4 text-pink-500" /> Instagram
+                    </label>
+                    <input
+                      type="url"
+                      value={settings.contact.social.instagram}
+                      onChange={(e) =>
+                        setSettings((p) => ({
+                          ...p,
                           contact: {
-                            ...prev.contact,
-                            emails: [
-                              ...prev.contact.emails,
-                              { label: "", email: "" },
-                            ],
+                            ...p.contact,
+                            social: {
+                              ...p.contact.social,
+                              instagram: e.target.value,
+                            },
                           },
                         }))
                       }
-                      className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2.5 rounded-xl hover:bg-blue-600 transition-colors font-medium text-sm"
-                    >
-                      <Plus className="w-4 h-4" /> Add Email
-                    </button>
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                      placeholder="https://instagram.com/..."
+                    />
                   </div>
-
-                  <div className="space-y-4">
-                    {settings.contact.emails.map((email, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex gap-4 items-start bg-gray-50 p-4 rounded-xl"
-                      >
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                              Label
-                            </label>
-                            <input
-                              type="text"
-                              value={email.label}
-                              onChange={(e) => {
-                                const newEmails = [...settings.contact.emails];
-                                newEmails[index].label = e.target.value;
-                                setSettings((prev) => ({
-                                  ...prev,
-                                  contact: {
-                                    ...prev.contact,
-                                    emails: newEmails,
-                                  },
-                                }));
-                              }}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="e.g., Support"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                              Email Address
-                            </label>
-                            <input
-                              type="email"
-                              value={email.email}
-                              onChange={(e) => {
-                                const newEmails = [...settings.contact.emails];
-                                newEmails[index].email = e.target.value;
-                                setSettings((prev) => ({
-                                  ...prev,
-                                  contact: {
-                                    ...prev.contact,
-                                    emails: newEmails,
-                                  },
-                                }));
-                              }}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="email@example.com"
-                            />
-                          </div>
-                        </div>
-                        <button
-                          onClick={() =>
-                            setSettings((prev) => ({
-                              ...prev,
-                              contact: {
-                                ...prev.contact,
-                                emails: prev.contact.emails.filter(
-                                  (_, i) => i !== index,
-                                ),
-                              },
-                            }))
-                          }
-                          className="mt-6 p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </motion.div>
-                    ))}
-                    {settings.contact.emails.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <Mail className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                        <p>No email addresses added yet</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Phones */}
-                <div className="p-8 bg-gradient-to-r from-blue-50/30 to-transparent">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-2 rounded-lg">
-                        <Phone className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-800">
-                          Phone Numbers
-                        </h2>
-                        <p className="text-gray-500 text-sm">
-                          Manage your contact phone numbers
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setSettings((prev) => ({
-                          ...prev,
+                  <div>
+                    <label className=" text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                      <Facebook className="w-4 h-4 text-blue-600" /> Facebook
+                    </label>
+                    <input
+                      type="url"
+                      value={settings.contact.social.facebook}
+                      onChange={(e) =>
+                        setSettings((p) => ({
+                          ...p,
                           contact: {
-                            ...prev.contact,
-                            phones: [
-                              ...prev.contact.phones,
-                              { label: "", number: "" },
-                            ],
+                            ...p.contact,
+                            social: {
+                              ...p.contact.social,
+                              facebook: e.target.value,
+                            },
                           },
                         }))
                       }
-                      className="flex items-center gap-2 bg-green-500 text-white px-4 py-2.5 rounded-xl hover:bg-green-600 transition-colors font-medium text-sm"
-                    >
-                      <Plus className="w-4 h-4" /> Add Phone
-                    </button>
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                      placeholder="https://facebook.com/..."
+                    />
                   </div>
-
-                  <div className="space-y-4">
-                    {settings.contact.phones.map((phone, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex gap-4 items-start bg-white p-4 rounded-xl border border-gray-100"
-                      >
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                              Label
-                            </label>
-                            <input
-                              type="text"
-                              value={phone.label}
-                              onChange={(e) => {
-                                const newPhones = [...settings.contact.phones];
-                                newPhones[index].label = e.target.value;
-                                setSettings((prev) => ({
-                                  ...prev,
-                                  contact: {
-                                    ...prev.contact,
-                                    phones: newPhones,
-                                  },
-                                }));
-                              }}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              placeholder="e.g., Main Office"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                              Phone Number
-                            </label>
-                            <input
-                              type="tel"
-                              value={phone.number}
-                              onChange={(e) => {
-                                const newPhones = [...settings.contact.phones];
-                                newPhones[index].number = e.target.value;
-                                setSettings((prev) => ({
-                                  ...prev,
-                                  contact: {
-                                    ...prev.contact,
-                                    phones: newPhones,
-                                  },
-                                }));
-                              }}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              placeholder="+1 (555) 123-4567"
-                            />
-                          </div>
-                        </div>
-                        <button
-                          onClick={() =>
-                            setSettings((prev) => ({
-                              ...prev,
-                              contact: {
-                                ...prev.contact,
-                                phones: prev.contact.phones.filter(
-                                  (_, i) => i !== index,
-                                ),
-                              },
-                            }))
-                          }
-                          className="mt-6 p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </motion.div>
-                    ))}
-                    {settings.contact.phones.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <Phone className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                        <p>No phone numbers added yet</p>
-                      </div>
-                    )}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                      <Twitter className="w-4 h-4 text-sky-500" /> Twitter / X
+                    </label>
+                    <input
+                      type="url"
+                      value={settings.contact.social.twitter}
+                      onChange={(e) =>
+                        setSettings((p) => ({
+                          ...p,
+                          contact: {
+                            ...p.contact,
+                            social: {
+                              ...p.contact.social,
+                              twitter: e.target.value,
+                            },
+                          },
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                      placeholder="https://twitter.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                      <Youtube className="w-4 h-4 text-red-500" /> YouTube
+                    </label>
+                    <input
+                      type="url"
+                      value={settings.contact.social.youtube}
+                      onChange={(e) =>
+                        setSettings((p) => ({
+                          ...p,
+                          contact: {
+                            ...p.contact,
+                            social: {
+                              ...p.contact.social,
+                              youtube: e.target.value,
+                            },
+                          },
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                      placeholder="https://youtube.com/@..."
+                    />
                   </div>
                 </div>
+              </section>
 
-                {/* Single address */}
-                <div className="p-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-2 rounded-lg">
-                        <MapPin className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-800">
-                          Business Address
-                        </h2>
-                        <p className="text-gray-500 text-sm">
-                          Manage your primary physical location
+              {/* Business Hours */}
+              <section>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                  Business Hours
+                </h3>
+                <div className="space-y-3">
+                  {[
+                    { key: "weekdays", label: "Weekdays", sub: "Mon – Fri" },
+                    { key: "saturday", label: "Saturday", sub: "Sat" },
+                    { key: "sunday", label: "Sunday", sub: "Sun" },
+                  ].map((d) => (
+                    <div
+                      key={d.key}
+                      className="flex flex-col sm:flex-row sm:items-center gap-3 bg-gray-50 p-3 rounded-lg"
+                    >
+                      <div className="w-24 sm:w-28">
+                        <p className="font-medium text-gray-800 text-sm">
+                          {d.label}
                         </p>
+                        <p className="text-xs text-gray-400">{d.sub}</p>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-gray-50 p-6 rounded-xl relative"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                            Address Line 1
-                          </label>
+                      <div className="flex items-center gap-3 flex-1">
+                        <label className="flex items-center gap-1.5 cursor-pointer text-sm text-gray-600">
                           <input
-                            type="text"
-                            value={settings.contact.address?.line1 || ""}
+                            type="checkbox"
+                            checked={settings.contact.hours[d.key].closed}
                             onChange={(e) =>
-                              setSettings((prev) => ({
-                                ...prev,
+                              setSettings((p) => ({
+                                ...p,
                                 contact: {
-                                  ...prev.contact,
-                                  address: {
-                                    ...prev.contact.address,
-                                    line1: e.target.value,
-                                  },
-                                },
-                              }))
-                            }
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="Street address"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                            Address Line 2
-                          </label>
-                          <input
-                            type="text"
-                            value={settings.contact.address?.line2 || ""}
-                            onChange={(e) =>
-                              setSettings((prev) => ({
-                                ...prev,
-                                contact: {
-                                  ...prev.contact,
-                                  address: {
-                                    ...prev.contact.address,
-                                    line2: e.target.value,
-                                  },
-                                },
-                              }))
-                            }
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="Apt, Suite, etc."
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                            City
-                          </label>
-                          <input
-                            type="text"
-                            value={settings.contact.address?.city || ""}
-                            onChange={(e) =>
-                              setSettings((prev) => ({
-                                ...prev,
-                                contact: {
-                                  ...prev.contact,
-                                  address: {
-                                    ...prev.contact.address,
-                                    city: e.target.value,
-                                  },
-                                },
-                              }))
-                            }
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="City"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                            State/Province
-                          </label>
-                          <input
-                            type="text"
-                            value={settings.contact.address?.state || ""}
-                            onChange={(e) =>
-                              setSettings((prev) => ({
-                                ...prev,
-                                contact: {
-                                  ...prev.contact,
-                                  address: {
-                                    ...prev.contact.address,
-                                    state: e.target.value,
-                                  },
-                                },
-                              }))
-                            }
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="State"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                            ZIP/Postal Code
-                          </label>
-                          <input
-                            type="text"
-                            value={settings.contact.address?.zip || ""}
-                            onChange={(e) =>
-                              setSettings((prev) => ({
-                                ...prev,
-                                contact: {
-                                  ...prev.contact,
-                                  address: {
-                                    ...prev.contact.address,
-                                    zip: e.target.value,
-                                  },
-                                },
-                              }))
-                            }
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="ZIP Code"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                            Country
-                          </label>
-                          <input
-                            type="text"
-                            value={settings.contact.address?.country || ""}
-                            onChange={(e) =>
-                              setSettings((prev) => ({
-                                ...prev,
-                                contact: {
-                                  ...prev.contact,
-                                  address: {
-                                    ...prev.contact.address,
-                                    country: e.target.value,
-                                  },
-                                },
-                              }))
-                            }
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="Country"
-                          />
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
-
-                {/* Social */}
-                <div className="p-8 bg-gradient-to-r from-purple-50/50 to-transparent">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="bg-gradient-to-br from-purple-500 to-violet-500 p-2 rounded-lg">
-                      <Instagram className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-800">
-                        Social Media Links
-                      </h2>
-                      <p className="text-gray-500 text-sm">
-                        Connect your social media profiles
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        <Instagram className="w-4 h-4 text-pink-500" />{" "}
-                        Instagram
-                      </label>
-                      <input
-                        type="url"
-                        value={settings.contact.social.instagram || ""}
-                        onChange={(e) =>
-                          setSettings((prev) => ({
-                            ...prev,
-                            contact: {
-                              ...prev.contact,
-                              social: {
-                                ...prev.contact.social,
-                                instagram: e.target.value,
-                              },
-                            },
-                          }))
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                        placeholder="https://instagram.com/..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        <Facebook className="w-4 h-4 text-blue-600" /> Facebook
-                      </label>
-                      <input
-                        type="url"
-                        value={settings.contact.social.facebook || ""}
-                        onChange={(e) =>
-                          setSettings((prev) => ({
-                            ...prev,
-                            contact: {
-                              ...prev.contact,
-                              social: {
-                                ...prev.contact.social,
-                                facebook: e.target.value,
-                              },
-                            },
-                          }))
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="https://facebook.com/..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        <Twitter className="w-4 h-4 text-sky-500" /> Twitter/X
-                      </label>
-                      <input
-                        type="url"
-                        value={settings.contact.social.twitter || ""}
-                        onChange={(e) =>
-                          setSettings((prev) => ({
-                            ...prev,
-                            contact: {
-                              ...prev.contact,
-                              social: {
-                                ...prev.contact.social,
-                                twitter: e.target.value,
-                              },
-                            },
-                          }))
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                        placeholder="https://twitter.com/..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        <Youtube className="w-4 h-4 text-sky-500" /> Youtube
-                      </label>
-                      <input
-                        type="url"
-                        value={settings.contact.social.youtube || ""}
-                        onChange={(e) =>
-                          setSettings((prev) => ({
-                            ...prev,
-                            contact: {
-                              ...prev.contact,
-                              social: {
-                                ...prev.contact.social,
-                                youtube: e.target.value,
-                              },
-                            },
-                          }))
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                        placeholder="https://youtube.com/..."
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Business hours */}
-                <div className="p-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="bg-gradient-to-br from-teal-500 to-cyan-500 p-2 rounded-lg">
-                      <Clock className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-800">
-                        Business Hours
-                      </h2>
-                      <p className="text-gray-500 text-sm">
-                        Set your operating hours
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 max-w-2xl">
-                    {["weekdays", "saturday", "sunday"].map((day) => (
-                      <div
-                        key={day}
-                        className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl"
-                      >
-                        <div className="w-28">
-                          <p className="font-semibold text-gray-800 capitalize">
-                            {day}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {day === "weekdays"
-                              ? "Mon - Fri"
-                              : day === "saturday"
-                                ? "Saturday"
-                                : "Sunday"}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-3 flex-1">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={settings.contact.hours[day].closed}
-                              onChange={(e) =>
-                                setSettings((prev) => ({
-                                  ...prev,
-                                  contact: {
-                                    ...prev.contact,
-                                    hours: {
-                                      ...prev.contact.hours,
-                                      [day]: {
-                                        ...prev.contact.hours[day],
-                                        closed: e.target.checked,
-                                      },
+                                  ...p.contact,
+                                  hours: {
+                                    ...p.contact.hours,
+                                    [d.key]: {
+                                      ...p.contact.hours[d.key],
+                                      closed: e.target.checked,
                                     },
                                   },
-                                }))
-                              }
-                              className="w-4 h-4 text-pink-500 rounded focus:ring-pink-500"
-                            />
-                            <span className="text-sm text-gray-600">
-                              Closed
-                            </span>
-                          </label>
+                                },
+                              }))
+                            }
+                            className="w-4 h-4 text-pink-500 rounded focus:ring-pink-500"
+                          />
+                          Closed
+                        </label>
+                      </div>
+                      {!settings.contact.hours[d.key].closed ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="time"
+                            value={settings.contact.hours[d.key].open}
+                            onChange={(e) =>
+                              setSettings((p) => ({
+                                ...p,
+                                contact: {
+                                  ...p.contact,
+                                  hours: {
+                                    ...p.contact.hours,
+                                    [d.key]: {
+                                      ...p.contact.hours[d.key],
+                                      open: e.target.value,
+                                    },
+                                  },
+                                },
+                              }))
+                            }
+                            className="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          />
+                          <span className="text-gray-400 text-sm">to</span>
+                          <input
+                            type="time"
+                            value={settings.contact.hours[d.key].close}
+                            onChange={(e) =>
+                              setSettings((p) => ({
+                                ...p,
+                                contact: {
+                                  ...p.contact,
+                                  hours: {
+                                    ...p.contact.hours,
+                                    [d.key]: {
+                                      ...p.contact.hours[d.key],
+                                      close: e.target.value,
+                                    },
+                                  },
+                                },
+                              }))
+                            }
+                            className="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                          />
                         </div>
-
-                        {!settings.contact.hours[day].closed ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="time"
-                              value={settings.contact.hours[day].open}
-                              onChange={(e) =>
-                                setSettings((prev) => ({
-                                  ...prev,
-                                  contact: {
-                                    ...prev.contact,
-                                    hours: {
-                                      ...prev.contact.hours,
-                                      [day]: {
-                                        ...prev.contact.hours[day],
-                                        open: e.target.value,
-                                      },
-                                    },
-                                  },
-                                }))
-                              }
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                            />
-                            <span className="text-gray-400">to</span>
-                            <input
-                              type="time"
-                              value={settings.contact.hours[day].close}
-                              onChange={(e) =>
-                                setSettings((prev) => ({
-                                  ...prev,
-                                  contact: {
-                                    ...prev.contact,
-                                    hours: {
-                                      ...prev.contact.hours,
-                                      [day]: {
-                                        ...prev.contact.hours[day],
-                                        close: e.target.value,
-                                      },
-                                    },
-                                  },
-                                }))
-                              }
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                            />
-                          </div>
-                        ) : (
-                          <span className="text-red-500 font-medium text-sm px-3 py-1.5 bg-red-50 rounded-lg">
-                            Closed
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Email tab */}
-            {/* {activeTab === 'email' && (
-              <div className="divide-y divide-gray-100">
-                <div className="p-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="bg-gradient-to-br from-purple-500 to-violet-500 p-2 rounded-lg"><Mail className="w-5 h-5 text-white" /></div>
-                    <div><h2 className="text-xl font-bold text-gray-800">Email Configuration</h2><p className="text-gray-500 text-sm">Configure email sender and notification settings</p></div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
-                    <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-6 rounded-xl border border-purple-100">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-purple-100 p-2 rounded-lg"><Mail className="w-5 h-5 text-purple-600" /></div>
-                        <div><h3 className="font-semibold text-gray-800">From Address</h3><p className="text-xs text-gray-500">Visible sender email for customers</p></div>
-                      </div>
-                      <input type="email" value={settings.email.from || ''} onChange={(e) => setSettings(prev => ({ ...prev, email: { ...prev.email, from: e.target.value } }))} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white" placeholder="noreply@example.com" />
-                      <p className="text-xs text-gray-500 mt-3">This email will appear as the sender for automated emails</p>
+                      ) : (
+                        <span className="text-xs font-medium text-red-500 bg-red-50 px-3 py-1.5 rounded-lg">
+                          Closed
+                        </span>
+                      )}
                     </div>
-
-                    <div className="bg-gradient-to-br from-pink-50 to-rose-50 p-6 rounded-xl border border-pink-100">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-pink-100 p-2 rounded-lg"><Bell className="w-5 h-5 text-pink-600" /></div>
-                        <div><h3 className="font-semibold text-gray-800">Admin Notifications</h3><p className="text-xs text-gray-500">Receive order and system notifications</p></div>
-                      </div>
-                      <input type="email" value={settings.email.admin || ''} onChange={(e) => setSettings(prev => ({ ...prev, email: { ...prev.email, admin: e.target.value } }))} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white" placeholder="admin@example.com" />
-                      <p className="text-xs text-gray-500 mt-3">Admin will receive notifications for new orders, low stock, etc.</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              </div>
-            )} */}
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Footer Save */}
-        <div className="flex justify-end">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white px-10 py-4 rounded-xl hover:from-pink-600 hover:to-pink-700 transition-all shadow-lg disabled:opacity-70 font-semibold text-lg"
-          >
-            {saving ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>{" "}
-                Saving Changes...
-              </>
-            ) : (
-              <>
-                <Save className="w-5 h-5" /> Save All Settings
-              </>
-            )}
-          </button>
+              </section>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Bottom Action Bar */}
+      <div className="bg-white rounded-lg shadow p-4 flex flex-col sm:flex-row justify-end gap-3">
+        <button
+          onClick={() => setSettings(defaultSettings)}
+          className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all disabled:opacity-50 text-sm font-medium shadow"
+        >
+          {saving ? (
+            <Loader className="w-4 h-4 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
+          {saving ? "Saving..." : "Save Changes"}
+        </button>
       </div>
     </div>
   );
