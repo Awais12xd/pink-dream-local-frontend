@@ -1025,12 +1025,12 @@ const AdminPanel = () => {
                     }
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                    [
+                    ([
                       "products",
                       "add-product",
                       "edit-product",
                       "product-details",
-                    ].includes(activeTab)
+                    ].includes(activeTab) || ecommerceOpen)
                       ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-200"
                       : "text-gray-700 hover:bg-gray-100"
                   } ${sidebarCollapsed ? "justify-center" : "justify-between"}`}
@@ -1214,7 +1214,7 @@ const AdminPanel = () => {
                     }
                   }}
                   className={`w-full flex gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                    ["roles", "team"].includes(activeTab)
+                    (["roles", "team"].includes(activeTab) || roleOpen)
                       ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-200"
                       : "text-gray-700 hover:bg-gray-100"
                   } ${sidebarCollapsed ? "justify-center" : "justify-between"}`}
@@ -1289,9 +1289,9 @@ const AdminPanel = () => {
                     }
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                    ["blogs", "add-blog", "edit-blog", "blog-details"].includes(
+                    (["blogs", "add-blog", "edit-blog", "blog-details"].includes(
                       activeTab,
-                    )
+                    ) || blogOpen)
                       ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-200"
                       : "text-gray-700 hover:bg-gray-100"
                   } ${sidebarCollapsed ? "justify-center" : "justify-between"}`}
