@@ -2,6 +2,7 @@
 import { PayPalButtons, usePayPalScriptReducer } from "@paypal/react-paypal-js";
 import { useState } from "react";
 import { toast } from "react-toastify";
+import { usePayPal } from "../context/PayPalContext";
 
 export default function PayPalButton({
   amount,
@@ -14,6 +15,16 @@ export default function PayPalButton({
 }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [{ isPending }] = usePayPalScriptReducer();
+
+const { ready } = usePayPal();
+
+  if (!ready) {
+    return (
+      <div className="p-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm">
+        PayPal is not configured right now.
+      </div>
+    );
+  }
 
   const mapPayPalError = (res, data, fallback) => {
     const msg = data?.message || data?.error || fallback;
@@ -140,6 +151,8 @@ export default function PayPalButton({
       </div>
     );
   }
+
+
 
   return (
     <div className="space-y-4">

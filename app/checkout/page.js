@@ -22,10 +22,10 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import { getImageSrc, handleImageError } from "../utils/imageUtils";
-toast
+toast;
 const DEFAULT_PAYMENT_METHODS = {
-  stripe: { enabled: true },
-  paypal: { enabled: true },
+  stripe: { enabled: false },
+  paypal: { enabled: false },
   cod: { enabled: true },
   bankTransfer: { enabled: false, instructions: "" },
 };
@@ -155,8 +155,11 @@ function CheckoutContent() {
       }
 
       await clearCart();
-      if(paymentData.method !== "cod" && paymentData.method !== "bankTransfer"){
-      toast.success("🎉 Payment successful! Order confirmed.");
+      if (
+        paymentData.method !== "cod" &&
+        paymentData.method !== "bankTransfer"
+      ) {
+        toast.success("🎉 Payment successful! Order confirmed.");
       }
 
       const successOrderId = order?.orderId || order?._id;
@@ -633,4 +636,3 @@ function CheckoutContent() {
 export default function CheckoutPage() {
   return <CheckoutContent />;
 }
-
