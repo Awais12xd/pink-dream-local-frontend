@@ -1,10 +1,12 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
+import dynamic from "next/dynamic";
 import { motion } from 'framer-motion'
 import { CreditCard, CheckCircle, Landmark, Banknote, Loader2 } from 'lucide-react'
 import { toast } from 'react-toastify'
-import CheckoutForm from './CheckoutForm'
-import PayPalButton from './PayPalButton'
+
+const CheckoutForm = dynamic(() => import("./CheckoutForm"));
+const PayPalButton = dynamic(() => import("./PayPalButton"));
 
 const DEFAULT_METHODS = {
   stripe: { enabled: true },

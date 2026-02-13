@@ -57,6 +57,7 @@ import {
 import dynamic from "next/dynamic";
 // import SettingsManager from "./components/SettingsManager";
 import { SettingContext } from "../context/SettingContext";
+import { NotificationProvider } from "../context/NotificationContext";
 import Image from "next/image";
 import Authorized from "../components/Authorized";
 import NotificationBell from "./components/NotificationBell";
@@ -890,6 +891,7 @@ const AdminPanel = () => {
 
   // MAIN JSX RETURN
   return (
+    <NotificationProvider>
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-pink-50/20 to-rose-50/30">
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
@@ -1658,6 +1660,7 @@ const AdminPanel = () => {
         </main>
       </div>
     </div>
+    </NotificationProvider>
   );
 };
 

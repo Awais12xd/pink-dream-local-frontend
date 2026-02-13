@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import Newsletter from "./components/Newsletter";
 import { useAuth } from "./context/AuthContext";
+import Image from "next/image";
 
 // API Configuration
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
@@ -97,37 +98,32 @@ export default function Home() {
   const fetchAllData = async () => {
     try {
       setLoading(true);
+      const fetchJson = async (url) => {
+        const res = await fetch(url);
+        return res.json();
+      };
 
-      // Fetch featured products
-      const featuredResponse = await fetch(
-        `${API_BASE}/featured-products?limit=4`,
-      );
-      const featuredData = await featuredResponse.json();
+      const [featuredData, categoriesData, statsData] = await Promise.all([
+        fetchJson(`${API_BASE}/featured-products?limit=4`).catch(() => null),
+        fetchJson(`${API_BASE}/categories?active=true`).catch(() => null),
+        fetchJson(`${API_BASE}/dashboard/stats`).catch(() => null),
+      ]);
 
-      // If no featured products, fetch recent products
       let productsToShow = [];
-      if (featuredData.success && featuredData.products.length > 0) {
+      if (featuredData?.success && featuredData?.products?.length > 0) {
         productsToShow = featuredData.products;
       } else {
-        // Fallback to recent products
-        const allProductsResponse = await fetch(
+        const allProductsData = await fetchJson(
           `${API_BASE}/allproducts?limit=4&sortBy=date&sortOrder=desc`,
-        );
-        const allProductsData = await allProductsResponse.json();
-        if (allProductsData.success) {
+        ).catch(() => null);
+        if (allProductsData?.success) {
           productsToShow = allProductsData.products;
         }
       }
 
       setFeaturedProducts(productsToShow);
 
-      // Fetch categories with dynamic + static logic
-      const categoriesResponse = await fetch(
-        `${API_BASE}/categories?active=true`,
-      );
-      const categoriesData = await categoriesResponse.json();
-
-      if (categoriesData.success && categoriesData.categories) {
+      if (categoriesData?.success && categoriesData?.categories) {
         // Extract category names from dynamic categories
         const dynamicCategoryNames = categoriesData.categories
           .map((cat) => {
@@ -166,12 +162,11 @@ export default function Home() {
         setDynamicCategories([]);
       }
 
-      // Fetch dashboard stats
-      const statsResponse = await fetch(`${API_BASE}/dashboard/stats`);
-      const statsData = await statsResponse.json();
-      if (statsData.success) {
+      if (statsData?.success) {
         setStats(statsData.stats);
       }
+
+      setError(null);
     } catch (error) {
       console.error("Error fetching data:", error);
       // Fallback to static categories on error
@@ -385,11 +380,16 @@ export default function Home() {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               <div className="relative z-10">
-                <img
-                  src="/assets/hero-img.jpeg"
-                  alt="Fashion Model"
-                  className="rounded-2xl shadow-2xl"
-                />
+                <div className="relative rounded-2xl shadow-2xl overflow-hidden aspect-[4/5]">
+                  <Image
+                    src="/assets/hero-img.jpeg"
+                    alt="Fashion Model"
+                    fill
+                    priority
+                    sizes="(max-width: 768px) 90vw, (max-width: 1280px) 50vw, 42vw"
+                    className="object-cover"
+                  />
+                </div>
                 <motion.div
                   className="absolute -top-4 -left-4 w-32 h-32 bg-pink-200 rounded-full opacity-70"
                   animate={{
@@ -558,12 +558,14 @@ export default function Home() {
                         >
                           {/* Circle Container */}
                           <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden shadow-xl ring-4 ring-white group-hover:ring-pink-200 transition-all duration-300">
-                            <img
+                            <Image
                               src={
                                 categoryImages[category] || "/assets/shop1.avif"
                               }
                               alt={category}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              fill
+                              sizes="(max-width: 768px) 96px, 112px"
+                              className="object-cover group-hover:scale-110 transition-transform duration-300"
                             />
                             <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 to-purple-500/20 group-hover:from-pink-500/40 group-hover:to-purple-500/40 transition-all duration-300" />
 
@@ -650,10 +652,12 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <img
+                <Image
                   src={testimonial.avatar}
                   alt={testimonial.name}
-                  className="w-16 h-16 rounded-full mx-auto mb-4"
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 rounded-full mx-auto mb-4 object-cover"
                 />
                 <div className="flex justify-center mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (

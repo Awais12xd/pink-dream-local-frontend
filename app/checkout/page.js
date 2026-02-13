@@ -20,15 +20,18 @@ import Footer from "../components/Footer";
 import PaymentSelector from "../components/PaymentSelector";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { StripeProvider } from "../context/StripeContext";
+import { PayPalProvider } from "../context/PayPalContext";
 import { toast } from "react-toastify";
 import { getImageSrc, handleImageError } from "../utils/imageUtils";
-toast;
+
 const DEFAULT_PAYMENT_METHODS = {
   stripe: { enabled: false },
   paypal: { enabled: false },
   cod: { enabled: true },
   bankTransfer: { enabled: false, instructions: "" },
 };
+
 
 function CheckoutContent() {
   const router = useRouter();
@@ -155,11 +158,8 @@ function CheckoutContent() {
       }
 
       await clearCart();
-      if (
-        paymentData.method !== "cod" &&
-        paymentData.method !== "bankTransfer"
-      ) {
-        toast.success("🎉 Payment successful! Order confirmed.");
+      if(paymentData.method !== "cod" && paymentData.method !== "bankTransfer"){
+      toast.success("🎉 Payment successful! Order confirmed.");
       }
 
       const successOrderId = order?.orderId || order?._id;
@@ -634,5 +634,11 @@ function CheckoutContent() {
 }
 
 export default function CheckoutPage() {
-  return <CheckoutContent />;
+  return (
+    <StripeProvider>
+      <PayPalProvider>
+        <CheckoutContent />
+      </PayPalProvider>
+    </StripeProvider>
+  );
 }

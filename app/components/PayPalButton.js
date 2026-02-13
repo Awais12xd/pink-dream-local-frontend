@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { usePayPal } from "../context/PayPalContext";
 
-export default function PayPalButton({
+function PayPalButtonInner({
   amount,
   orderId,
   userId,
@@ -16,16 +16,6 @@ export default function PayPalButton({
   const [isProcessing, setIsProcessing] = useState(false);
   const [{ isPending }] = usePayPalScriptReducer();
 
-const { ready } = usePayPal();
-
-  if (!ready) {
-    return (
-      <div className="p-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm">
-        PayPal is not configured right now.
-      </div>
-    );
-  }
-
   const mapPayPalError = (res, data, fallback) => {
     const msg = data?.message || data?.error || fallback;
     if (res?.status === 403 || /disabled/i.test(msg)) {
@@ -35,12 +25,10 @@ const { ready } = usePayPal();
     return msg;
   };
 
-  const createOrder = async (data, actions) => {
+  const createOrder = async () => {
     setIsProcessing(true);
 
     try {
-      console.log("🔵 Creating PayPal order...", { amount, orderId, userId });
-
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/payment/paypal/create-order`,
         {
@@ -53,24 +41,21 @@ const { ready } = usePayPal();
       const result = await response.json().catch(() => ({}));
 
       if (result.success) {
-        console.log("✅ PayPal order created:", result.orderID);
         return result.orderID;
-      } else {
-        throw new Error(
-          mapPayPalError(response, result, "Failed to create PayPal order"),
-        );
       }
+
+      throw new Error(
+        mapPayPalError(response, result, "Failed to create PayPal order"),
+      );
     } catch (error) {
-      console.error("❌ PayPal create order error:", error);
       toast.error("Failed to initialize PayPal payment");
       setIsProcessing(false);
       throw error;
     }
   };
 
-  const onApprove = async (data, actions) => {
+  const onApprove = async (data) => {
     try {
-      console.log("🔵 PayPal payment approved, capturing...", data.orderID);
       toast.info("Processing your PayPal payment...");
 
       const response = await fetch(
@@ -111,16 +96,13 @@ const { ready } = usePayPal();
       const result = await response.json().catch(() => ({}));
 
       if (result.success) {
-        console.log("✅ PayPal payment captured successfully");
-        toast.success("🎉 PayPal payment successful!");
+        toast.success("PayPal payment successful.");
         onSuccess?.(result.order, result.paypalDetails);
-      } else {
-        throw new Error(
-          mapPayPalError(response, result, "Payment capture failed"),
-        );
+        return;
       }
+
+      throw new Error(mapPayPalError(response, result, "Payment capture failed"));
     } catch (error) {
-      console.error("❌ PayPal capture error:", error);
       toast.error("PayPal payment failed: " + error.message);
       onError?.(error);
     } finally {
@@ -128,14 +110,12 @@ const { ready } = usePayPal();
     }
   };
 
-  const onCancel = (data) => {
-    console.log("🔵 PayPal payment cancelled");
+  const onCancel = () => {
     toast.info("PayPal payment was cancelled");
     setIsProcessing(false);
   };
 
   const onErrorHandler = (err) => {
-    console.error("❌ PayPal error:", err);
     toast.error("PayPal payment error occurred");
     onError?.(err);
     setIsProcessing(false);
@@ -145,14 +125,10 @@ const { ready } = usePayPal();
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-blue-600 font-medium">
-          Loading PayPal...
-        </span>
+        <span className="ml-3 text-blue-600 font-medium">Loading PayPal...</span>
       </div>
     );
   }
-
-
 
   return (
     <div className="space-y-4">
@@ -160,9 +136,7 @@ const { ready } = usePayPal();
         <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10 rounded-lg">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-blue-600 font-medium">
-              Processing PayPal payment...
-            </p>
+            <p className="text-blue-600 font-medium">Processing PayPal payment...</p>
           </div>
         </div>
       )}
@@ -184,10 +158,22 @@ const { ready } = usePayPal();
       />
 
       <div className="text-center">
-        <p className="text-sm text-gray-600 flex items-center justify-center">
-          🔒 <span className="ml-1">Secure payment • Stay on this page</span>
-        </p>
+        <p className="text-sm text-gray-600">Secure payment. Stay on this page.</p>
       </div>
     </div>
   );
+}
+
+export default function PayPalButton(props) {
+  const { ready } = usePayPal();
+
+  if (!ready) {
+    return (
+      <div className="p-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm">
+        PayPal is not configured right now.
+      </div>
+    );
+  }
+
+  return <PayPalButtonInner {...props} />;
 }

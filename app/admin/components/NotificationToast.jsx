@@ -16,6 +16,6 @@ export default function NotificationToast({ title, message, severity }) {
         </div>
         {message && <div className="notif-toast__msg">{message}</div>}
       </div>
-    </div>
+    </div> 
   );
 }
