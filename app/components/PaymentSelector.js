@@ -2,7 +2,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from "next/dynamic";
 import { motion } from 'framer-motion'
-import { CreditCard, CheckCircle, Landmark, Banknote, Loader2 } from 'lucide-react'
+import {
+  CreditCard,
+  CheckCircle,
+  Landmark,
+  Banknote,
+  Loader2,
+  Upload,
+  X,
+  AlertCircle,
+} from 'lucide-react'
 import { toast } from 'react-toastify'
 
 const CheckoutForm = dynamic(() => import("./CheckoutForm"));
@@ -14,6 +23,9 @@ const DEFAULT_METHODS = {
   cod: { enabled: false },
   bankTransfer: { enabled: false, instructions: "" },
 }
+
+const RECEIPT_MAX_SIZE_MB = 5
+const RECEIPT_ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 
 export default function PaymentSelector({
   amount,
@@ -29,13 +41,16 @@ export default function PaymentSelector({
 }) {
   const methods = paymentMethods || DEFAULT_METHODS
   const [offlineLoading, setOfflineLoading] = useState(false)
+  const [selectedMethod, setSelectedMethod] = useState('')
+
+  const [bankReceiptFile, setBankReceiptFile] = useState(null)
+  const [bankReceiptPreview, setBankReceiptPreview] = useState('')
+  const [bankReceiptError, setBankReceiptError] = useState('')
 
   const enabledMethods = useMemo(() => {
     const order = ['stripe', 'paypal', 'cod', 'bankTransfer']
     return order.filter((k) => methods?.[k]?.enabled)
   }, [methods])
-
-  const [selectedMethod, setSelectedMethod] = useState('')
 
   useEffect(() => {
     if (!enabledMethods.length) {
@@ -47,14 +62,100 @@ export default function PaymentSelector({
     }
   }, [enabledMethods, selectedMethod])
 
-  const createOfflineOrder = async (method) => {
-    if(!shippingAddress.name || !shippingAddress.email || !shippingAddress.phone || !shippingAddress.address || !shippingAddress.city || !shippingAddress.state || !shippingAddress.zipCode || !shippingAddress.country ){
-        toast.error("Fill all the required fields");
-        return;
+  useEffect(() => {
+    if (!bankReceiptFile) {
+      setBankReceiptPreview('')
+      return
     }
+    const objectUrl = URL.createObjectURL(bankReceiptFile)
+    setBankReceiptPreview(objectUrl)
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [bankReceiptFile])
+
+  const validateShippingAddress = () => {
+    const requiredFields = [
+      "name",
+      "email",
+      "phone",
+      "address",
+      "city",
+      "state",
+      "zipCode",
+      "country",
+    ]
+
+    return requiredFields.every((field) =>
+      String(shippingAddress?.[field] || "").trim().length > 0,
+    )
+  }
+
+  const handleBankReceiptChange = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!RECEIPT_ALLOWED_TYPES.includes(file.type)) {
+      setBankReceiptError('Only JPG, PNG, and WEBP files are allowed.')
+      setBankReceiptFile(null)
+      return
+    }
+
+    if (file.size > RECEIPT_MAX_SIZE_MB * 1024 * 1024) {
+      setBankReceiptError(`Receipt image must be <= ${RECEIPT_MAX_SIZE_MB}MB.`)
+      setBankReceiptFile(null)
+      return
+    }
+
+    setBankReceiptError('')
+    setBankReceiptFile(file)
+  }
+
+  const resetBankReceipt = () => {
+    setBankReceiptFile(null)
+    setBankReceiptError('')
+  }
+
+  const uploadBankTransferReceipt = async ({
+    orderIdentifier,
+    receiptUploadToken,
+  }) => {
+    const formData = new FormData()
+    formData.append("receiptImage", bankReceiptFile)
+    formData.append("receiptUploadToken", receiptUploadToken)
+
+    const uploadRes = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/payment/offline/upload-receipt/${orderIdentifier}`,
+      {
+        method: "POST",
+        body: formData,
+      },
+    )
+
+    const uploadData = await uploadRes.json().catch(() => ({}))
+    if (!uploadRes.ok || !uploadData.success) {
+      throw new Error(uploadData.message || "Failed to upload bank transfer receipt")
+    }
+
+    return uploadData
+  }
+
+  const createOfflineOrder = async (method) => {
+    if (!validateShippingAddress()) {
+      toast.error("Fill all required shipping fields.")
+      return
+    }
+
+    const isBankTransfer = method === 'bankTransfer'
+
+    if (isBankTransfer && !bankReceiptFile) {
+      setBankReceiptError("Receipt image is required for bank transfer.")
+      toast.error("Please upload your transfer receipt.")
+      return
+    }
+
     setOfflineLoading(true)
+
     try {
-      const paymentMethod = method === 'bankTransfer' ? 'bank_transfer' : 'cod'
+      const paymentMethod = isBankTransfer ? 'bank_transfer' : 'cod'
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/offline/create-order`, {
         method: 'POST',
@@ -81,8 +182,34 @@ export default function PaymentSelector({
         throw new Error(data.message || 'Failed to place offline order')
       }
 
-      toast.success('Order placed successfully')
-      onSuccess?.(data.order, { id: data?.payment?.reference || `offline_${paymentMethod}` , method : selectedMethod })
+      let finalOrder = data.order
+
+      if (isBankTransfer) {
+        const orderIdentifier = data?.order?._id || data?.order?.orderId
+        const uploadToken = data?.payment?.receiptUploadToken
+
+        if (!orderIdentifier || !uploadToken) {
+          throw new Error("Unable to start receipt upload. Please try again.")
+        }
+
+        const uploadData = await uploadBankTransferReceipt({
+          orderIdentifier,
+          receiptUploadToken: uploadToken,
+        })
+
+        finalOrder = uploadData.order || finalOrder
+        toast.success("Bank transfer proof submitted. Payment verification is pending.")
+      } else {
+        toast.success('Order placed successfully')
+      }
+
+      onSuccess?.(
+        finalOrder,
+        {
+          id: data?.payment?.reference || `offline_${paymentMethod}`,
+          method: selectedMethod,
+        },
+      )
     } catch (err) {
       toast.error(err.message || 'Failed to place order')
       onError?.(err)
@@ -121,7 +248,7 @@ export default function PaymentSelector({
     },
     bankTransfer: {
       title: 'Bank Transfer',
-      desc: 'Manual transfer to bank account',
+      desc: 'Transfer manually and upload your receipt',
       icon: <Landmark className="w-6 h-6" />,
       activeCls: 'border-amber-500 bg-amber-50 ring-2 ring-amber-500 ring-opacity-20',
       idleCls: 'border-gray-300 hover:border-amber-300 bg-white',
@@ -228,22 +355,86 @@ export default function PaymentSelector({
           </div>
         )}
 
-        {/* {selectedMethod === 'bankTransfer' && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-amber-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Bank Transfer</h3>
-            <p className="text-sm text-gray-700 whitespace-pre-line mb-4">
-              {methods?.bankTransfer?.instructions || 'Bank instructions are not configured.'}
-            </p>
+        {selectedMethod === 'bankTransfer' && (
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-amber-200 space-y-4">
+            <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+              <AlertCircle className="w-5 h-5 text-amber-700 mt-0.5" />
+              <p className="text-sm text-amber-800">
+                Transfer exactly <span className="font-semibold">${Number(amount || 0).toFixed(2)}</span> and upload receipt proof.
+                Admin will verify before marking payment as succeeded.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Bank Transfer Details</h3>
+              <div className="text-sm text-gray-700 whitespace-pre-line rounded-lg border border-gray-200 bg-gray-50 p-4">
+                {methods?.bankTransfer?.instructions || 'Bank instructions are not configured.'}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold text-gray-800 mb-2">Upload Transfer Receipt</h4>
+              <div className="rounded-lg border-2 border-dashed border-gray-300 p-4 bg-white">
+                {!bankReceiptFile ? (
+                  <div className="text-center space-y-2">
+                    <p className="text-sm text-gray-600">
+                      JPG, PNG, WEBP (max {RECEIPT_MAX_SIZE_MB}MB)
+                    </p>
+                    <input
+                      id="bank-receipt-file"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleBankReceiptChange}
+                    />
+                    <label
+                      htmlFor="bank-receipt-file"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 cursor-pointer"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Upload Receipt
+                    </label>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {bankReceiptPreview ? (
+                      <img
+                        src={bankReceiptPreview}
+                        alt="Bank transfer receipt preview"
+                        className="w-full max-h-64 object-contain rounded-lg border border-gray-200 bg-gray-50"
+                      />
+                    ) : null}
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-gray-600 truncate">
+                        {bankReceiptFile.name} ({(bankReceiptFile.size / 1024 / 1024).toFixed(2)} MB)
+                      </p>
+                      <button
+                        type="button"
+                        onClick={resetBankReceipt}
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100"
+                      >
+                        <X className="w-3 h-3" />
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {bankReceiptError ? (
+                <p className="text-sm text-red-600 mt-2">{bankReceiptError}</p>
+              ) : null}
+            </div>
+
             <button
               onClick={() => createOfflineOrder('bankTransfer')}
-              disabled={offlineLoading || isLoading}
+              disabled={offlineLoading || isLoading || !bankReceiptFile}
               className="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {offlineLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              Place Bank Transfer Order
+              Submit Proof & Place Bank Transfer Order
             </button>
           </div>
-        )} */}
+        )}
       </motion.div>
     </div>
   )

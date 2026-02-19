@@ -5,6 +5,9 @@ import { Heart, ShoppingBag, Loader2, Eye } from 'lucide-react'
 import Link from 'next/link'
 import { useWishlist } from '../context/WishlistContext'
 import { useCart } from '../context/CartContext'
+import { toast } from 'react-toastify'
+import { useRouter, useSearchParams } from "next/navigation"
+import { useAuth } from '../context/AuthContext'
 
 // Fallback image URL
 const FALLBACK_IMAGE = 'https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams'
@@ -45,7 +48,9 @@ const getImageSrc = (imageSrc, fallback = FALLBACK_IMAGE) => {
 }
 
 const ProductCard = ({ product }) => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false)
+  const router = useRouter();
   const [addingToCart, setAddingToCart] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [imageError, setImageError] = useState(false)
@@ -150,6 +155,15 @@ const ProductCard = ({ product }) => {
   const itemQuantity = getItemQuantity ? getItemQuantity(product.id) : 0
   const inCart = isInCart ? isInCart(product.id) : false
 
+  const handleDetailClick = () => {
+    if (!user ) {
+      toast.info("Login to see the product details!")
+      return;
+    }
+    router.push(`/product/${product.id}`);
+    return;
+  }
+
   return (
     <div 
       className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-pink-200 hover:-translate-y-2"
@@ -158,7 +172,7 @@ const ProductCard = ({ product }) => {
     >
       {/* Image Container */}
       <div className="relative overflow-hidden rounded-t-3xl">
-        <Link href={productUrl}>
+        <div onClick={handleDetailClick}>
           <div className="aspect-[4/5] relative cursor-pointer">
             {!imageError ? (
               <img
@@ -180,7 +194,7 @@ const ProductCard = ({ product }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
             <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
           </div>
-        </Link>
+        </div>
 
         {/* Badges */}
         <div className="absolute top-4 left-4 z-10 space-y-2">
@@ -271,11 +285,11 @@ const ProductCard = ({ product }) => {
           </div>
         )}
 
-        <Link href={productUrl}>
+        <button onClick={handleDetailClick}>
           <h3 className="font-bold text-gray-800 hover:text-pink-600 transition-colors duration-200 line-clamp-2 mb-2 min-h-[2.5rem] text-base leading-snug cursor-pointer">
             {product.name}
           </h3>
-        </Link>
+        </button>
 
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
@@ -320,12 +334,13 @@ const ProductCard = ({ product }) => {
           )}
         </button>
 
-        <Link 
-          href={productUrl}
+        <button 
+          // href={productUrl}
+          onClick={handleDetailClick}
           className="block w-full text-center mt-2 text-sm text-pink-600 hover:text-pink-700 font-medium transition-colors duration-200"
         >
           View Details →
-        </Link>
+        </button>
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Percent,
   Plus,
@@ -23,13 +23,23 @@ import {
   Clock,
   Target,
   Award,
+  Loader
 } from "lucide-react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import Authorized from "@/app/components/Authorized";
-
+import { toast } from "react-toastify";
 const PromoCodeManager = () => {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
   const token = localStorage.getItem("staffUserToken");
+  const getAuthHeaders = () => {
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("staffUserToken")
+        : null;
+
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   // States
   const [promoCodes, setPromoCodes] = useState([]);
@@ -40,6 +50,10 @@ const PromoCodeManager = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [stats, setStats] = useState(null);
+
+  const [selectedPromoCodeIds, setSelectedPromoCodeIds] = useState([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const selectAllRef = useRef(null);
 
   // Form state for new/edit promo code
   const [formData, setFormData] = useState({
@@ -57,6 +71,19 @@ const PromoCodeManager = () => {
     isActive: true,
   });
 
+  const currentPageIds = useMemo(
+    () => promoCodes.map((b) => b._id),
+    [promoCodes],
+  );
+
+  const selectedOnPageCount = useMemo(
+    () => promoCodes.filter((b) => selectedPromoCodeIds.includes(b._id)).length,
+    [promoCodes, selectedPromoCodeIds],
+  );
+
+  const allOnPageSelected =
+    promoCodes.length > 0 && selectedOnPageCount === promoCodes.length;
+
   // Fetch promo codes
   const fetchPromoCodes = async () => {
     try {
@@ -65,7 +92,7 @@ const PromoCodeManager = () => {
         `${API_BASE}/api/promo-codes/all?status=${filterStatus}&search=${searchTerm}`,
         {
           headers: {
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         },
       );
@@ -86,7 +113,7 @@ const PromoCodeManager = () => {
     try {
       const response = await fetch(`${API_BASE}/api/promo-codes/stats`, {
         headers: {
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
@@ -111,7 +138,7 @@ const PromoCodeManager = () => {
     try {
       // Validate dates
       if (new Date(formData.validUntil) <= new Date(formData.validFrom)) {
-        alert("End date must be after start date");
+        toast.error("End date must be after start date");
         return;
       }
 
@@ -119,7 +146,7 @@ const PromoCodeManager = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           ...formData,
@@ -142,12 +169,13 @@ const PromoCodeManager = () => {
         resetForm();
         fetchPromoCodes();
         fetchStats();
+        toast.success("PromoCode Created Succesfully!");
       } else {
-        alert(data.message || "Failed to create promo code");
+        toast.error(data.message || "Failed to create promo code");
       }
     } catch (error) {
       console.error("Error creating promo code:", error);
-      alert("Failed to create promo code");
+      toast.error("Failed to create promo code");
     }
   };
 
@@ -162,7 +190,7 @@ const PromoCodeManager = () => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             ...formData,
@@ -186,12 +214,13 @@ const PromoCodeManager = () => {
         setSelectedPromo(null);
         resetForm();
         fetchPromoCodes();
+        toast.success(data.message || "PromoCode updated!");
       } else {
-        alert(data.message || "Failed to update promo code");
+        toast.error(data.message || "Failed to update promo code");
       }
     } catch (error) {
       console.error("Error updating promo code:", error);
-      alert("Failed to update promo code");
+      toast.error("Failed to update promo code");
     }
   };
 
@@ -202,9 +231,9 @@ const PromoCodeManager = () => {
     try {
       const response = await fetch(`${API_BASE}/api/promo-codes/delete/${id}`, {
         method: "DELETE",
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await response.json();
@@ -212,12 +241,72 @@ const PromoCodeManager = () => {
       if (data.success) {
         fetchPromoCodes();
         fetchStats();
+        toast.success(data.message || "PromoCode deleted successfully");
       } else {
-        alert(data.message || "Failed to delete promo code");
+        toast.error(data.message || "Failed to delete promo code");
       }
     } catch (error) {
       console.error("Error deleting promo code:", error);
-      alert("Failed to delete promo code");
+      toast.error("Failed to delete promo code");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedPromoCodeIds.length === 0) return;
+
+    const confirmed = window.confirm(
+      `Delete ${selectedPromoCodeIds.length} selected PromoCode(s)? This action cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setBulkDeleting(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/promo-codes/bulk-delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ ids: selectedPromoCodeIds }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        toast.error(data.message || "Failed to bulk delete PromoCode");
+        return;
+      }
+
+      setSelectedPromoCodeIds([]);
+      await fetchPromoCodes();
+      toast.success(data.message || "Bulk delete completed");
+    } catch (error) {
+      console.error("Error bulk deleting PromoCode:", error);
+      toast.error("Failed to bulk delete PromoCode");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const handleSelectOne = (promoId, checked) => {
+    if (checked) {
+      setSelectedPromoCodeIds((prev) =>
+        Array.from(new Set([...prev, promoId])),
+      );
+    } else {
+      setSelectedPromoCodeIds((prev) => prev.filter((id) => id !== promoId));
+    }
+  };
+
+  const handleSelectAllCurrentPage = (checked) => {
+    if (checked) {
+      setSelectedPromoCodeIds((prev) =>
+        Array.from(new Set([...prev, ...currentPageIds])),
+      );
+    } else {
+      setSelectedPromoCodeIds((prev) =>
+        prev.filter((id) => !currentPageIds.includes(id)),
+      );
     }
   };
 
@@ -229,8 +318,8 @@ const PromoCodeManager = () => {
         {
           method: "PATCH",
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         },
       );
 
@@ -238,6 +327,7 @@ const PromoCodeManager = () => {
 
       if (data.success) {
         fetchPromoCodes();
+        toast.success("PromoCode status updated!");
       }
     } catch (error) {
       console.error("Error toggling status:", error);
@@ -247,8 +337,14 @@ const PromoCodeManager = () => {
   // Copy promo code to clipboard
   const handleCopyCode = (code) => {
     navigator.clipboard.writeText(code);
-    alert(`Copied: ${code}`);
+    toast.success(`Copied: ${code}`);
   };
+
+  useEffect(() => {
+    if (!selectAllRef.current) return;
+    selectAllRef.current.indeterminate =
+      selectedOnPageCount > 0 && !allOnPageSelected;
+  }, [selectedOnPageCount, allOnPageSelected]);
 
   // Edit promo code
   const handleEditClick = (promo) => {
@@ -449,6 +545,38 @@ const PromoCodeManager = () => {
         </div>
       </div>
 
+      {selectedPromoCodeIds.length > 0 && (
+        <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 flex items-center justify-between">
+          <p className="text-sm font-medium text-rose-900">
+            {selectedPromoCodeIds.length} PromoCode(s) selected
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedPromoCodeIds([])}
+              className="inline-flex items-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-white"
+            >
+              <X className="w-4 h-4" />
+              Clear
+            </button>
+
+            <Authorized permission="promoCodes:delete">
+              <button
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-60"
+              >
+                {bulkDeleting ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Delete Selected
+              </button>
+            </Authorized>
+          </div>
+        </div>
+      )}
+
       {/* Promo Codes Table */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         {loading ? (
@@ -468,6 +596,18 @@ const PromoCodeManager = () => {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
+                  <th className="px-4 py-3 text-left">
+                    <input
+                      ref={selectAllRef}
+                      type="checkbox"
+                      checked={allOnPageSelected}
+                      onChange={(e) =>
+                        handleSelectAllCurrentPage(e.target.checked)
+                      }
+                      disabled={loading || promoCodes.length === 0}
+                      className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500 cursor-pointer"
+                    />
+                  </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Code & Title
                   </th>
@@ -496,6 +636,16 @@ const PromoCodeManager = () => {
                     animate={{ opacity: 1 }}
                     className="hover:bg-gray-50 transition-colors"
                   >
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedPromoCodeIds.includes(promo._id)}
+                        onChange={(e) =>
+                          handleSelectOne(promo._id, e.target.checked)
+                        }
+                        className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       <div>
                         <div className="flex items-center gap-2">

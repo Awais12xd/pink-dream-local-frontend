@@ -19,6 +19,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Authorized from "@/app/components/Authorized"; // your existing wrapper
+import { toast } from "react-toastify";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -266,12 +267,12 @@ const TeamManager = () => {
         });
 
         if (res.status === 200) {
-          showNotification("Member updated successfully", "success");
+          toast.success("Member updated successfully");
         } else {
           const err = await res
             .json()
             .catch(() => ({ error: "Update failed" }));
-          showNotification(err?.error || "Failed to update member", "error");
+          toast.error(err?.error || "Failed to update member");
         }
       } else {
         const res = await fetch(`${API_BASE}/staffUsers`, {
@@ -288,12 +289,12 @@ const TeamManager = () => {
         });
 
         if (res.status === 200 || res.status === 201) {
-          showNotification("Member added successfully", "success");
+          toast.success("Member added successfully");
         } else {
           const err = await res
             .json()
             .catch(() => ({ error: "Create failed" }));
-          showNotification(err?.error || "Failed to add member", "error");
+          toast.error(err?.error || "Failed to add member");
         }
       }
 
@@ -301,7 +302,7 @@ const TeamManager = () => {
       setShowModal(false);
     } catch (err) {
       console.error("Save member error", err);
-      showNotification("Server error", "error");
+      toast.error("Server error");
     } finally {
       setSaving(false);
     }
@@ -317,7 +318,7 @@ const TeamManager = () => {
           : m,
       ),
     );
-    showNotification("Status updated");
+    toast.success("Status updated");
 
     // sync with backend (best-effort)
     try {
@@ -339,7 +340,7 @@ const TeamManager = () => {
       console.error("Toggle status error", err);
       // revert on error
       await fetchMembers();
-      showNotification("Failed to update status", "error");
+      toast.error("Failed to update status");
     }
   };
 
@@ -356,15 +357,15 @@ const TeamManager = () => {
       });
 
       if (res.status === 200) {
-        showNotification("Member removed successfully", "success");
+        toast.success("Member removed successfully");
         await fetchMembers();
       } else {
         const err = await res.json().catch(() => ({ error: "Delete failed" }));
-        showNotification(err?.error || "Failed to remove member", "error");
+        toast.error(err?.error || "Failed to remove member");
       }
     } catch (err) {
       console.error("Delete member error", err);
-      showNotification("Server error", "error");
+      toast.error("Server error");
     } finally {
       setSaving(false);
       setDeleteConfirm({ show: false, memberId: null });

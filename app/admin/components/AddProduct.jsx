@@ -1,6 +1,7 @@
 import React, { useCallback, useState, useEffect } from 'react'
 import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
   AlertCircle, Check, Loader, RefreshCw } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 
  // Add Product Page Component with Dynamic + Static Categories
@@ -328,7 +329,7 @@ import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
     
     // Validation
     if (!newProduct.name || !newProduct.new_price || !newProduct.category) {
-      alert('Please fill in all required fields (Name, Price, Category)');
+      toast.error('Please fill in all required fields (Name, Price, Category)');
       return;
     }
 
@@ -396,15 +397,17 @@ import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
           shipping_class: 'standard',
           status: 'draft'
         });
+
+        toast.success("Product created successfully!")
         
         // Optionally switch to products list
         // setActiveTab('products');
       } else {
-        alert(`❌ Failed to add product: ${data.message}`);
+        toast.error(`❌ Failed to add product: ${data.message}`);
       }
     } catch (error) {
       console.error('Error adding product:', error);
-      alert('❌ Error adding product. Please try again.');
+      toast.error('❌ Error adding product. Please try again.');
     } finally {
       setSaving(false);
     }

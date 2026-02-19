@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Edit,
   Trash2,
@@ -8,12 +8,23 @@ import {
   Loader,
   Info,
   EyeOff,
+  X,
 } from "lucide-react";
 import Pagination from "../../components/Pagination";
 import Authorized from "@/app/components/Authorized";
+import { toast } from "react-toastify";
+import Link from "next/link";
 
 const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
   const token = localStorage.getItem("staffUserToken");
+  const getAuthHeaders = () => {
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("staffUserToken")
+        : null;
+
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,6 +43,10 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
   const [selectedProductImages, setSelectedProductImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const selectAllRef = useRef(null);
+
   const searchTimeoutRef = useRef(null);
   const categories = [
     "Dresses",
@@ -44,6 +59,16 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
     "Swimwear",
   ];
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
+  const currentPageIds = useMemo(() => products.map((b) => b.id), [products]);
+
+  const selectedOnPageCount = useMemo(
+    () => products.filter((b) => selectedProductIds.includes(b.id)).length,
+    [products, selectedProductIds],
+  );
+
+  const allOnPageSelected =
+    products.length > 0 && selectedOnPageCount === products.length;
 
   // Image utility functions
   const getImageSrc = (
@@ -115,15 +140,18 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
     }
   };
 
-   // Handle toggle active status
+  // Handle toggle active status
   const handleToggleActive = async (productId) => {
     try {
-      const response = await fetch(`${API_BASE}/product/${productId}/toggle-active`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${API_BASE}/product/${productId}/toggle-active`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       const data = await response.json();
 
@@ -378,6 +406,82 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedProductIds.length === 0) return;
+
+    const confirmed = window.confirm(
+      `Delete ${selectedProductIds.length} selected products(s)? This action cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setBulkDeleting(true);
+    try {
+      const response = await fetch(`${API_BASE}/products/bulk-delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ ids: selectedProductIds }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        toast.error(data.message || "Failed to bulk delete products");
+        return;
+      }
+
+      setSelectedProductIds([]);
+      await fetchProducts();
+
+      // const extraInfo = [
+      //   data.invalidIds?.length
+      //     ? `Invalid IDs: ${data.invalidIds.length}`
+      //     : null,
+      //   data.notFoundIds?.length
+      //     ? `Not found: ${data.notFoundIds.length}`
+      //     : null,
+      // ]
+      //   .filter(Boolean)
+      //   .join(" | ");
+
+      // alert(
+      //   extraInfo
+      //     ? `${data.message}\n${extraInfo}`
+      //     : data.message || "Bulk delete completed",
+      // );
+      toast.success(data.message || "Bulk delete completed");
+    } catch (error) {
+      console.error("Error bulk deleting products:", error);
+      alert("Failed to bulk delete products");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const handleSelectOne = (productId, checked) => {
+    if (checked) {
+      setSelectedProductIds((prev) =>
+        Array.from(new Set([...prev, productId])),
+      );
+    } else {
+      setSelectedProductIds((prev) => prev.filter((id) => id !== productId));
+    }
+  };
+
+  const handleSelectAllCurrentPage = (checked) => {
+    if (checked) {
+      setSelectedProductIds((prev) =>
+        Array.from(new Set([...prev, ...currentPageIds])),
+      );
+    } else {
+      setSelectedProductIds((prev) =>
+        prev.filter((id) => !currentPageIds.includes(id)),
+      );
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
   }, [
@@ -389,6 +493,12 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
     sortOrder,
     itemsPerPage,
   ]);
+
+  useEffect(() => {
+    if (!selectAllRef.current) return;
+    selectAllRef.current.indeterminate =
+      selectedOnPageCount > 0 && !allOnPageSelected;
+  }, [selectedOnPageCount, allOnPageSelected]);
 
   useEffect(() => {
     return () => {
@@ -475,6 +585,38 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
         </div>
       </div>
 
+      {selectedProductIds.length > 0 && (
+        <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 flex items-center justify-between">
+          <p className="text-sm font-medium text-rose-900">
+            {selectedProductIds.length} product(s) selected
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedProductIds([])}
+              className="inline-flex items-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-white"
+            >
+              <X className="w-4 h-4" />
+              Clear
+            </button>
+
+            <Authorized permission="products:delete">
+              <button
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-60"
+              >
+                {bulkDeleting ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Delete Selected
+              </button>
+            </Authorized>
+          </div>
+        </div>
+      )}
+
       {/* Search Results Info */}
       {searchTerm && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -490,6 +632,18 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-left">
+                  <input
+                    ref={selectAllRef}
+                    type="checkbox"
+                    checked={allOnPageSelected}
+                    onChange={(e) =>
+                      handleSelectAllCurrentPage(e.target.checked)
+                    }
+                    disabled={loading || products.length === 0}
+                    className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500 cursor-pointer"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Product
                 </th>
@@ -548,6 +702,16 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
 
                   return (
                     <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedProductIds.includes(product.id)}
+                          onChange={(e) =>
+                            handleSelectOne(product.id, e.target.checked)
+                          }
+                          className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <ProductImageDisplay product={product} />
@@ -627,15 +791,13 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-2">
-                          {onViewProduct && (
-                            <button
-                              onClick={() => onViewProduct(product)}
-                              className="text-green-600 hover:text-green-900 transition-colors"
-                              title="View Details"
-                            >
-                              <Info className="w-4 h-4" />
-                            </button>
-                          )}
+                          <Link
+                            href={`/product/${product?.id}`}
+                            className="text-green-600 hover:text-green-900 transition-colors"
+                            title="View Details"
+                          >
+                            <Info className="w-4 h-4" />
+                          </Link>
                           <Authorized permission="products:update">
                             {onEditProduct && (
                               <button

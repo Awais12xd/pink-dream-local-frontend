@@ -34,6 +34,21 @@ export default function ModernFooter() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [email, setEmail] = useState("");
 
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const MAX_FOOTER_CATEGORIES = 20;
+  const FALLBACK_FOOTER_CATEGORIES = [
+    "Dresses",
+    "Tops & Blouses",
+    "Bottoms",
+    "Accessories",
+    "Shoes",
+    "Bags",
+  ];
+
+  const [footerCategories, setFooterCategories] = useState(
+    FALLBACK_FOOTER_CATEGORIES,
+  );
+
   const storeAddress = settings?.contact.address;
 
   // Enhanced slider content with more engaging copy
@@ -79,17 +94,6 @@ export default function ModernFooter() {
         { name: "Lookbook", href: "/lookbook" },
       ],
     },
-    {
-      title: "Categories",
-      links: [
-        { name: "Dresses", href: "/shop?category=dresses" },
-        { name: "Tops & Blouses", href: "/shop?category=tops" },
-        { name: "Bottoms", href: "/shop?category=bottoms" },
-        { name: "Accessories", href: "/shop?category=accessories" },
-        { name: "Shoes", href: "/shop?category=shoes" },
-        { name: "Bags", href: "/shop?category=bags" },
-      ],
-    },
     // {
     //   title: 'Support',
     //   links: [
@@ -102,6 +106,32 @@ export default function ModernFooter() {
     //   ]
     // }
   ];
+
+  const extractCategoryNames = (categories = []) => {
+    const uniqueByKey = new Map();
+
+    for (const category of categories) {
+      const rawName = typeof category === "string" ? category : category?.name;
+      const name = String(rawName || "").trim();
+      if (!name) continue;
+
+      const key = name.toLowerCase();
+      if (!uniqueByKey.has(key)) {
+        uniqueByKey.set(key, name);
+      }
+    }
+
+    return Array.from(uniqueByKey.values());
+  };
+
+  const visibleFooterCategories = footerCategories.slice(
+    0,
+    MAX_FOOTER_CATEGORIES,
+  );
+  const hiddenCategoryCount = Math.max(
+    footerCategories.length - MAX_FOOTER_CATEGORIES,
+    0,
+  );
 
   const socialLinks = [
     {
@@ -158,6 +188,38 @@ export default function ModernFooter() {
     }, 4000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadFooterCategories = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/categories?active=true`);
+        const data = await response.json();
+
+        if (!mounted) return;
+
+        if (data?.success && Array.isArray(data.categories)) {
+          const names = extractCategoryNames(data.categories);
+          setFooterCategories(
+            names.length ? names : FALLBACK_FOOTER_CATEGORIES,
+          );
+        } else {
+          setFooterCategories(FALLBACK_FOOTER_CATEGORIES);
+        }
+      } catch {
+        if (mounted) {
+          setFooterCategories(FALLBACK_FOOTER_CATEGORIES);
+        }
+      }
+    };
+
+    loadFooterCategories();
+
+    return () => {
+      mounted = false;
+    };
+  }, [API_BASE]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % sliderContent.length);
@@ -367,7 +429,7 @@ export default function ModernFooter() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            {footerSections.map((section, index) => (
+            {footerSections.map((section) => (
               <div key={section.title}>
                 <h3 className="font-semibold text-gray-800 mb-2 text-lg">
                   {section.title}
@@ -394,6 +456,29 @@ export default function ModernFooter() {
                 </ul>
               </div>
             ))}
+
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-2 text-lg">
+                Categories
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {visibleFooterCategories.map((categoryName) => (
+                  <Link
+                    key={categoryName}
+                    href={`/shop?category=${encodeURIComponent(categoryName)}`}
+                    className="inline-flex items-center bg-pink-100 text-pink-600 text-xs px-3 py-1 rounded-full font-medium hover:bg-pink-200 transition-colors"
+                  >
+                    {categoryName}
+                  </Link>
+                ))}
+
+                {hiddenCategoryCount > 0 && (
+                  <span className="inline-flex items-center bg-pink-50 border border-pink-200 text-pink-700 text-xs px-3 py-1 rounded-full font-semibold">
+                    {hiddenCategoryCount}+ more
+                  </span>
+                )}
+              </div>
+            </div>
           </motion.div>
 
           {/* Column 3: Contact Info + Reviews */}

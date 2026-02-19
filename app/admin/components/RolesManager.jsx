@@ -16,6 +16,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import Authorized from "@/app/components/Authorized"; // your existing Authorized component
+import { toast } from "react-toastify";
 
 /* -------------------- Permissions config -------------------- */
 const PERMISSIONS = {
@@ -214,11 +215,11 @@ const RolesManager = () => {
   const handleSave = async (e) => {
     e?.preventDefault();
     if (!formData.name.trim()) {
-      showNotification("Role name is required", "error");
+      toast.error("Role name is required");
       return;
     }
     if (formData.permissions.length === 0) {
-      showNotification("Select at least one permission", "error");
+      toast.error("Select at least one permission");
       return;
     }
 
@@ -239,12 +240,12 @@ const RolesManager = () => {
           }),
         });
         if (res.status === 200) {
-          showNotification("Role updated successfully", "success");
+          toast.success("Role updated successfully");
         } else {
           const err = await res
             .json()
             .catch(() => ({ error: "Update failed" }));
-          showNotification(err?.error || "Failed to update role", "error");
+          toast.error(err?.error || "Failed to update role");
         }
       } else {
         const res = await fetch(`${API_BASE}/roles`, {
@@ -261,12 +262,12 @@ const RolesManager = () => {
           }),
         });
         if (res.status === 200 || res.status === 201) {
-          showNotification("Role created successfully", "success");
+          toast.success("Role created successfully");
         } else {
           const err = await res
             .json()
             .catch(() => ({ error: "Create failed" }));
-          showNotification(err?.error || "Failed to create role", "error");
+          toast.error(err?.error || "Failed to create role", "error");
         }
       }
 
@@ -274,7 +275,7 @@ const RolesManager = () => {
       setShowModal(false);
     } catch (err) {
       console.error("Save role error", err);
-      showNotification("Server error", "error");
+      toast.error("Server error");
     } finally {
       setSaving(false);
     }
@@ -297,15 +298,15 @@ const RolesManager = () => {
       });
 
       if (res.status === 200) {
-        showNotification("Role deleted successfully", "success");
+        toast.success("Role deleted successfully");
         await fetchRoles();
       } else {
         const err = await res.json().catch(() => ({ error: "Delete failed" }));
-        showNotification(err?.error || "Failed to delete role", "error");
+        toast.error(err?.error || "Failed to delete role");
       }
     } catch (err) {
       console.error("Delete role error", err);
-      showNotification("Server error", "error");
+      toast.error("Server error");
     } finally {
       setSaving(false);
       setDeleteConfirm({ show: false, roleId: null });
@@ -314,7 +315,7 @@ const RolesManager = () => {
 
   const handleToggleActive = async (role) => {
     if (role.protected) {
-      showNotification("Protected roles cannot be deactivated", "error");
+      toast.error("Protected roles cannot be deactivated");
       return;
     }
 
@@ -328,18 +329,17 @@ const RolesManager = () => {
       });
 
       if (res.ok) {
-        showNotification(
-          `Role ${role.active ? "deactivated" : "activated"}`,
-          "success",
+        toast.success(
+          `Role ${role.active ? "deactivated" : "activated"}`
         );
         await fetchRoles();
       } else {
         const err = await res.json().catch(() => ({ error: "Toggle failed" }));
-        showNotification(err?.error || "Failed to toggle role", "error");
+        toast.error(err?.error || "Failed to toggle role");
       }
     } catch (err) {
       console.error("Toggle role error", err);
-      showNotification("Server error", "error");
+      toast.error("Server error");
     }
   };
 

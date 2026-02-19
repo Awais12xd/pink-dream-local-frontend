@@ -40,6 +40,7 @@ export default function RootLayout({ children }) {
             <CartProvider>
               <WishlistProvider>
                 <ToastContainer
+                 theme="colored"
                   position="top-right"
                   autoClose={3000}
                   hideProgressBar={false}

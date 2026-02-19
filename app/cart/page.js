@@ -44,7 +44,7 @@ export default function CartPage() {
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [promoError, setPromoError] = useState("");
 
-  const [ allowGuestCheckout , setAllowGuestCheckout] = useState(true);
+  const [allowGuestCheckout, setAllowGuestCheckout] = useState(true);
 
   // ✅ Load applied promo code from localStorage on mount
   useEffect(() => {
@@ -289,6 +289,27 @@ export default function CartPage() {
     );
   }
 
+  const renderSelectedOptions = (selectedOptions = {}) => {
+    const entries = Object.entries(selectedOptions || {}).filter(
+      ([key, value]) => key && value,
+    );
+
+    if (entries.length === 0) return null;
+
+    return (
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {entries.map(([key, value]) => (
+          <span
+            key={key}
+            className="text-xs px-2 py-0.5 rounded-full bg-pink-50 text-pink-700 border border-pink-200"
+          >
+            {key}: {value}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <Header />
@@ -311,7 +332,7 @@ export default function CartPage() {
             <AnimatePresence>
               {cart.map((item) => (
                 <motion.div
-                  key={`${item.id}-${item.size}`}
+                  key={`${item.id}-${item.variantHash || "default"}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -100 }}
@@ -333,7 +354,8 @@ export default function CartPage() {
                       <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
                         {item.name}
                       </h3>
-                      <p className="text-gray-600 mb-2">Size: {item.size}</p>
+                      {renderSelectedOptions(item.selectedOptions)}
+
                       <p className="text-2xl font-bold text-pink-600">
                         ${item.price.toFixed(2)}
                       </p>
@@ -342,7 +364,9 @@ export default function CartPage() {
                     {/* Quantity Controls */}
                     <div className="flex flex-col items-end space-y-4">
                       <button
-                        onClick={() => removeFromCart(item.id, item.size)}
+                        onClick={() =>
+                          removeFromCart(item.id, item.variantHash || null)
+                        }
                         className="text-red-500 hover:text-red-700 transition-colors p-2"
                         title="Remove item"
                       >
@@ -354,9 +378,9 @@ export default function CartPage() {
                           onClick={() =>
                             updateQuantity(
                               item.id,
-                              item.size,
                               item.quantity - 1,
-                            )
+                              item.variantHash
+                             || null)
                           }
                           disabled={item.quantity <= 1}
                           className="p-2 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -370,8 +394,8 @@ export default function CartPage() {
                           onClick={() =>
                             updateQuantity(
                               item.id,
-                              item.size,
                               item.quantity + 1,
+                              item.variantHash || null
                             )
                           }
                           className="p-2 hover:bg-gray-200 rounded-lg transition-colors"

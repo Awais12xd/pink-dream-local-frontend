@@ -32,7 +32,6 @@ const DEFAULT_PAYMENT_METHODS = {
   bankTransfer: { enabled: false, instructions: "" },
 };
 
-
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -158,8 +157,11 @@ function CheckoutContent() {
       }
 
       await clearCart();
-      if(paymentData.method !== "cod" && paymentData.method !== "bankTransfer"){
-      toast.success("🎉 Payment successful! Order confirmed.");
+      if (
+        paymentData.method !== "cod" &&
+        paymentData.method !== "bankTransfer"
+      ) {
+        toast.success("🎉 Payment successful! Order confirmed.");
       }
 
       const successOrderId = order?.orderId || order?._id;
@@ -209,6 +211,27 @@ function CheckoutContent() {
       </div>
     );
   }
+
+  const renderSelectedOptions = (selectedOptions = {}) => {
+    const entries = Object.entries(selectedOptions || {}).filter(
+      ([key, value]) => key && value,
+    );
+
+    if (entries.length === 0) return null;
+
+    return (
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        {entries.map(([key, value]) => (
+          <span
+            key={key}
+            className="text-xs px-2 py-0.5 rounded-full bg-pink-50 text-pink-700 border border-pink-200"
+          >
+            {key}: {value}
+          </span>
+        ))}
+      </div>
+    );
+  };
 
   // ✅ FIXED: Calculate amounts with proper discount handling
   const subtotal = getTotalPrice();
@@ -309,7 +332,7 @@ function CheckoutContent() {
               <div className="space-y-4 mb-6">
                 {cart.map((item) => (
                   <div
-                    key={`${item.id}-${item.size}`}
+                    key={`${item.id}-${item.variantHash || "default"}`}
                     className="flex items-center space-x-4 pb-4 border-b border-gray-100"
                   >
                     <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
@@ -327,7 +350,8 @@ function CheckoutContent() {
                       <h3 className="font-semibold text-gray-900 truncate">
                         {item.name}
                       </h3>
-                      <p className="text-sm text-gray-600">Size: {item.size}</p>
+                     {renderSelectedOptions(item.selectedOptions)}
+
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-gray-900">

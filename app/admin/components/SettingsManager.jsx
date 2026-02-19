@@ -924,7 +924,7 @@ const SettingsManager = () => {
                 </div>
 
                 {/* Bank Transfer */}
-                {/* <div
+                <div
                   className={`border rounded-lg overflow-hidden transition-colors ${settings.payment.bankTransfer.enabled ? "border-pink-200 bg-pink-50/30" : "border-gray-200"}`}
                 >
                   <div className="p-4 flex items-center justify-between">
@@ -987,7 +987,7 @@ const SettingsManager = () => {
                       />
                     </div>
                   )}
-                </div> */}
+                </div>
               </div>
             </div>
           )}

@@ -20,6 +20,7 @@ import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import "./Blog.css";
 import dynamic from "next/dynamic";
+import { toast } from "react-toastify";
 
 const CKEditorInput = dynamic(() => import("./CkEditorInput.jsx"), {
   ssr: false,
@@ -437,6 +438,7 @@ const AddBlogPage = () => {
       const data = await response.json();
 
       if (data.success) {
+        toast.success("Blog created successfully!")
 
         // Reset form
         setNewBlog({
