@@ -917,9 +917,8 @@ const AdminPanel = () => {
             className={`p-6 border-b border-gray-100 ${sidebarCollapsed ? "px-3" : "px-6"}`}
           >
             <div className="flex items-center gap-3">
-              {settings?.branding?.adminLogo?.url ? (
-                <Link
-                  href="/"
+              {!sidebarCollapsed && settings?.branding?.adminLogo?.url ? (
+                <div
                   className="relative md:flex hidden items-center justify-center w-36 h-12 lg:w-60 lg:h-16 flex-shrink-0  sm:ml-3"
                 >
                   <Image
@@ -932,7 +931,7 @@ const AdminPanel = () => {
            100vw"
                     priority={true}
                   />
-                </Link>
+                </div>
               ) : (
                 <>
                   <div className="relative">

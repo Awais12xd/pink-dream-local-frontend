@@ -14,7 +14,6 @@ export default function NotificationToast({ title, message, severity }) {
           <Bell size={14} />
           <span>{title}</span>
         </div>
-        {message && <div className="notif-toast__msg">{message}</div>}
       </div>
     </div> 
   );
