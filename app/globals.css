@@ -35,7 +35,6 @@
 .notif-toast {
   display: flex;
   gap: 12px;
-  align-items: flex-start;
   background: white;
   padding: 10px;
   border-radius: 5px;

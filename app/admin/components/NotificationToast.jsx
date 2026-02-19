@@ -5,7 +5,7 @@ export default function NotificationToast({ title, message, severity }) {
   const isCritical = severity === "critical";
 
   return (
-    <div className="notif-toast">
+    <div className="notif-toast  !items-center">
       <div className={`notif-toast__icon ${isCritical ? "critical" : "high"}`}>
         {isCritical ? <AlertCircle size={18} /> : <AlertTriangle size={18} />}
       </div>
