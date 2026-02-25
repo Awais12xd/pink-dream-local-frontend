@@ -298,21 +298,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
 
   // Product Image Display Component
   const ProductImageDisplay = ({ product }) => {
-    let images = [];
-
-    if (product.images && Array.isArray(product.images)) {
-      images = product.images.filter((img) => img && img.trim() !== "");
-    } else if (product.image) {
-      images = [product.image];
-    }
-
-    if (images.length === 0) {
-      return (
-        <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center mr-3">
-          <ImageIcon className="w-5 h-5 text-gray-400" />
-        </div>
-      );
-    }
+    
 
     return (
       <div className="flex items-center mr-3">
