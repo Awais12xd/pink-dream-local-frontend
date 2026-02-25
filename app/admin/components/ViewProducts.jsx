@@ -318,17 +318,11 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
       <div className="flex items-center mr-3">
         <div className="relative">
           <img
-            src={getImageSrc(images[0])}
+            src={getImageSrc(product?.image)}
             alt={product.name}
             className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => handleViewImages(product)}
             onError={handleImageError}
           />
-          {images.length > 1 && (
-            <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {images.length}
-            </span>
-          )}
         </div>
       </div>
     );
