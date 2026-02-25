@@ -35,7 +35,9 @@ import {
   Phone,
   Trash2,
   Copy,
+  FileSpreadsheet, // add this
 } from "lucide-react";
+
 import Pagination from "../../components/Pagination";
 import Authorized from "@/app/components/Authorized";
 import { toast } from "react-toastify";
@@ -81,6 +83,7 @@ const AdminOrders = () => {
   const [verificationNote, setVerificationNote] = useState("");
 
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("");
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
@@ -623,6 +626,143 @@ const AdminOrders = () => {
     toast.success(`Copied: ${code}`);
   };
 
+  const getOrderStatusLabel = (status) => {
+    const key = String(status || "").toLowerCase();
+    return orderStatusConfig[key]?.label || status || "N/A";
+  };
+
+  const getPaymentMethodLabel = (method) => {
+    const key = String(method || "").toLowerCase();
+    return paymentMethodConfig[key]?.label || method || "N/A";
+  };
+
+  const getPaymentStatusLabel = (status) => {
+    const key = String(status || "").toLowerCase();
+    return paymentStatusConfig[key]?.label || status || "N/A";
+  };
+
+  const toNumber = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const formatItemOptions = (selectedOptions = {}) => {
+    return Object.entries(selectedOptions || {})
+      .filter(([k, v]) => k && v)
+      .map(([k, v]) => `${k}:${v}`)
+      .join(", ");
+  };
+
+  const buildItemsSummary = (items = []) => {
+    return (items || [])
+      .map((item) => {
+        const name = item?.name || "Item";
+        const qty = toNumber(item?.quantity);
+        const optionsText = formatItemOptions(item?.selectedOptions);
+        return `${name} x${qty}${optionsText ? ` (${optionsText})` : ""}`;
+      })
+      .join(" | ");
+  };
+
+  const exportVisibleOrdersToExcel = async () => {
+    if (!orders.length) {
+      toast.info("No orders to export on this page.");
+      return;
+    }
+
+    setExportingExcel(true);
+    try {
+      const XLSXModule = await import("xlsx");
+      const XLSX = XLSXModule.default ?? XLSXModule;
+
+      const rows = orders.map((order) => {
+        const dt = formatDateTime(order?.createdAt);
+        const subtotal = toNumber(order?.amount?.subtotal);
+        const shipping = toNumber(order?.amount?.shipping);
+        const tax = toNumber(order?.amount?.tax);
+        const total = toNumber(order?.amount?.total ?? order?.totalAmount);
+
+        const itemsCount = order?.items?.length || 0;
+        const totalQty = (order?.items || []).reduce(
+          (sum, item) => sum + toNumber(item?.quantity),
+          0,
+        );
+
+        return {
+          "Order ID": order?.orderId || "",
+          "Order Date": dt?.date || "",
+          "Order Time": dt?.time || "",
+          "Customer Name": order?.shippingAddress?.name || "",
+          "Customer Email": order?.shippingAddress?.email || "",
+          "Customer Phone": order?.shippingAddress?.phone || "",
+          City: order?.shippingAddress?.city || "",
+          Country: order?.shippingAddress?.country || "",
+          "Zip Code": order?.shippingAddress?.zipCode || "",
+          "Order Status": getOrderStatusLabel(order?.status),
+          "Payment Method": getPaymentMethodLabel(order?.paymentMethod),
+          "Payment Status": getPaymentStatusLabel(order?.paymentStatus),
+          "Items Count": itemsCount,
+          "Total Quantity": totalQty,
+          "Items Summary": buildItemsSummary(order?.items),
+          "Subtotal (USD)": subtotal,
+          "Shipping (USD)": shipping,
+          "Tax (USD)": tax,
+          "Total (USD)": total,
+          "Receipt Uploaded": order?.paymentMeta?.receiptImageUrl
+            ? "Yes"
+            : "No",
+          "Receipt URL": order?.paymentMeta?.receiptImageUrl || "",
+          "Created At (ISO)": order?.createdAt
+            ? new Date(order.createdAt).toISOString()
+            : "",
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+
+      const headers = Object.keys(rows[0] || {});
+      worksheet["!cols"] = headers.map((header) => {
+        const maxLen = Math.max(
+          header.length,
+          ...rows.map((r) => String(r[header] ?? "").length),
+        );
+        return { wch: Math.min(Math.max(maxLen + 2, 12), 50) };
+      });
+
+      if (worksheet["!ref"]) {
+        worksheet["!autofilter"] = { ref: worksheet["!ref"] };
+      }
+
+      const infoSheet = XLSX.utils.aoa_to_sheet([
+        ["Export Name", "Orders - Current Visible View"],
+        ["Generated At", new Date().toLocaleString()],
+        ["Search Filter", searchTerm || "All"],
+        ["Status Filter", statusFilter || "All"],
+        ["Date Filter", dateFilter || "All"],
+        ["Payment Method Filter", paymentMethodFilter || "All"],
+        ["Current Page", `${currentPage} of ${totalPages}`],
+        ["Rows Exported", String(orders.length)],
+        ["Items Per Page", String(itemsPerPage)],
+      ]);
+      infoSheet["!cols"] = [{ wch: 24 }, { wch: 55 }];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
+      XLSX.utils.book_append_sheet(workbook, infoSheet, "Export_Info");
+
+      const stamp = new Date().toISOString().replace(/:/g, "-").slice(0, 19);
+      const fileName = `orders-current-view-page-${currentPage}-${stamp}.xlsx`;
+
+      XLSX.writeFile(workbook, fileName, { compression: true });
+      toast.success(`Exported ${rows.length} order(s) to Excel.`);
+    } catch (error) {
+      console.error("Excel export error:", error);
+      toast.error("Failed to export Excel file.");
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
   // Load initial data
   useEffect(() => {
     fetchOrders();
@@ -793,25 +933,25 @@ const AdminOrders = () => {
   };
 
   const renderOrderItemOptions = (selectedOptions = {}) => {
-  const entries = Object.entries(selectedOptions || {}).filter(
-    ([key, value]) => key && value
-  )
+    const entries = Object.entries(selectedOptions || {}).filter(
+      ([key, value]) => key && value,
+    );
 
-  if (entries.length === 0) return null
+    if (entries.length === 0) return null;
 
-  return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
-      {entries.map(([key, value]) => (
-        <span
-          key={key}
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200"
-        >
-          {key}: {value}
-        </span>
-      ))}
-    </div>
-  )
-}
+    return (
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {entries.map(([key, value]) => (
+          <span
+            key={key}
+            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200"
+          >
+            {key}: {value}
+          </span>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -864,6 +1004,24 @@ const AdminOrders = () => {
                 Delete All
               </button>
             </Authorized>
+            <button
+              onClick={exportVisibleOrdersToExcel}
+              disabled={loading || exportingExcel || orders.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              title={
+                orders.length === 0
+                  ? "No orders on current page to export"
+                  : "Export current table view to Excel (.xlsx)"
+              }
+            >
+              {exportingExcel ? (
+                <Loader className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="w-4 h-4" />
+              )}
+              {exportingExcel ? "Exporting..." : "Export Excel"}
+            </button>
+
             <button
               onClick={() => {
                 fetchOrders(
@@ -1390,7 +1548,6 @@ const AdminOrders = () => {
                           Price: ${item.price}
                         </p>
                         {renderOrderItemOptions(item.selectedOptions)}
-
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-gray-800">

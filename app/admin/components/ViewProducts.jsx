@@ -9,6 +9,9 @@ import {
   Info,
   EyeOff,
   X,
+  Upload,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
 import Pagination from "../../components/Pagination";
 import Authorized from "@/app/components/Authorized";
@@ -46,6 +49,10 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const selectAllRef = useRef(null);
+
+  const fileInputRef = useRef(null);
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [importingExcel, setImportingExcel] = useState(false);
 
   const searchTimeoutRef = useRef(null);
   const categories = [
@@ -482,6 +489,422 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
     }
   };
 
+  const joinPipe = (value) =>
+    Array.isArray(value) ? value.filter(Boolean).join(" | ") : "";
+
+  const formatSpecsForExport = (specs) =>
+    Array.isArray(specs)
+      ? specs
+          .map(
+            (s) =>
+              `${String(s?.key || "").trim()}:${String(s?.value || "").trim()}`,
+          )
+          .filter((x) => x !== ":")
+          .join(" | ")
+      : "";
+
+  const exportProductsToExcel = async () => {
+    if (!products.length) {
+      toast.info("No products to export on this page.");
+      return;
+    }
+
+    setExportingExcel(true);
+    try {
+      const XLSXModule = await import("xlsx");
+      const XLSX = XLSXModule.default ?? XLSXModule;
+
+      const rows = products.map((p) => {
+        const oldPrice = Number(p.old_price || 0);
+        const newPrice = Number(p.new_price || 0);
+        const discountPercent =
+          oldPrice > 0
+            ? (((oldPrice - newPrice) / oldPrice) * 100).toFixed(2)
+            : "0.00";
+
+        return {
+          "Product ID": p.id ?? "",
+          Name: p.name ?? "",
+          Category: p.category ?? "",
+          Brand: p.brand ?? "",
+          SKU: p.sku ?? "",
+          Status: p.status ?? "published",
+          Active: p.available ? "Yes" : "No",
+          Featured: p.featured ? "Yes" : "No",
+          "New Price": newPrice,
+          "Old Price": oldPrice,
+          "Discount %": Number(discountPercent),
+          "Stock Quantity": Number(p.stock_quantity || 0),
+          "Low Stock Threshold": Number(p.low_stock_threshold || 0),
+          "Shipping Class": p.shipping_class ?? "standard",
+          "Primary Image": p.image ?? "",
+          "Images (| separated)": joinPipe(p.images),
+          "Colors (| separated)": joinPipe(p.colors),
+          "Sizes (| separated)": joinPipe(p.sizes),
+          "Tags (| separated)": joinPipe(p.tags),
+          "Features (| separated)": joinPipe(p.features),
+          "Specifications (key:value|...)": formatSpecsForExport(
+            p.specifications,
+          ),
+          Description: p.description ?? "",
+          "Short Description": p.short_description ?? "",
+          "Created At": p.createdAt ? new Date(p.createdAt).toISOString() : "",
+          "Updated At": p.updatedAt ? new Date(p.updatedAt).toISOString() : "",
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const headers = Object.keys(rows[0] || {});
+      ws["!cols"] = headers.map((h) => ({
+        wch: Math.min(Math.max(h.length + 2, 14), 45),
+      }));
+      if (ws["!ref"]) ws["!autofilter"] = { ref: ws["!ref"] };
+
+      const info = XLSX.utils.aoa_to_sheet([
+        ["Export", "Products - Current Visible Page"],
+        ["Generated At", new Date().toLocaleString()],
+        ["Search", searchTerm || "All"],
+        ["Category", selectedCategory || "All"],
+        ["Min Price", priceRange.min || "Any"],
+        ["Max Price", priceRange.max || "Any"],
+        ["Sort", `${sortBy} (${sortOrder})`],
+        ["Current Page", `${currentPage}`],
+        ["Items Per Page", `${itemsPerPage}`],
+        ["Rows Exported", `${products.length}`],
+      ]);
+      info["!cols"] = [{ wch: 24 }, { wch: 50 }];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Products");
+      XLSX.utils.book_append_sheet(wb, info, "Export_Info");
+
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      XLSX.writeFile(wb, `products-current-page-${currentPage}-${stamp}.xlsx`);
+      toast.success(`Exported ${products.length} product(s).`);
+    } catch (error) {
+      console.error("Error exporting products:", error);
+      toast.error("Failed to export products.");
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
+  const downloadImportTemplate = async () => {
+    try {
+      const XLSXModule = await import("xlsx");
+      const XLSX = XLSXModule.default ?? XLSXModule;
+
+      const headers = [
+        "name",
+        "category",
+        "new_price",
+        "old_price",
+        "image",
+        "images",
+        "brand",
+        "sku",
+        "stock_quantity",
+        "low_stock_threshold",
+        "available",
+        "featured",
+        "status",
+        "description",
+        "short_description",
+        "colors",
+        "sizes",
+        "tags",
+        "features",
+        "shipping_class",
+        "weight",
+        "dimension_length",
+        "dimension_width",
+        "dimension_height",
+        "discount_type",
+        "discount_value",
+        "sale_start_date",
+        "sale_end_date",
+        "meta_title",
+        "meta_description",
+        "meta_keywords",
+        "slug",
+        "materials",
+        "care_instructions",
+        "size_chart",
+        "specifications",
+        "related_products",
+      ];
+
+      const sample = {
+        name: "Sample Floral Dress",
+        category: "Dresses",
+        new_price: 49.99,
+        old_price: 69.99,
+        image: "https://example.com/images/floral-dress-main.jpg",
+        images:
+          "https://example.com/images/floral-dress-main.jpg|https://example.com/images/floral-dress-side.jpg",
+        brand: "Pink Dreams",
+        sku: "DRS-1001",
+        stock_quantity: 30,
+        low_stock_threshold: 5,
+        available: "true",
+        featured: "false",
+        status: "published",
+        description: "Long floral dress with soft fabric and elegant cut.",
+        short_description: "Floral maxi dress",
+        colors: "Pink|White",
+        sizes: "S|M|L",
+        tags: "summer|floral|maxi",
+        features: "Breathable|Lightweight",
+        shipping_class: "standard",
+        weight: 0.65,
+        dimension_length: 28,
+        dimension_width: 22,
+        dimension_height: 3,
+        discount_type: "percentage",
+        discount_value: 0,
+        sale_start_date: "2026-03-01",
+        sale_end_date: "2026-03-30",
+        meta_title: "Sample Floral Dress - Pink Dreams",
+        meta_description: "A trendy floral dress for summer.",
+        meta_keywords: "dress,floral,summer",
+        slug: "sample-floral-dress",
+        materials: "Cotton Blend",
+        care_instructions: "Machine wash cold",
+        size_chart: "https://example.com/size-chart/dress",
+        specifications: "Fit:Regular|Sleeve:Sleeveless",
+        related_products: "1002|1003",
+      };
+
+      const templateSheet = XLSX.utils.json_to_sheet([sample], {
+        header: headers,
+      });
+      templateSheet["!cols"] = headers.map((h) => ({
+        wch: Math.min(Math.max(h.length + 2, 18), 45),
+      }));
+      if (templateSheet["!ref"])
+        templateSheet["!autofilter"] = { ref: templateSheet["!ref"] };
+
+      const instructionsSheet = XLSX.utils.aoa_to_sheet([
+        [
+          "═══════════════════════════════════════════════════════════════════════════════════",
+        ],
+        [
+          "                        PRODUCT IMPORT INSTRUCTIONS                                  ",
+        ],
+        [
+          "═══════════════════════════════════════════════════════════════════════════════════",
+        ],
+        [""],
+        ["📋 REQUIRED FIELDS (Must have at least these):"],
+        ["  • name         - Product title (e.g., 'Pink Floral Dress')"],
+        [
+          "  • category     - Must match an existing category (e.g., 'Dresses', 'Tops')",
+        ],
+        ["  • new_price    - Current selling price (numeric, e.g., 49.99)"],
+        ["  • image        - Primary image URL (at least one image required)"],
+        [""],
+        ["🖼️ IMAGE GUIDELINES:(Only cloudinary urls are accepted.)"],
+        [
+          "  • PRIMARY IMAGE (image): Use a direct URL to your main product photo",
+        ],
+        ["    Example: https://cloudinary.com/images/dress-main.jpg"],
+        [""],
+        [
+          "  • ADDITIONAL IMAGES (images): Separate multiple URLs with | pipe character",
+        ],
+        [
+          "    Example: https://cloudinary.com/img1.jpg|https://cloudinary.com/img2.jpg|https://cloudinary.com/img3.jpg",
+        ],
+        [
+          "    💡 Tip: Add up to 5-10 images for best presentation. First image is the main one.",
+        ],
+        [""],
+        ["📦 MULTI-VALUE FIELDS (use | separator between values):"],
+        ["  • colors       - Available colors (e.g., Pink|White|Blue|Navy)"],
+        ["  • sizes        - Available sizes (e.g., S|M|L|XL|XXL)"],
+        ["  • tags         - Search tags (e.g., summer|floral|casual|elegant)"],
+        [
+          "  • features     - Product features (e.g., Breathable|Lightweight|Stretchable)",
+        ],
+        [""],
+        ["📝 SPECIFICATIONS FORMAT:"],
+        ["  Use key:value format, separated by | pipe character"],
+        [
+          "  Example: Fit:Regular|Sleeve:Sleeveless|Length:Maxi|Fabric:Cotton Blend",
+        ],
+        [
+          "  💡 Common specs: Fit, Sleeve, Length, Fabric, Pattern, Neckline, Waistline",
+        ],
+        [""],
+        ["🏷️ PRODUCT STATUS OPTIONS:"],
+        ["  • published   - Visible on website (default)"],
+        ["  • draft        - Saved but not visible"],
+        ["  • archived     - Hidden from store"],
+        [""],
+        ["🚚 SHIPPING CLASS OPTIONS:"],
+        ["  • standard    - Regular shipping (default)"],
+        ["  • express     - Faster delivery"],
+        ["  • overnight   - Next day delivery"],
+        ["  • free        - Free shipping"],
+        [""],
+        ["💰 PRICING & DISCOUNTS:"],
+        ["  • new_price       - Current selling price (required)"],
+        ["  • old_price      - Original price (for showing discount)"],
+        ["  • discount_type   - 'percentage' or 'fixed'"],
+        ["  • discount_value  - Discount amount (e.g., 20 for 20% or $20)"],
+        ["  • sale_start_date - Promotion start (YYYY-MM-DD format)"],
+        ["  • sale_end_date   - Promotion end (YYYY-MM-DD format)"],
+        [""],
+        ["DIMENSIONS & WEIGHT:"],
+        ["  • weight            - Package weight in kg"],
+        ["  • dimension_length  - Length in inches"],
+        ["  • dimension_width   - Width in inches"],
+        ["  • dimension_height  - Height in inches"],
+        [""],
+        ["🔗 RELATED PRODUCTS:"],
+        ["  Use product IDs separated by | (e.g., 1001|1002|1003)"],
+        ["  💡 Find product IDs from your existing products list"],
+        [""],
+        ["✅ BOOLEAN VALUES (true/false):"],
+        ["  • available     - Product in stock (true/false)"],
+        ["  • featured     - Show on homepage (true/false)"],
+        ["  Accepts: true, false, yes, no, 1, 0"],
+        [""],
+        ["📅 DATE FORMAT:"],
+        ["  Use YYYY-MM-DD format (e.g., 2026-03-15)"],
+        [""],
+        ["🔍 SEO FIELDS (Optional but recommended):"],
+        ["  • meta_title       - Browser title (50-60 chars)"],
+        ["  • meta_description - Search description (150-160 chars)"],
+        ["  • meta_keywords    - Comma or | separated keywords"],
+        ["  • slug             - URL-friendly name (e.g., pink-floral-dress)"],
+        [""],
+        ["📝 OTHER OPTIONAL FIELDS:"],
+        ["  • brand           - Product brand"],
+        ["  • sku             - Stock keeping unit (unique identifier)"],
+        ["  • stock_quantity  - Number of items in stock"],
+        ["  • low_stock_threshold - Alert when stock runs low"],
+        ["  • short_description - Brief product summary"],
+        ["  • description     - Full product details (supports HTML)"],
+        ["  • materials       - What product is made of"],
+        ["  • care_instructions - How to maintain product"],
+        ["  • size_chart      - URL to size chart image"],
+        [""],
+        [
+          "═══════════════════════════════════════════════════════════════════════════════════",
+        ],
+        [
+          "                                    TIPS                                            ",
+        ],
+        [
+          "═══════════════════════════════════════════════════════════════════════════════════",
+        ],
+        [
+          "  💡 Start with the Template sheet - it's pre-filled with example data",
+        ],
+        ["  💡 Keep one product per row"],
+        ["  💡 Use consistent category names that already exist in your store"],
+        ["  💡 Test import with a few products first before bulk importing"],
+        [
+          " 💡 Only cloudinary images URL are allowed , so first upload images on cloudinary and get their URL's and then add in file",
+        ],
+        ["  💡 For best results, resize images to 800x1000px or similar ratio"],
+        [""],
+        [
+          "Need help? Check your existing products for reference or contact support.",
+        ],
+      ]);
+      instructionsSheet["!cols"] = [{ wch: 28 }, { wch: 100 }];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, templateSheet, "Template");
+      XLSX.utils.book_append_sheet(wb, instructionsSheet, "Instructions");
+
+      XLSX.writeFile(wb, "products-import-template.xlsx");
+      toast.success("Import template downloaded.");
+    } catch (error) {
+      console.error("Error creating template:", error);
+      toast.error("Failed to download template.");
+    }
+  };
+
+  const downloadImportErrorReport = (errors = []) => {
+    if (!errors.length) return;
+    const lines = [
+      "row,reason",
+      ...errors.map(
+        (e) => `${e.row},"${String(e.reason).replace(/"/g, '""')}"`,
+      ),
+    ];
+    const blob = new Blob([lines.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `product-import-errors-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const allowed = [".xlsx", ".xls", ".csv"];
+    const lower = file.name.toLowerCase();
+    const isAllowed = allowed.some((ext) => lower.endsWith(ext));
+    if (!isAllowed) {
+      toast.error("Please upload a valid Excel/CSV file.");
+      return;
+    }
+
+    setImportingExcel(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`${API_BASE}/products/import-excel`, {
+        method: "POST",
+        headers: {
+          ...getAuthHeaders(),
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        toast.error(data.message || "Import failed.");
+        return;
+      }
+
+      toast.success(data.message || "Products imported successfully.");
+
+      if (
+        data.summary?.failed > 0 &&
+        Array.isArray(data.errors) &&
+        data.errors.length
+      ) {
+        toast.warn(
+          `${data.summary.failed} row(s) skipped. Error report downloaded.`,
+        );
+        downloadImportErrorReport(data.errors);
+      }
+
+      setCurrentPage(1);
+      fetchProducts();
+    } catch (error) {
+      console.error("Error importing products:", error);
+      toast.error("Failed to import products.");
+    } finally {
+      setImportingExcel(false);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
   }, [
@@ -582,6 +1005,68 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
             <option value="new_price-asc">Price Low-High</option>
             <option value="new_price-desc">Price High-Low</option>
           </select>
+        </div>
+        <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-gray-700">Bulk Tools</p>
+            <p className="text-xs text-gray-500">
+              Export visible products, download starter template, and import
+              products in bulk from Excel.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Authorized permission="products:read">
+              <button
+                onClick={exportProductsToExcel}
+                disabled={loading || exportingExcel || products.length === 0}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                title="Export currently visible products to Excel"
+              >
+                {exportingExcel ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="w-4 h-4" />
+                )}
+                {exportingExcel ? "Exporting..." : "Export Excel"}
+              </button>
+            </Authorized>
+
+            <Authorized permission="products:create">
+              <button
+                onClick={downloadImportTemplate}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                title="Download import template"
+              >
+                <Download className="w-4 h-4" />
+                Download Template
+              </button>
+            </Authorized>
+
+            <Authorized permission="products:create">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importingExcel}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                title="Import products from Excel file"
+              >
+                {importingExcel ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {importingExcel ? "Importing..." : "Import Excel"}
+              </button>
+            </Authorized>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleImportFile}
+              className="hidden"
+            />
+          </div>
         </div>
       </div>
 

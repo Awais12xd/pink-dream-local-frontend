@@ -919,7 +919,7 @@ const AdminPanel = () => {
             <div className="flex items-center gap-3">
               {!sidebarCollapsed && settings?.branding?.adminLogo?.url ? (
                 <div
-                  className="relative md:flex hidden items-center justify-center w-36 h-12 lg:w-60 lg:h-16 flex-shrink-0  sm:ml-3"
+                  className="relative md:flex hidden items-center justify-center w-36 h-12 lg:w-60 lg:h-16 flex-shrink-0  sm:ml-2"
                 >
                   <Image
                     src={settings?.branding?.adminLogo?.url}

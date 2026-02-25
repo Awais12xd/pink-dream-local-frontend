@@ -33,9 +33,9 @@ export function WishlistProvider({ children }) {
       localStorage.removeItem('wishlist')
       
       // Load authenticated user's wishlist
-      setTimeout(() => {
-        loadAuthenticatedWishlist(userData)
-      }, 100)
+      // setTimeout(() => {
+      //   loadAuthenticatedWishlist(userData)
+      // }, 100)
     }
 
     const handleUserLoggedOut = (event) => {

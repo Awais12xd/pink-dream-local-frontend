@@ -1,5 +1,6 @@
 'use client'
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
+
 
 const AuthContext = createContext()
 
@@ -14,6 +15,9 @@ export const AuthProvider = ({ children }) => {
     type: null,
     message: ''
   })
+
+  const lastOAuthDispatchRef = useRef({ token: null, userId: null })
+
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
@@ -435,15 +439,24 @@ export const AuthProvider = ({ children }) => {
           clearRateLimit()
           
           // Trigger login event for wishlist sync
-          window.dispatchEvent(new CustomEvent('userLoggedIn', {
-            detail: { 
-              userId: userData.id, 
-              userData: userData, 
-              isOAuth: true,
-              provider: provider,
-              token: authToken
-            }
-          }))
+          const shouldDispatchLoginEvent =
+  lastOAuthDispatchRef.current.token !== authToken ||
+  lastOAuthDispatchRef.current.userId !== userData.id
+
+if (shouldDispatchLoginEvent) {
+  window.dispatchEvent(new CustomEvent('userLoggedIn', {
+    detail: {
+      userId: userData.id,
+      userData,
+      isOAuth: true,
+      provider,
+      token: authToken
+    }
+  }))
+
+  lastOAuthDispatchRef.current = { token: authToken, userId: userData.id }
+}
+
           
           console.log(`✅ ${provider} OAuth login successful:`, userData.name)
           

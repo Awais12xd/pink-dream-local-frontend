@@ -25,6 +25,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import { getImageSrc, handleImageError } from "../utils/imageUtils";
+import LoginModal from "../components/LoginModal";
 
 export default function CartPage() {
   const router = useRouter();
@@ -45,6 +46,7 @@ export default function CartPage() {
   const [promoError, setPromoError] = useState("");
 
   const [allowGuestCheckout, setAllowGuestCheckout] = useState(true);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // ✅ Load applied promo code from localStorage on mount
   useEffect(() => {
@@ -235,7 +237,7 @@ export default function CartPage() {
   // ✅ Navigate to checkout with promo data
   const handleProceedToCheckout = () => {
     if (!user && allowGuestCheckout === false) {
-      router.push(`/login?redirect=/checkout`);
+      setIsLoginModalOpen(true);
       return;
     }
 
@@ -255,6 +257,11 @@ export default function CartPage() {
     } else {
       router.push("/checkout");
     }
+  };
+
+  const handleLoginSuccess = (user) => {
+    setIsLoginModalOpen(false);
+    // Optional: You can add any additional logic here after successful login
   };
 
   // Empty cart state
@@ -379,8 +386,8 @@ export default function CartPage() {
                             updateQuantity(
                               item.id,
                               item.quantity - 1,
-                              item.variantHash
-                             || null)
+                              item.variantHash || null,
+                            )
                           }
                           disabled={item.quantity <= 1}
                           className="p-2 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -395,7 +402,7 @@ export default function CartPage() {
                             updateQuantity(
                               item.id,
                               item.quantity + 1,
-                              item.variantHash || null
+                              item.variantHash || null,
                             )
                           }
                           className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
@@ -621,7 +628,12 @@ export default function CartPage() {
           </div>
         </div>
       </div>
-
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onAuthSuccess={handleLoginSuccess}
+      />
       <Footer />
     </div>
   );

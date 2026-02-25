@@ -1,8 +1,17 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect } from 'react'
-import { Eye, EyeOff, Mail, Lock, User, Check, X, ArrowLeft } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import React, { useState, useEffect } from "react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  Check,
+  X,
+  ArrowLeft,
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 // OAuth Icons
 const GoogleIcon = ({ className = "w-5 h-5" }) => (
@@ -24,16 +33,21 @@ const GoogleIcon = ({ className = "w-5 h-5" }) => (
       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
     />
   </svg>
-)
+);
 
 const FacebookIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} fill="#1877F2" viewBox="0 0 24 24">
-    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
   </svg>
-)
+);
 
 // OAuth Login Buttons Component
-const OAuthButtons = ({ isLoading, onGoogleLogin, onFacebookLogin, isLogin }) => (
+const OAuthButtons = ({
+  isLoading,
+  onGoogleLogin,
+  onFacebookLogin,
+  isLogin,
+}) => (
   <div className="space-y-3">
     {/* Google Login */}
     <button
@@ -41,27 +55,27 @@ const OAuthButtons = ({ isLoading, onGoogleLogin, onFacebookLogin, isLogin }) =>
       onClick={onGoogleLogin}
       disabled={isLoading}
       className={`w-full bg-white border border-gray-300 text-gray-700 py-2.5 px-4 rounded-lg font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 flex items-center justify-center space-x-3 transition-all duration-200 ${
-        isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'
+        isLoading ? "opacity-50 cursor-not-allowed" : "hover:shadow-md"
       }`}
     >
       <GoogleIcon />
-      <span>{isLogin ? 'Sign in' : 'Sign up'} with Google</span>
+      <span>{isLogin ? "Sign in" : "Sign up"} with Google</span>
     </button>
 
     {/* Facebook Login */}
-    <button
+    {/* <button
       type="button"
       onClick={onFacebookLogin}
       disabled={isLoading}
       className={`w-full bg-[#1877F2] text-white py-2.5 px-4 rounded-lg font-medium hover:bg-[#166FE5] focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 flex items-center justify-center space-x-3 transition-all duration-200 ${
-        isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'
+        isLoading ? "opacity-50 cursor-not-allowed" : "hover:shadow-md"
       }`}
     >
       <FacebookIcon className="w-5 h-5 text-white" />
-      <span>{isLogin ? 'Sign in' : 'Sign up'} with Facebook</span>
-    </button>
+      <span>{isLogin ? "Sign in" : "Sign up"} with Facebook</span>
+    </button> */}
   </div>
-)
+);
 
 // Divider Component
 const AuthDivider = () => (
@@ -70,372 +84,404 @@ const AuthDivider = () => (
       <div className="w-full border-t border-gray-200"></div>
     </div>
     <div className="relative flex justify-center text-sm">
-      <span className="px-4 bg-white text-gray-500 font-medium">or continue with email</span>
+      <span className="px-4 bg-white text-gray-500 font-medium">
+        or continue with email
+      </span>
     </div>
   </div>
-)
+);
 
 const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
-  const { 
-    login, 
-    register, 
-    checkEmail, 
+  const {
+    login,
+    register,
+    checkEmail,
     isLoading: authLoading,
     loginWithGoogle,
-    loginWithFacebook
-  } = useAuth()
-  
-  const [isLogin, setIsLogin] = useState(true)
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
+    loginWithFacebook,
+  } = useAuth();
+
+  const [isLogin, setIsLogin] = useState(true);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    rememberMe: false
-  })
-  const [errors, setErrors] = useState({})
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [successMessage, setSuccessMessage] = useState('')
-  const [emailExists, setEmailExists] = useState(false)
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false)
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    rememberMe: false,
+  });
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [emailExists, setEmailExists] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   // Forgot password specific states
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
-  const [forgotPasswordStep, setForgotPasswordStep] = useState('email') // 'email' or 'success'
-  const [isSendingReset, setIsSendingReset] = useState(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [forgotPasswordStep, setForgotPasswordStep] = useState("email"); // 'email' or 'success'
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   // OAuth loading states
-  const [oauthLoading, setOauthLoading] = useState(false)
+  const [oauthLoading, setOauthLoading] = useState(false);
 
   // Close modal on escape key
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose()
+      if (e.key === "Escape" && isOpen) {
+        onClose();
       }
-    }
+    };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'hidden'
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen, onClose])
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, onClose]);
 
   // Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
       setFormData({
-        name: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        rememberMe: false
-      })
-      setErrors({})
-      setSuccessMessage('')
-      setEmailExists(false)
-      setIsLogin(true)
-      setShowForgotPassword(false)
-      setForgotPasswordEmail('')
-      setForgotPasswordStep('email')
-      setOauthLoading(false)
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        rememberMe: false,
+      });
+      setErrors({});
+      setSuccessMessage("");
+      setEmailExists(false);
+      setIsLogin(true);
+      setShowForgotPassword(false);
+      setForgotPasswordEmail("");
+      setForgotPasswordStep("email");
+      setOauthLoading(false);
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   // Real-time email validation with debounce
   useEffect(() => {
-    if (formData.email && !isLogin && formData.email.includes('@')) {
+    if (formData.email && !isLogin && formData.email.includes("@")) {
       const timeoutId = setTimeout(async () => {
-        setIsCheckingEmail(true)
+        setIsCheckingEmail(true);
         try {
-          const exists = await checkEmail(formData.email)
-          setEmailExists(exists)
-          
+          const exists = await checkEmail(formData.email);
+          setEmailExists(exists);
+
           if (exists) {
-            setErrors(prev => ({
+            setErrors((prev) => ({
               ...prev,
-              email: 'An account with this email already exists'
-            }))
+              email: "An account with this email already exists",
+            }));
           } else {
-            setErrors(prev => {
-              const newErrors = { ...prev }
-              if (newErrors.email === 'An account with this email already exists') {
-                delete newErrors.email
+            setErrors((prev) => {
+              const newErrors = { ...prev };
+              if (
+                newErrors.email === "An account with this email already exists"
+              ) {
+                delete newErrors.email;
               }
-              return newErrors
-            })
+              return newErrors;
+            });
           }
         } catch (error) {
-          console.error('Error checking email:', error)
+          console.error("Error checking email:", error);
         } finally {
-          setIsCheckingEmail(false)
+          setIsCheckingEmail(false);
         }
-      }, 500)
+      }, 500);
 
-      return () => clearTimeout(timeoutId)
+      return () => clearTimeout(timeoutId);
     }
-  }, [formData.email, isLogin, checkEmail])
+  }, [formData.email, isLogin, checkEmail]);
 
   // OAuth handlers
   const handleGoogleLogin = () => {
     try {
-      setOauthLoading(true)
-      setErrors({})
-      console.log('🔍 Starting Google OAuth...')
-      loginWithGoogle()
+      setOauthLoading(true);
+      setErrors({});
+      console.log("🔍 Starting Google OAuth...");
+      loginWithGoogle();
     } catch (error) {
-      console.error('Google login error:', error)
-      setErrors({ general: 'Failed to initiate Google login. Please try again.' })
-      setOauthLoading(false)
+      console.error("Google login error:", error);
+      setErrors({
+        general: "Failed to initiate Google login. Please try again.",
+      });
+      setOauthLoading(false);
     }
-  }
+  };
 
   const handleFacebookLogin = () => {
     try {
-      setOauthLoading(true)
-      setErrors({})
-      console.log('🔍 Starting Facebook OAuth...')
-      loginWithFacebook()
+      setOauthLoading(true);
+      setErrors({});
+      console.log("🔍 Starting Facebook OAuth...");
+      loginWithFacebook();
     } catch (error) {
-      console.error('Facebook login error:', error)
-      setErrors({ general: 'Failed to initiate Facebook login. Please try again.' })
-      setOauthLoading(false)
+      console.error("Facebook login error:", error);
+      setErrors({
+        general: "Failed to initiate Facebook login. Please try again.",
+      });
+      setOauthLoading(false);
     }
-  }
+  };
 
   const validateForm = () => {
-    const newErrors = {}
-    
+    const newErrors = {};
+
     // Email validation
     if (!formData.email) {
-      newErrors.email = 'Email is required'
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email'
+      newErrors.email = "Please enter a valid email";
     } else if (!isLogin && emailExists) {
-      newErrors.email = 'An account with this email already exists'
+      newErrors.email = "An account with this email already exists";
     }
-    
+
     // Password validation
     if (!formData.password) {
-      newErrors.password = 'Password is required'
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
+      newErrors.password = "Password must be at least 6 characters";
     } else if (formData.password.length > 100) {
-      newErrors.password = 'Password must not exceed 100 characters'
+      newErrors.password = "Password must not exceed 100 characters";
     }
 
     // Common weak passwords check
-    const commonPasswords = ['123456', 'password', '123456789', 'qwerty', 'abc123']
+    const commonPasswords = [
+      "123456",
+      "password",
+      "123456789",
+      "qwerty",
+      "abc123",
+    ];
     if (!isLogin && commonPasswords.includes(formData.password.toLowerCase())) {
-      newErrors.password = 'Please choose a stronger password'
+      newErrors.password = "Please choose a stronger password";
     }
-    
+
     if (!isLogin) {
       // Name validation
       if (!formData.name) {
-        newErrors.name = 'Name is required'
+        newErrors.name = "Name is required";
       } else if (formData.name.trim().length < 2) {
-        newErrors.name = 'Name must be at least 2 characters'
+        newErrors.name = "Name must be at least 2 characters";
       } else if (formData.name.trim().length > 50) {
-        newErrors.name = 'Name must not exceed 50 characters'
+        newErrors.name = "Name must not exceed 50 characters";
       }
-      
+
       // Confirm password validation
       if (!formData.confirmPassword) {
-        newErrors.confirmPassword = 'Please confirm your password'
+        newErrors.confirmPassword = "Please confirm your password";
       } else if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Passwords do not match'
+        newErrors.confirmPassword = "Passwords do not match";
       }
     }
-    
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!validateForm()) return
-    
-    setIsSubmitting(true)
-    setErrors({})
-    
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    setErrors({});
+
     try {
-      let result
+      let result;
       if (isLogin) {
-        result = await login(formData.email, formData.password, formData.rememberMe)
+        result = await login(
+          formData.email,
+          formData.password,
+          formData.rememberMe,
+        );
       } else {
         const userData = {
           name: formData.name.trim(),
           email: formData.email.trim(),
-          password: formData.password
-        }
-        result = await register(userData)
+          password: formData.password,
+        };
+        result = await register(userData);
       }
-      
+
       if (result.success) {
-        setSuccessMessage(result.message || (isLogin ? 'Login successful!' : 'Account created successfully!'))
-        
+        setSuccessMessage(
+          result.message ||
+            (isLogin ? "Login successful!" : "Account created successfully!"),
+        );
+
         // Call success callback if provided
         if (onAuthSuccess) {
-          onAuthSuccess(result.user)
+          onAuthSuccess(result.user);
         }
-        
+
         // Close modal after success
         setTimeout(() => {
-          onClose()
-        }, 1500)
+          onClose();
+        }, 1500);
       } else {
         if (result.errors) {
-          setErrors(result.errors)
+          setErrors(result.errors);
         } else {
-          setErrors({ general: result.error })
+          setErrors({ general: result.error });
         }
       }
     } catch (error) {
-      console.error('Auth error:', error)
-      setErrors({ general: 'Something went wrong. Please try again.' })
+      console.error("Auth error:", error);
+      setErrors({ general: "Something went wrong. Please try again." });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setFormData(prev => ({
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
-    
+      [name]: type === "checkbox" ? checked : value,
+    }));
+
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
-      }))
+        [name]: "",
+      }));
     }
-  }
+  };
 
   const toggleMode = () => {
-    setIsLogin(!isLogin)
-    setFormData(prev => ({
+    setIsLogin(!isLogin);
+    setFormData((prev) => ({
       ...prev,
-      name: '',
-      password: '',
-      confirmPassword: ''
-    }))
-    setErrors({})
-    setSuccessMessage('')
-    setEmailExists(false)
-    setShowForgotPassword(false)
-    setOauthLoading(false)
-  }
+      name: "",
+      password: "",
+      confirmPassword: "",
+    }));
+    setErrors({});
+    setSuccessMessage("");
+    setEmailExists(false);
+    setShowForgotPassword(false);
+    setOauthLoading(false);
+  };
 
   // Handle forgot password
   const handleForgotPassword = () => {
-    setShowForgotPassword(true)
-    setForgotPasswordStep('email')
-    setForgotPasswordEmail('')
-    setErrors({})
-    setSuccessMessage('')
-  }
+    setShowForgotPassword(true);
+    setForgotPasswordStep("email");
+    setForgotPasswordEmail("");
+    setErrors({});
+    setSuccessMessage("");
+  };
 
   const handleBackToLogin = () => {
-    setShowForgotPassword(false)
-    setForgotPasswordStep('email')
-    setForgotPasswordEmail('')
-    setErrors({})
-    setSuccessMessage('')
-  }
+    setShowForgotPassword(false);
+    setForgotPasswordStep("email");
+    setForgotPasswordEmail("");
+    setErrors({});
+    setSuccessMessage("");
+  };
 
   const handleForgotPasswordSubmit = async (e) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!forgotPasswordEmail) {
-      setErrors({ email: 'Email is required' })
-      return
+      setErrors({ email: "Email is required" });
+      return;
     }
 
     if (!/\S+@\S+\.\S+/.test(forgotPasswordEmail)) {
-      setErrors({ email: 'Please enter a valid email address' })
-      return
+      setErrors({ email: "Please enter a valid email address" });
+      return;
     }
 
-    setIsSendingReset(true)
-    setErrors({})
+    setIsSendingReset(true);
+    setErrors({});
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/forgot-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/auth/forgot-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: forgotPasswordEmail }),
         },
-        body: JSON.stringify({ email: forgotPasswordEmail })
-      })
+      );
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (data.success) {
-        setForgotPasswordStep('success')
-        setSuccessMessage(data.message)
+        setForgotPasswordStep("success");
+        setSuccessMessage(data.message);
       } else {
-        setErrors({ general: data.message || 'Failed to send reset email. Please try again.' })
+        setErrors({
+          general:
+            data.message || "Failed to send reset email. Please try again.",
+        });
       }
     } catch (error) {
-      console.error('Forgot password error:', error)
-      setErrors({ general: 'Network error. Please check your connection and try again.' })
+      console.error("Forgot password error:", error);
+      setErrors({
+        general: "Network error. Please check your connection and try again.",
+      });
     } finally {
-      setIsSendingReset(false)
+      setIsSendingReset(false);
     }
-  }
+  };
 
   // Password strength indicator
   const getPasswordStrength = (password) => {
-    if (!password) return { score: 0, text: '', color: '' }
-    
-    let score = 0
-    if (password.length >= 8) score++
-    if (/[a-z]/.test(password)) score++
-    if (/[A-Z]/.test(password)) score++
-    if (/[0-9]/.test(password)) score++
-    if (/[^A-Za-z0-9]/.test(password)) score++
-    
-    const levels = [
-      { text: 'Very Weak', color: 'bg-red-400' },
-      { text: 'Weak', color: 'bg-orange-400' },
-      { text: 'Fair', color: 'bg-yellow-400' },
-      { text: 'Good', color: 'bg-blue-400' },
-      { text: 'Strong', color: 'bg-green-400' }
-    ]
-    
-    return { score, ...levels[score] }
-  }
+    if (!password) return { score: 0, text: "", color: "" };
 
-  const passwordStrength = getPasswordStrength(formData.password)
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+
+    const levels = [
+      { text: "Very Weak", color: "bg-red-400" },
+      { text: "Weak", color: "bg-orange-400" },
+      { text: "Fair", color: "bg-yellow-400" },
+      { text: "Good", color: "bg-blue-400" },
+      { text: "Strong", color: "bg-green-400" },
+    ];
+
+    return { score, ...levels[score] };
+  };
+
+  const passwordStrength = getPasswordStrength(formData.password);
 
   // Check if any loading state is active
-  const isAnyLoading = isSubmitting || authLoading || isSendingReset || oauthLoading
+  const isAnyLoading =
+    isSubmitting || authLoading || isSendingReset || oauthLoading;
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
-      <div className={`relative w-full max-w-sm ${!isLogin && !showForgotPassword ? 'max-h-[90vh]' : ''}`}>
+      <div
+        className={`relative w-full max-w-sm ${!isLogin && !showForgotPassword ? "max-h-[90vh]" : ""}`}
+      >
         {/* Custom scrollbar styles for signup */}
         <style jsx>{`
           .custom-scrollbar::-webkit-scrollbar {
@@ -458,10 +504,12 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
           }
         `}</style>
 
-        <div className={`relative bg-white rounded-2xl shadow-2xl border border-pink-100 ${!isLogin && !showForgotPassword ? 'overflow-y-auto custom-scrollbar max-h-[90vh]' : 'overflow-hidden'}`}>
+        <div
+          className={`relative bg-white rounded-2xl shadow-2xl border border-pink-100 ${!isLogin && !showForgotPassword ? "overflow-y-auto custom-scrollbar max-h-[90vh]" : "overflow-hidden"}`}
+        >
           {/* Subtle background gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-pink-50 via-white to-pink-50"></div>
-          
+
           {/* Close button */}
           <button
             onClick={onClose}
@@ -479,14 +527,18 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                   <span className="text-white font-bold text-lg">P</span>
                 </div>
                 <h1 className="text-xl font-bold text-gray-800 mb-1">
-                  {showForgotPassword ? 'Reset Password' : isLogin ? 'Welcome Back' : 'Join Pink Dreams'}
+                  {showForgotPassword
+                    ? "Reset Password"
+                    : isLogin
+                      ? "Welcome Back"
+                      : "Join Pink Dreams"}
                 </h1>
                 <p className="text-gray-500 text-sm">
-                  {showForgotPassword 
-                    ? 'Enter your email to receive reset instructions' 
-                    : isLogin 
-                    ? 'Sign in to your account' 
-                    : 'Create your fashion account'}
+                  {showForgotPassword
+                    ? "Enter your email to receive reset instructions"
+                    : isLogin
+                      ? "Sign in to your account"
+                      : "Create your fashion account"}
                 </p>
               </div>
             </div>
@@ -495,7 +547,9 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
             {successMessage && (
               <div className="mx-6 mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center space-x-2">
                 <Check className="w-4 h-4 text-green-500" />
-                <span className="text-green-700 text-sm font-medium">{successMessage}</span>
+                <span className="text-green-700 text-sm font-medium">
+                  {successMessage}
+                </span>
               </div>
             )}
 
@@ -503,7 +557,9 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
             {errors.general && (
               <div className="mx-6 mb-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-center space-x-2">
                 <X className="w-4 h-4 text-red-500" />
-                <span className="text-red-700 text-sm font-medium">{errors.general}</span>
+                <span className="text-red-700 text-sm font-medium">
+                  {errors.general}
+                </span>
               </div>
             )}
 
@@ -511,7 +567,9 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
             {oauthLoading && (
               <div className="mx-6 mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center space-x-2">
                 <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
-                <span className="text-blue-700 text-sm font-medium">Redirecting to social login...</span>
+                <span className="text-blue-700 text-sm font-medium">
+                  Redirecting to social login...
+                </span>
               </div>
             )}
 
@@ -528,30 +586,34 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                   <span className="text-sm">Back to Sign In</span>
                 </button>
 
-                {forgotPasswordStep === 'email' ? (
+                {forgotPasswordStep === "email" ? (
                   <form onSubmit={handleForgotPasswordSubmit}>
                     <div className="space-y-4">
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                         <p className="text-blue-700 text-sm">
-                          <strong>Forgot your Password?</strong><br />
-                          Provide your account email address to receive an email to reset your password.
+                          <strong>Forgot your Password?</strong>
+                          <br />
+                          Provide your account email address to receive an email
+                          to reset your password.
                         </p>
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-gray-700 text-sm font-medium">Email Address *</label>
+                        <label className="text-gray-700 text-sm font-medium">
+                          Email Address *
+                        </label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                           <input
                             type="email"
                             value={forgotPasswordEmail}
                             onChange={(e) => {
-                              setForgotPasswordEmail(e.target.value)
+                              setForgotPasswordEmail(e.target.value);
                               if (errors.email) {
-                                setErrors(prev => ({ ...prev, email: '' }))
+                                setErrors((prev) => ({ ...prev, email: "" }));
                               }
                             }}
-                            className={`w-full bg-pink-25 border ${errors.email ? 'border-red-300' : 'border-pink-200'} rounded-lg px-10 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-200`}
+                            className={`w-full bg-pink-25 border ${errors.email ? "border-red-300" : "border-pink-200"} rounded-lg px-10 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-200`}
                             placeholder="Enter your email address"
                             disabled={isSendingReset}
                           />
@@ -568,7 +630,9 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                         type="submit"
                         disabled={isSendingReset}
                         className={`w-full bg-gradient-to-r from-pink-400 to-pink-500 text-white py-2.5 rounded-lg font-semibold hover:from-pink-500 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 transform transition-all duration-200 ${
-                          isSendingReset ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 shadow-lg hover:shadow-xl'
+                          isSendingReset
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:scale-105 shadow-lg hover:shadow-xl"
                         }`}
                       >
                         {isSendingReset ? (
@@ -583,8 +647,9 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
 
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                         <p className="text-gray-600 text-xs text-center">
-                          We'll send you an email with instructions to reset your password. 
-                          Please check your spam folder if you don't see it within a few minutes.
+                          We'll send you an email with instructions to reset
+                          your password. Please check your spam folder if you
+                          don't see it within a few minutes.
                         </p>
                       </div>
                     </div>
@@ -596,22 +661,29 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                       <Check className="w-8 h-8 text-green-500" />
                     </div>
                     <div className="space-y-2">
-                      <h3 className="text-lg font-semibold text-gray-800">Check Your Email</h3>
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        Check Your Email
+                      </h3>
                       <p className="text-gray-600 text-sm">
                         We've sent password reset instructions to:
                       </p>
-                      <p className="text-pink-600 font-medium">{forgotPasswordEmail}</p>
+                      <p className="text-pink-600 font-medium">
+                        {forgotPasswordEmail}
+                      </p>
                     </div>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                       <p className="text-blue-700 text-xs">
-                        <strong>Next steps:</strong><br />
-                        1. Check your email inbox (and spam folder)<br />
-                        2. Click the "Reset My Password" button in the email<br />
+                        <strong>Next steps:</strong>
+                        <br />
+                        1. Check your email inbox (and spam folder)
+                        <br />
+                        2. Click the "Reset My Password" button in the email
+                        <br />
                         3. Follow the instructions to create a new password
                       </p>
                     </div>
                     <button
-                      onClick={() => setForgotPasswordStep('email')}
+                      onClick={() => setForgotPasswordStep("email")}
                       className="text-pink-500 hover:text-pink-600 text-sm font-medium transition-colors"
                       disabled={isSendingReset}
                     >
@@ -624,23 +696,25 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
               // Regular Login/Register Form
               <div className="px-6 pb-6">
                 {/* OAuth Buttons */}
-                <OAuthButtons 
+                <OAuthButtons
                   isLoading={isAnyLoading}
                   onGoogleLogin={handleGoogleLogin}
                   onFacebookLogin={handleFacebookLogin}
                   isLogin={isLogin}
                 />
-                
+
                 {/* Divider */}
                 <AuthDivider />
-                
+
                 {/* Email/Password Form */}
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-4">
                     {/* Name field (only for register) */}
                     {!isLogin && (
                       <div className="space-y-1.5">
-                        <label className="text-gray-700 text-sm font-medium">Full Name *</label>
+                        <label className="text-gray-700 text-sm font-medium">
+                          Full Name *
+                        </label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                           <input
@@ -648,7 +722,7 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                             name="name"
                             value={formData.name}
                             onChange={handleInputChange}
-                            className={`w-full bg-pink-25 border ${errors.name ? 'border-red-300' : 'border-pink-200'} rounded-lg px-10 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-200`}
+                            className={`w-full bg-pink-25 border ${errors.name ? "border-red-300" : "border-pink-200"} rounded-lg px-10 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-200`}
                             placeholder="Enter your full name"
                             maxLength="50"
                             disabled={isAnyLoading}
@@ -665,7 +739,9 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
 
                     {/* Email field */}
                     <div className="space-y-1.5">
-                      <label className="text-gray-700 text-sm font-medium">Email Address *</label>
+                      <label className="text-gray-700 text-sm font-medium">
+                        Email Address *
+                      </label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
@@ -673,7 +749,7 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
-                          className={`w-full bg-pink-25 border ${errors.email ? 'border-red-300' : 'border-pink-200'} rounded-lg px-10 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-200 ${!isLogin ? 'pr-10' : ''}`}
+                          className={`w-full bg-pink-25 border ${errors.email ? "border-red-300" : "border-pink-200"} rounded-lg px-10 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-200 ${!isLogin ? "pr-10" : ""}`}
                           placeholder="Enter your email"
                           disabled={isAnyLoading}
                         />
@@ -682,15 +758,18 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                             <div className="w-4 h-4 border-2 border-pink-300 border-t-pink-600 rounded-full animate-spin"></div>
                           </div>
                         )}
-                        {!isLogin && !isCheckingEmail && formData.email && formData.email.includes('@') && (
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            {emailExists ? (
-                              <X className="w-4 h-4 text-red-500" />
-                            ) : (
-                              <Check className="w-4 h-4 text-green-500" />
-                            )}
-                          </div>
-                        )}
+                        {!isLogin &&
+                          !isCheckingEmail &&
+                          formData.email &&
+                          formData.email.includes("@") && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              {emailExists ? (
+                                <X className="w-4 h-4 text-red-500" />
+                              ) : (
+                                <Check className="w-4 h-4 text-green-500" />
+                              )}
+                            </div>
+                          )}
                       </div>
                       {errors.email && (
                         <p className="text-red-500 text-xs flex items-center space-x-1">
@@ -702,15 +781,17 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
 
                     {/* Password field */}
                     <div className="space-y-1.5">
-                      <label className="text-gray-700 text-sm font-medium">Password *</label>
+                      <label className="text-gray-700 text-sm font-medium">
+                        Password *
+                      </label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
-                          type={showPassword ? 'text' : 'password'}
+                          type={showPassword ? "text" : "password"}
                           name="password"
                           value={formData.password}
                           onChange={handleInputChange}
-                          className={`w-full bg-pink-25 border ${errors.password ? 'border-red-300' : 'border-pink-200'} rounded-lg px-10 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-200`}
+                          className={`w-full bg-pink-25 border ${errors.password ? "border-red-300" : "border-pink-200"} rounded-lg px-10 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-200`}
                           placeholder="Enter your password"
                           maxLength="100"
                           disabled={isAnyLoading}
@@ -721,25 +802,33 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                           className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                           disabled={isAnyLoading}
                         >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          {showPassword ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
-                      
+
                       {/* Password strength indicator (only for register) */}
                       {!isLogin && formData.password && (
                         <div className="space-y-1">
                           <div className="flex items-center space-x-2">
                             <div className="flex-1 bg-pink-100 rounded-full h-1.5">
-                              <div 
+                              <div
                                 className={`h-1.5 rounded-full transition-all duration-300 ${passwordStrength.color}`}
-                                style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                                style={{
+                                  width: `${(passwordStrength.score / 5) * 100}%`,
+                                }}
                               ></div>
                             </div>
-                            <span className="text-xs text-gray-500">{passwordStrength.text}</span>
+                            <span className="text-xs text-gray-500">
+                              {passwordStrength.text}
+                            </span>
                           </div>
                         </div>
                       )}
-                      
+
                       {errors.password && (
                         <p className="text-red-500 text-xs flex items-center space-x-1">
                           <X className="w-3 h-3" />
@@ -751,33 +840,42 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                     {/* Confirm Password field (only for register) */}
                     {!isLogin && (
                       <div className="space-y-1.5">
-                        <label className="text-gray-700 text-sm font-medium">Confirm Password *</label>
+                        <label className="text-gray-700 text-sm font-medium">
+                          Confirm Password *
+                        </label>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                           <input
-                            type={showConfirmPassword ? 'text' : 'password'}
+                            type={showConfirmPassword ? "text" : "password"}
                             name="confirmPassword"
                             value={formData.confirmPassword}
                             onChange={handleInputChange}
-                            className={`w-full bg-pink-25 border ${errors.confirmPassword ? 'border-red-300' : 'border-pink-200'} rounded-lg px-10 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-200`}
+                            className={`w-full bg-pink-25 border ${errors.confirmPassword ? "border-red-300" : "border-pink-200"} rounded-lg px-10 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-200`}
                             placeholder="Confirm your password"
                             disabled={isAnyLoading}
                           />
                           <button
                             type="button"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
                             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                             disabled={isAnyLoading}
                           >
-                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {showConfirmPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
                           </button>
                         </div>
-                        {formData.confirmPassword && formData.password === formData.confirmPassword && (
-                          <p className="text-green-500 text-xs flex items-center space-x-1">
-                            <Check className="w-3 h-3" />
-                            <span>Passwords match</span>
-                          </p>
-                        )}
+                        {formData.confirmPassword &&
+                          formData.password === formData.confirmPassword && (
+                            <p className="text-green-500 text-xs flex items-center space-x-1">
+                              <Check className="w-3 h-3" />
+                              <span>Passwords match</span>
+                            </p>
+                          )}
                         {errors.confirmPassword && (
                           <p className="text-red-500 text-xs flex items-center space-x-1">
                             <X className="w-3 h-3" />
@@ -798,7 +896,9 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                           className="w-4 h-4 text-pink-400 bg-white border-pink-300 rounded focus:ring-pink-300 focus:ring-2"
                           disabled={isAnyLoading}
                         />
-                        <label className="ml-2 text-gray-600 text-sm">Remember me for 30 days</label>
+                        <label className="ml-2 text-gray-600 text-sm">
+                          Remember me for 30 days
+                        </label>
                       </div>
                     )}
 
@@ -807,16 +907,20 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                       type="submit"
                       disabled={isAnyLoading || (!isLogin && emailExists)}
                       className={`w-full bg-gradient-to-r from-pink-400 to-pink-500 text-white py-2.5 rounded-lg font-semibold hover:from-pink-500 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 transform transition-all duration-200 ${
-                        isAnyLoading || (!isLogin && emailExists) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 shadow-lg hover:shadow-xl'
+                        isAnyLoading || (!isLogin && emailExists)
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:scale-105 shadow-lg hover:shadow-xl"
                       }`}
                     >
                       {isSubmitting || authLoading ? (
                         <div className="flex items-center justify-center space-x-2">
                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          <span>{isLogin ? 'Signing In...' : 'Creating Account...'}</span>
+                          <span>
+                            {isLogin ? "Signing In..." : "Creating Account..."}
+                          </span>
                         </div>
                       ) : (
-                        <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                        <span>{isLogin ? "Sign In" : "Create Account"}</span>
                       )}
                     </button>
 
@@ -824,7 +928,8 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
                     {!isLogin && (
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5">
                         <p className="text-blue-700 text-xs text-center">
-                          By creating an account, you agree to our Terms of Service and Privacy Policy.
+                          By creating an account, you agree to our Terms of
+                          Service and Privacy Policy.
                         </p>
                       </div>
                     )}
@@ -837,13 +942,15 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
             {!showForgotPassword && (
               <div className="px-6 pb-6 text-center space-y-3">
                 <p className="text-gray-600 text-sm">
-                  {isLogin ? "Don't have an account?" : "Already have an account?"}
+                  {isLogin
+                    ? "Don't have an account?"
+                    : "Already have an account?"}
                   <button
                     onClick={toggleMode}
                     className="ml-1 text-pink-500 hover:text-pink-600 font-medium transition-colors"
                     disabled={isAnyLoading}
                   >
-                    {isLogin ? 'Sign Up' : 'Sign In'}
+                    {isLogin ? "Sign Up" : "Sign In"}
                   </button>
                 </p>
 
@@ -871,7 +978,7 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default LoginModal
+export default LoginModal;

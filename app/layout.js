@@ -7,9 +7,20 @@ import { WishlistProvider } from "./context/WishlistContext";
 import { ToastContainer } from "react-toastify";
 import SettingsProvider from "./context/SettingContext";
 import "react-toastify/dist/ReactToastify.css";
+import RouteGuardModal from "./components/RouteGuardModel";
 
-const inter = Inter({ subsets: ["latin"], weight: ["400","500","600","700"], variable: "--font-inter", display: "swap"});
-const merriweather = Merriweather({ subsets: ["latin"], weight: ["400","700"], variable: "--font-merriweather", display: "swap" });
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-inter",
+  display: "swap",
+});
+const merriweather = Merriweather({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-merriweather",
+  display: "swap",
+});
 
 export const metadata = {
   title: "Pink Dreams - Premium Fashion Store",
@@ -40,7 +51,7 @@ export default function RootLayout({ children }) {
             <CartProvider>
               <WishlistProvider>
                 <ToastContainer
-                 theme="colored"
+                  theme="colored"
                   position="top-right"
                   autoClose={3000}
                   hideProgressBar={false}
@@ -51,7 +62,7 @@ export default function RootLayout({ children }) {
                   draggable
                   pauseOnHover
                 />
-                {children}
+                <RouteGuardModal>{children}</RouteGuardModal>
               </WishlistProvider>
             </CartProvider>
           </AuthProvider>

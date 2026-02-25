@@ -33,9 +33,16 @@ const DEFAULT_PAYMENT_METHODS = {
 };
 
 function CheckoutContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const { cart, getTotalPrice, getTotalItems, clearCart } = useCart();
+  const {
+    cart,
+    getTotalPrice,
+    getTotalItems,
+    clearCart,
+    isLoading: isCartLoading,
+  } = useCart();
+
+  const router = useRouter();
   const { user } = useAuth();
 
   const [orderId, setOrderId] = useState("");
@@ -56,39 +63,10 @@ function CheckoutContent() {
   });
 
   const [publicSettings, setPublicSettings] = useState(null);
-  const [allowGuestCheckout, setAllowGuestCheckout] = useState(true);
 
   const paymentMethods = useMemo(() => {
     return publicSettings?.paymentSettings?.methods || DEFAULT_PAYMENT_METHODS;
   }, [publicSettings]);
-
-  useEffect(() => {
-    let mounted = true;
-
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/public`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!mounted) return;
-        const s = d?.settings || null;
-        setPublicSettings(s);
-        setAllowGuestCheckout(s?.allowGuestCheckout ?? true);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setPublicSettings(null);
-        setAllowGuestCheckout(true);
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!user && allowGuestCheckout === false) {
-      router.push(`/login?redirect=/checkout`);
-    }
-  }, [user, allowGuestCheckout, router]);
 
   useEffect(() => {
     const newOrderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
@@ -126,7 +104,7 @@ function CheckoutContent() {
 
     // Redirect if cart is empty
     if (cart.length === 0) {
-      router.push("/cart");
+      router.replace("/cart");
     }
   }, [cart, router, searchParams]);
 
@@ -178,6 +156,13 @@ function CheckoutContent() {
       if (!successOrderId) {
         throw new Error("Order ID is missing. Please contact support.");
       }
+      try {
+        if (typeof window !== "undefined" && order) {
+          sessionStorage.setItem("lastSuccessfulOrder", JSON.stringify(order));
+        }
+      } catch (e) {
+        console.warn("Could not cache successful order:", e);
+      }
 
       router.push(
         `/order/success?payment_intent=${paymentId}&order_id=${successOrderId}`,
@@ -207,6 +192,19 @@ function CheckoutContent() {
             Your cart is empty
           </h2>
           <p className="text-gray-600 mb-4">Redirecting to cart...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isCartLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <ShoppingCart className="w-24 h-24 mx-auto text-gray-300 mb-4" />
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Loading cart...
+          </h2>
         </div>
       </div>
     );
@@ -350,8 +348,7 @@ function CheckoutContent() {
                       <h3 className="font-semibold text-gray-900 truncate">
                         {item.name}
                       </h3>
-                     {renderSelectedOptions(item.selectedOptions)}
-
+                      {renderSelectedOptions(item.selectedOptions)}
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-gray-900">

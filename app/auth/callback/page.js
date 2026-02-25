@@ -1,7 +1,8 @@
 // Create this file: pages/auth/callback.js
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
@@ -15,80 +16,71 @@ const AuthCallback = () => {
   const [message, setMessage] = useState('Processing authentication...')
   const [provider, setProvider] = useState('')
 
-  useEffect(() => {
-    const processCallback = async () => {
-      try {
-        // Get parameters from URL
-        const token = searchParams.get('token')
-        const error = searchParams.get('error')
-        const success = searchParams.get('success')
-        const authProvider = searchParams.get('provider')
-        
-        setProvider(authProvider || '')
+  const hasProcessedRef = useRef(false)
+const redirectTimerRef = useRef(null)
 
-        if (error) {
-          // Handle error cases
-          const errorMessages = {
-            'google_auth_failed': 'Google authentication failed. Please try again.',
-            'facebook_auth_failed': 'Facebook authentication failed. Please try again.',
-            'google_callback_failed': 'Google authentication callback failed.',
-            'facebook_callback_failed': 'Facebook authentication callback failed.',
-            'access_denied': 'Access was denied. Please try again.',
-            'invalid_request': 'Invalid authentication request.'
-          }
-          
-          setStatus('error')
-          setMessage(errorMessages[error] || 'Authentication failed. Please try again.')
-          
-          // Redirect to login page after 3 seconds
-          setTimeout(() => {
-            router.push('/')
-          }, 3000)
-          return
+
+useEffect(() => {
+  if (hasProcessedRef.current) return
+  hasProcessedRef.current = true
+
+  const processCallback = async () => {
+    try {
+      const token = searchParams.get('token')
+      const error = searchParams.get('error')
+      const success = searchParams.get('success')
+      const authProvider = searchParams.get('provider')
+
+      setProvider(authProvider || '')
+
+      if (error) {
+        const errorMessages = {
+          google_auth_failed: 'Google authentication failed. Please try again.',
+          facebook_auth_failed: 'Facebook authentication failed. Please try again.',
+          google_callback_failed: 'Google authentication callback failed.',
+          facebook_callback_failed: 'Facebook authentication callback failed.',
+          access_denied: 'Access was denied. Please try again.',
+          invalid_request: 'Invalid authentication request.'
         }
 
-        if (token && success === 'true') {
-          // Handle successful authentication
-          const result = await handleOAuthCallback(token, authProvider)
-          
-          if (result.success) {
-            setStatus('success')
-            setMessage(`Successfully signed in with ${authProvider}!`)
-            
-            // Redirect to home page after 2 seconds
-            setTimeout(() => {
-              router.push('/')
-            }, 2000)
-          } else {
-            setStatus('error')
-            setMessage(result.error || 'Authentication failed')
-            
-            setTimeout(() => {
-              router.push('/')
-            }, 3000)
-          }
-        } else {
-          // No token or success flag
-          setStatus('error')
-          setMessage('Invalid authentication response')
-          
-          setTimeout(() => {
-            router.push('/')
-          }, 3000)
-        }
-      } catch (error) {
-        console.error('OAuth callback error:', error)
         setStatus('error')
-        setMessage('An unexpected error occurred')
-        
-        setTimeout(() => {
-          router.push('/')
-        }, 3000)
+        setMessage(errorMessages[error] || 'Authentication failed. Please try again.')
+        redirectTimerRef.current = setTimeout(() => router.push('/'), 3000)
+        return
       }
-    }
 
-    processCallback()
-  }, [searchParams, router, handleOAuthCallback])
+      if (token && success === 'true') {
+        const result = await handleOAuthCallback(token, authProvider)
+
+        if (result.success) {
+          setStatus('success')
+          setMessage(`Successfully signed in with ${authProvider}!`)
+          redirectTimerRef.current = setTimeout(() => router.push('/'), 1200)
+        } else {
+          setStatus('error')
+          setMessage(result.error || 'Authentication failed')
+          redirectTimerRef.current = setTimeout(() => router.push('/'), 3000)
+        }
+      } else {
+        setStatus('error')
+        setMessage('Invalid authentication response')
+        redirectTimerRef.current = setTimeout(() => router.push('/'), 3000)
+      }
+    } catch (error) {
+      console.error('OAuth callback error:', error)
+      setStatus('error')
+      setMessage('An unexpected error occurred')
+      redirectTimerRef.current = setTimeout(() => router.push('/'), 3000)
+    }
+  }
+
+  processCallback()
+
+  return () => {
+    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current)
+  }
+}, [searchParams, router, handleOAuthCallback])
+
 
   const getProviderName = (provider) => {
     switch (provider) {
