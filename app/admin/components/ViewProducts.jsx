@@ -298,7 +298,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
 
   // Product Image Display Component
   const ProductImageDisplay = ({ product }) => {
-    
+     
 
     return (
       <div className="flex items-center mr-3">

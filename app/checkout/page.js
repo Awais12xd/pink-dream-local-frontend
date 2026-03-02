@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useContext } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -18,10 +18,12 @@ import Link from "next/link";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import PaymentSelector from "../components/PaymentSelector";
+import LoginModal from "../components/LoginModal";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { StripeProvider } from "../context/StripeContext";
 import { PayPalProvider } from "../context/PayPalContext";
+import { SettingContext } from "../context/SettingContext";
 import { toast } from "react-toastify";
 import { getImageSrc, handleImageError } from "../utils/imageUtils";
 
@@ -44,9 +46,11 @@ function CheckoutContent() {
 
   const router = useRouter();
   const { user } = useAuth();
+  const { settings } = useContext(SettingContext);
 
   const [orderId, setOrderId] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // Promo code state from cart
   const [appliedPromo, setAppliedPromo] = useState(null);
@@ -67,11 +71,68 @@ function CheckoutContent() {
   const paymentMethods = useMemo(() => {
     return publicSettings?.paymentSettings?.methods || DEFAULT_PAYMENT_METHODS;
   }, [publicSettings]);
+  const allowGuestCheckout =
+    typeof publicSettings?.allowGuestCheckout === "boolean"
+      ? publicSettings.allowGuestCheckout
+      : null;
+
+  const filteredPaymentMethods = useMemo(() => {
+    const mustRestrictMethods = !user && allowGuestCheckout !== true;
+    if (!mustRestrictMethods) return paymentMethods;
+
+    return {
+      stripe: { ...paymentMethods?.stripe, enabled: false },
+      paypal: { ...paymentMethods?.paypal, enabled: false },
+      bankTransfer: { ...paymentMethods?.bankTransfer, enabled: false },
+      cod: { ...paymentMethods?.cod, enabled: true },
+    };
+  }, [paymentMethods, allowGuestCheckout, user]);
+
+  useEffect(() => {
+    if (user?.name || user?.email) {
+      setShippingAddress((prev) => ({
+        ...prev,
+        name: prev.name || user?.name || "",
+        email: prev.email || user?.email || "",
+      }));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    let mounted = true;
+    if (settings) {
+      setPublicSettings(settings);
+    }
+
+    const fetchLatestSettings = () =>
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/public`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (!mounted) return;
+          setPublicSettings(d?.settings || null);
+        })
+        .catch(() => {
+          if (!mounted) return;
+          if (!settings) {
+            setPublicSettings(null);
+          }
+        });
+
+    fetchLatestSettings();
+    const intervalId = setInterval(fetchLatestSettings, 20000);
+
+    return () => {
+      mounted = false;
+      clearInterval(intervalId);
+    };
+  }, [settings]);
 
   useEffect(() => {
     const newOrderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
     setOrderId(newOrderId);
+  }, []);
 
+  useEffect(() => {
     // FIXED: Check multiple sources for promo code data
     let promoData = null;
 
@@ -101,12 +162,13 @@ function CheckoutContent() {
     if (promoData) {
       setAppliedPromo(promoData);
     }
+  }, [searchParams]);
 
-    // Redirect if cart is empty
-    if (cart.length === 0) {
+  useEffect(() => {
+    if (!isCartLoading && cart.length === 0) {
       router.replace("/cart");
     }
-  }, [cart, router, searchParams]);
+  }, [cart.length, isCartLoading, router]);
 
   const handlePaymentSuccess = async (order, paymentData) => {
     setIsProcessing(true);
@@ -183,6 +245,19 @@ function CheckoutContent() {
     setIsProcessing(false);
   };
 
+  if (isCartLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <ShoppingCart className="w-24 h-24 mx-auto text-gray-300 mb-4" />
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Loading cart...
+          </h2>
+        </div>
+      </div>
+    );
+  }
+
   if (cart.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -192,19 +267,6 @@ function CheckoutContent() {
             Your cart is empty
           </h2>
           <p className="text-gray-600 mb-4">Redirecting to cart...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isCartLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <ShoppingCart className="w-24 h-24 mx-auto text-gray-300 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Loading cart...
-          </h2>
         </div>
       </div>
     );
@@ -622,7 +684,10 @@ function CheckoutContent() {
                 onSuccess={handlePaymentSuccess}
                 onError={handlePaymentError}
                 isLoading={isProcessing}
-                paymentMethods={paymentMethods}
+                paymentMethods={filteredPaymentMethods}
+                isAuthenticated={!!user}
+                allowGuestCheckout={allowGuestCheckout}
+                onRequireAuth={() => setIsLoginModalOpen(true)}
               />
 
               {/* Trust Signals */}
@@ -649,6 +714,11 @@ function CheckoutContent() {
           </div>
         </div>
       </div>
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onAuthSuccess={() => setIsLoginModalOpen(false)}
+      />
       <Footer />
     </div>
   );

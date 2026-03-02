@@ -372,6 +372,98 @@ const EditProfileModal = ({ user, isOpen, onClose, onSave }) => {
   );
 };
 
+// Edit Address Modal
+const EditAddressModal = ({ user, isOpen, onClose, onSave }) => {
+  const [address, setAddress] = useState(user?.address || '');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setAddress(user?.address || '');
+  }, [user, isOpen]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    const trimmedAddress = address.trim();
+    if (trimmedAddress.length > 0 && trimmedAddress.length < 5) {
+      setError('Address must be at least 5 characters long');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onSave({ address: trimmedAddress });
+      onClose();
+    } catch (saveError) {
+      setError(saveError.message || 'Failed to update address');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <motion.div
+        className="bg-white rounded-2xl p-6 w-full max-w-md"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-800">Delivery Address</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Address
+            </label>
+            <textarea
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+              placeholder="Enter your delivery address"
+            />
+            <p className="text-gray-500 text-xs mt-1">
+              This address will be used for quick checkout details.
+            </p>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
+
+          <div className="flex space-x-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center justify-center"
+            >
+              {loading ? <Loader className="animate-spin" size={20} /> : 'Save Address'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
 // Change Password Modal
 const ChangePasswordModal = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -577,6 +669,11 @@ const AccountInfoSection = ({ user }) => {
       verified: user?.emailVerified 
     },
     { 
+      icon: MapPin, 
+      label: 'Delivery Address', 
+      value: user?.address?.trim() || 'Not provided'
+    },
+    { 
       icon: Calendar, 
       label: 'Member Since', 
       value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
@@ -637,7 +734,7 @@ const AccountInfoSection = ({ user }) => {
 };
 
 // Quick Actions Component
-const QuickActions = () => {
+const QuickActions = ({ onOpenAddressModal, address }) => {
   const actions = [
     { 
       icon: Package, 
@@ -656,17 +753,17 @@ const QuickActions = () => {
     { 
       icon: MapPin, 
       label: 'Addresses', 
-      href: '/addresses',
+      onClick: onOpenAddressModal,
       color: 'from-green-500 to-green-600',
-      description: 'Delivery addresses'
+      description: address?.trim() ? 'Update delivery address' : 'Add delivery address'
     },
-    { 
-      icon: Bell, 
-      label: 'Notifications', 
-      href: '/notifications',
-      color: 'from-yellow-500 to-orange-600',
-      description: 'Updates & alerts'
-    }
+    // { 
+    //   icon: Bell, 
+    //   label: 'Notifications', 
+    //   href: '/notifications',
+    //   color: 'from-yellow-500 to-orange-600',
+    //   description: 'Updates & alerts'
+    // }
   ];
 
   return (
@@ -678,14 +775,26 @@ const QuickActions = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 + index * 0.1 }}
         >
-          <Link
-            href={action.href}
-            className={`block p-6 bg-gradient-to-br ${action.color} text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105`}
-          >
-            <action.icon size={24} className="mb-3" />
-            <h3 className="font-semibold mb-1">{action.label}</h3>
-            <p className="text-sm opacity-90">{action.description}</p>
-          </Link>
+          {action.onClick ? (
+            <button
+              type="button"
+              onClick={action.onClick}
+              className={`w-full text-left p-6 bg-gradient-to-br ${action.color} text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105`}
+            >
+              <action.icon size={24} className="mb-3" />
+              <h3 className="font-semibold mb-1">{action.label}</h3>
+              <p className="text-sm opacity-90">{action.description}</p>
+            </button>
+          ) : (
+            <Link
+              href={action.href}
+              className={`block p-6 bg-gradient-to-br ${action.color} text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105`}
+            >
+              <action.icon size={24} className="mb-3" />
+              <h3 className="font-semibold mb-1">{action.label}</h3>
+              <p className="text-sm opacity-90">{action.description}</p>
+            </Link>
+          )}
         </motion.div>
       ))}
     </div>
@@ -750,6 +859,7 @@ const ProfilePage = () => {
   const [stats, setStats] = useState({ cart: 0, wishlist: 0 });
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [notification, setNotification] = useState({ message: '', type: '' });
@@ -804,12 +914,15 @@ const ProfilePage = () => {
   };
 
   // Handle profile update
-  const handleProfileUpdate = async (profileData) => {
+  const handleProfileUpdate = async (
+    profileData,
+    successMessage = 'Profile updated successfully!'
+  ) => {
     try {
       const response = await api.updateProfile(profileData);
       if (response.success) {
-        setUser(response.user);
-        showNotification('Profile updated successfully!');
+        setUser((prev) => ({ ...prev, ...response.user }));
+        showNotification(successMessage);
       } else {
         throw new Error(response.message || 'Failed to update profile');
       }
@@ -818,6 +931,13 @@ const ProfilePage = () => {
       showNotification('Failed to update profile', 'error');
       throw error;
     }
+  };
+
+  const handleAddressUpdate = async ({ address }) => {
+    await handleProfileUpdate(
+      { address },
+      'Delivery address updated successfully!'
+    );
   };
 
   // Handle password change
@@ -919,7 +1039,10 @@ const ProfilePage = () => {
             transition={{ delay: 0.4 }}
           >
             <h2 className="text-xl font-bold text-gray-800 mb-6">Quick Actions</h2>
-            <QuickActions />
+            <QuickActions
+              onOpenAddressModal={() => setShowAddressModal(true)}
+              address={user?.address}
+            />
           </motion.div>
           
           {/* Profile Actions */}
@@ -980,6 +1103,13 @@ const ProfilePage = () => {
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
           onSave={handleProfileUpdate}
+        />
+
+        <EditAddressModal
+          user={user}
+          isOpen={showAddressModal}
+          onClose={() => setShowAddressModal(false)}
+          onSave={handleAddressUpdate}
         />
 
         <ChangePasswordModal

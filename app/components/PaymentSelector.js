@@ -38,6 +38,9 @@ export default function PaymentSelector({
   onError,
   isLoading,
   paymentMethods = DEFAULT_METHODS,
+  isAuthenticated = false,
+  allowGuestCheckout = true,
+  onRequireAuth,
 }) {
   const methods = paymentMethods || DEFAULT_METHODS
   const [offlineLoading, setOfflineLoading] = useState(false)
@@ -139,6 +142,17 @@ export default function PaymentSelector({
   }
 
   const createOfflineOrder = async (method) => {
+    if (!isAuthenticated && allowGuestCheckout === null) {
+      toast.info("Checking checkout permissions. Please try again.");
+      return;
+    }
+
+    if (!isAuthenticated && allowGuestCheckout === false) {
+      toast.info("Please log in to place your order.");
+      onRequireAuth?.();
+      return;
+    }
+
     if (!validateShippingAddress()) {
       toast.error("Fill all required shipping fields.")
       return
@@ -321,6 +335,9 @@ export default function PaymentSelector({
               onSuccess={onSuccess}
               onError={onError}
               isLoading={isLoading}
+              isAuthenticated={isAuthenticated}
+              allowGuestCheckout={allowGuestCheckout}
+              onRequireAuth={onRequireAuth}
             />
           </div>
         )}
@@ -336,6 +353,9 @@ export default function PaymentSelector({
               shippingAddress={shippingAddress}
               onSuccess={onSuccess}
               onError={onError}
+              isAuthenticated={isAuthenticated}
+              allowGuestCheckout={allowGuestCheckout}
+              onRequireAuth={onRequireAuth}
             />
           </div>
         )}

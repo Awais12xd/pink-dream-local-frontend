@@ -12,12 +12,19 @@ function PayPalButtonInner({
   shippingAddress,
   onSuccess,
   onError,
+  isAuthenticated = false,
+  allowGuestCheckout = true,
+  onRequireAuth,
 }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [{ isPending }] = usePayPalScriptReducer();
 
   const mapPayPalError = (res, data, fallback) => {
     const msg = data?.message || data?.error || fallback;
+    if (res?.status === 403 && /guest checkout/i.test(msg)) {
+      onRequireAuth?.();
+      return "Guest checkout is disabled. Please login to continue.";
+    }
     if (res?.status === 403 || /disabled/i.test(msg)) {
       return "PayPal is currently disabled by admin. Please select another payment method.";
     }
@@ -25,7 +32,26 @@ function PayPalButtonInner({
     return msg;
   };
 
+  const ensureCheckoutAllowed = () => {
+    if (!isAuthenticated && allowGuestCheckout === null) {
+      toast.info("Checking checkout permissions. Please try again.");
+      return false;
+    }
+
+    if (!isAuthenticated && allowGuestCheckout === false) {
+      toast.info("Please login to continue checkout.");
+      onRequireAuth?.();
+      return false;
+    }
+
+    return true;
+  };
+
   const createOrder = async () => {
+    if (!ensureCheckoutAllowed()) {
+      throw new Error("Checkout requires authentication");
+    }
+
     setIsProcessing(true);
 
     try {
@@ -48,13 +74,19 @@ function PayPalButtonInner({
         mapPayPalError(response, result, "Failed to create PayPal order"),
       );
     } catch (error) {
-      toast.error("Failed to initialize PayPal payment");
+      if (error.message !== "Checkout requires authentication") {
+        toast.error("Failed to initialize PayPal payment");
+      }
       setIsProcessing(false);
       throw error;
     }
   };
 
   const onApprove = async (data) => {
+    if (!ensureCheckoutAllowed()) {
+      return;
+    }
+
     try {
       toast.info("Processing your PayPal payment...");
 

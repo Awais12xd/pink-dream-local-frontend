@@ -19,9 +19,6 @@ const ROUTE_POLICIES = [
   { prefix: "/orders", mode: PROTECTION.LOGIN_ONLY },
   { prefix: "/profile", mode: PROTECTION.LOGIN_ONLY },
   { prefix: "/account", mode: PROTECTION.LOGIN_ONLY },
-
-  // If you want product details protected by login, keep this:
-  { prefix: "/product", mode: PROTECTION.LOGIN_ONLY },
 ];
 
 const EXCLUDED_PREFIXES = ["/login", "/auth", "/admin"];

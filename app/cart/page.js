@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -26,6 +26,7 @@ import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import { getImageSrc, handleImageError } from "../utils/imageUtils";
 import LoginModal from "../components/LoginModal";
+import { SettingContext } from "../context/SettingContext";
 
 export default function CartPage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function CartPage() {
     clearCart,
   } = useCart();
   const { user } = useAuth();
+  const { settings } = useContext(SettingContext);
 
   // Promo code states
   const [promoCode, setPromoCode] = useState("");
@@ -45,7 +47,8 @@ export default function CartPage() {
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [promoError, setPromoError] = useState("");
 
-  const [allowGuestCheckout, setAllowGuestCheckout] = useState(true);
+  const [allowGuestCheckout, setAllowGuestCheckout] = useState(null);
+  const [checkoutPolicyLoading, setCheckoutPolicyLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // ✅ Load applied promo code from localStorage on mount
@@ -216,26 +219,46 @@ export default function CartPage() {
   useEffect(() => {
     let mounted = true;
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/public`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!mounted) return;
-        const s = d?.settings || null;
-        // setPublicSettings(s);
-        setAllowGuestCheckout(s?.allowGuestCheckout ?? true);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setAllowGuestCheckout(true);
-      });
+    if (typeof settings?.allowGuestCheckout === "boolean") {
+      setAllowGuestCheckout(settings.allowGuestCheckout);
+      setCheckoutPolicyLoading(false);
+    }
+
+    const fetchLatestCheckoutPolicy = () =>
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/public`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (!mounted) return;
+          const s = d?.settings || null;
+          setAllowGuestCheckout(s?.allowGuestCheckout ?? true);
+        })
+        .catch(() => {
+          if (!mounted) return;
+          if (typeof settings?.allowGuestCheckout !== "boolean") {
+            setAllowGuestCheckout(true);
+          }
+        })
+        .finally(() => {
+          if (!mounted) return;
+          setCheckoutPolicyLoading(false);
+        });
+
+    fetchLatestCheckoutPolicy();
+    const intervalId = setInterval(fetchLatestCheckoutPolicy, 20000);
 
     return () => {
       mounted = false;
+      clearInterval(intervalId);
     };
-  }, []);
+  }, [settings?.allowGuestCheckout]);
 
   // ✅ Navigate to checkout with promo data
   const handleProceedToCheckout = () => {
+    if (!user && checkoutPolicyLoading) {
+      toast.info("Checking checkout settings. Please try again.");
+      return;
+    }
+
     if (!user && allowGuestCheckout === false) {
       setIsLoginModalOpen(true);
       return;
@@ -258,6 +281,9 @@ export default function CartPage() {
       router.push("/checkout");
     }
   };
+
+  const showGuestCheckoutButton =
+    !user && allowGuestCheckout === true && !checkoutPolicyLoading;
 
   const handleLoginSuccess = (user) => {
     setIsLoginModalOpen(false);
@@ -602,11 +628,31 @@ export default function CartPage() {
                 {/* Checkout Button */}
                 <button
                   onClick={handleProceedToCheckout}
-                  className="w-full mt-6 px-6 py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl hover:from-pink-600 hover:to-pink-700 transition-all shadow-lg font-bold text-lg flex items-center justify-center"
+                  disabled={!user && checkoutPolicyLoading}
+                  className="w-full mt-6 px-6 py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl hover:from-pink-600 hover:to-pink-700 transition-all shadow-lg font-bold text-lg flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Proceed to Checkout
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </button>
+
+                {showGuestCheckoutButton && (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm font-semibold text-amber-900">
+                      Guest checkout is available
+                    </p>
+                    <p className="mt-1 text-xs text-amber-800 leading-relaxed">
+                      You can place this order without signing in. Guest orders
+                      are not available in account order tracking.
+                    </p>
+                    <button
+                      onClick={handleProceedToCheckout}
+                      className="w-full mt-3 px-4 py-3 border border-amber-300 bg-white text-amber-900 rounded-lg hover:bg-amber-100 transition-all font-semibold flex items-center justify-center"
+                    >
+                      Guest Checkout
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Trust Badges */}
                 <div className="mt-6 space-y-2 text-sm text-gray-600">

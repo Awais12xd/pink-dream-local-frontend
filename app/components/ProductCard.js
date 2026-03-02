@@ -5,9 +5,7 @@ import { Heart, ShoppingBag, Loader2, Eye } from 'lucide-react'
 import Link from 'next/link'
 import { useWishlist } from '../context/WishlistContext'
 import { useCart } from '../context/CartContext'
-import { toast } from 'react-toastify'
-import { useRouter, useSearchParams } from "next/navigation"
-import { useAuth } from '../context/AuthContext'
+import { useRouter } from "next/navigation"
 
 // Fallback image URL
 const FALLBACK_IMAGE = 'https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams'
@@ -48,7 +46,6 @@ const getImageSrc = (imageSrc, fallback = FALLBACK_IMAGE) => {
 }
 
 const ProductCard = ({ product }) => {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false)
   const router = useRouter();
   const [addingToCart, setAddingToCart] = useState(false)
@@ -156,12 +153,7 @@ const ProductCard = ({ product }) => {
   const inCart = isInCart ? isInCart(product.id) : false
 
   const handleDetailClick = () => {
-    if (!user ) {
-      toast.info("Login to see the product details!")
-      return;
-    }
     router.push(`/product/${product.id}`);
-    return;
   }
 
   return (

@@ -42,11 +42,17 @@ const ProductImageZoom = ({
   onImageError = () => {},
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+  const [cursorPosition, setCursorPosition] = useState({ x: 50, y: 50 });
   const [isMobile, setIsMobile] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [resolvedSrc, setResolvedSrc] = useState(src);
 
   const containerRef = useRef(null);
+
+  useEffect(() => {
+    setResolvedSrc(highResSrc || src);
+    setIsImageLoaded(false);
+  }, [src, highResSrc]);
 
   useEffect(() => {
     const checkIfMobile = () => {
@@ -65,10 +71,14 @@ const ProductImageZoom = ({
     const container = containerRef.current;
     const rect = container.getBoundingClientRect();
 
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    if (!rect.width || !rect.height) return;
 
-    setCursorPosition({ x, y });
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+
+    const clamp = (value) => Math.min(100, Math.max(0, value));
+
+    setCursorPosition({ x: clamp(x), y: clamp(y) });
   };
 
   const handleMouseEnter = () => {
@@ -95,7 +105,16 @@ const ProductImageZoom = ({
   };
 
   const handleImageError = (e) => {
-    setIsImageLoaded(false);
+    const fallback =
+      "https://placehold.co/1200x1200/FFB6C1/FFFFFF?text=No+Image";
+
+    if (resolvedSrc !== fallback) {
+      setResolvedSrc(fallback);
+      setIsImageLoaded(false);
+      return;
+    }
+
+    setIsImageLoaded(true);
     onImageError(e);
   };
 
@@ -112,12 +131,12 @@ const ProductImageZoom = ({
       }}
     >
       <motion.img
-        src={src}
+        src={resolvedSrc}
         alt={alt}
         className="w-full h-full object-cover select-none"
         animate={{
           scale: isHovered && !isMobile ? 2 : 1,
-          transformOrigin: `${cursorPosition.x}px ${cursorPosition.y}px`,
+          transformOrigin: `${cursorPosition.x}% ${cursorPosition.y}%`,
         }}
         transition={{
           type: "tween",
@@ -130,7 +149,7 @@ const ProductImageZoom = ({
         style={{
           transformOrigin:
             isHovered && !isMobile
-              ? `${cursorPosition.x}px ${cursorPosition.y}px`
+              ? `${cursorPosition.x}% ${cursorPosition.y}%`
               : "center center",
         }}
       />
@@ -235,10 +254,8 @@ export default function ProductDetail() {
     const userData = localStorage.getItem("user");
     if (userData) {
       setUser(JSON.parse(userData));
-    }else{
-      router.push(`/login?redirect=/product/${productId}`);
     }
-  }, [user , router]);
+  }, [user]);
 
   useEffect(() => {
     if (productId) {
@@ -790,18 +807,12 @@ export default function ProductDetail() {
                   </div>
                 )}
 
-                <div className="flex-1 relative h-[450px] rounded-xl overflow-hidden bg-gray-50">
-                  <img
-                    src={getImageSrc(activeImage)}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src =
-                        "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image";
-                    }}
-                  />
-                </div>
+                <ProductImageZoom
+                  src={getImageSrc(activeImage)}
+                  highResSrc={getHighResSrc(activeImage)}
+                  alt={product.name}
+                  className="flex-1 h-[450px]"
+                />
               </div>
             </motion.div>
 

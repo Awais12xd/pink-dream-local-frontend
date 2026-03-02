@@ -1052,6 +1052,19 @@ import { toast } from 'react-toastify';
                       Featured product
                     </label>
                   </div>
+
+                  <div className="flex items-center space-x-3 py-2">
+                    <input
+                      type="checkbox"
+                      id="allowReviews"
+                      checked={newProduct.allowReviews !== false}
+                      onChange={(e) => updateProductField('allowReviews', e.target.checked)}
+                      className="w-4 h-4 text-pink-600 bg-gray-100 border-pink-300 rounded focus:ring-pink-500"
+                    />
+                    <label htmlFor="allowReviews" className="text-sm font-medium text-gray-700">
+                      Allow reviews
+                    </label>
+                  </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

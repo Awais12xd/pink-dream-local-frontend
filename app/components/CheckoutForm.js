@@ -42,6 +42,9 @@ export default function CheckoutForm({
   onSuccess,
   onError,
   isLoading: externalLoading = false,
+  isAuthenticated = false,
+  allowGuestCheckout = true,
+  onRequireAuth,
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -64,6 +67,10 @@ export default function CheckoutForm({
 
   const mapPaymentError = (res, data, fallback) => {
     const msg = data?.message || data?.error || fallback;
+    if (res?.status === 403 && /guest checkout/i.test(msg)) {
+      onRequireAuth?.();
+      return "Guest checkout is disabled. Please login to continue.";
+    }
     if (res?.status === 403 || /disabled/i.test(msg)) {
       return "Card payment is currently disabled by admin. Please select another payment method.";
     }
@@ -91,6 +98,19 @@ export default function CheckoutForm({
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (!isAuthenticated && allowGuestCheckout === null) {
+      setError("Checking checkout permissions. Please try again.");
+      toast.info("Checking checkout permissions. Please try again.");
+      return;
+    }
+
+    if (!isAuthenticated && allowGuestCheckout === false) {
+      setError("Guest checkout is disabled. Please login to continue.");
+      toast.info("Please login to continue checkout.");
+      onRequireAuth?.();
+      return;
+    }
 
     if (!stripe || !elements) {
       setError("Stripe is not loaded yet. Please try again.");
@@ -193,8 +213,15 @@ export default function CheckoutForm({
       const orderData = await orderResponse.json();
     //   console.log("📦 Order creation response:", orderData);
 
-      if (!orderData.success) {
-        throw new Error(orderData.message || "Failed to create order");
+      if (!orderResponse.ok || !orderData.success) {
+        const orderErrorMessage = orderData.message || "Failed to create order";
+        if (
+          orderResponse.status === 403 &&
+          /guest checkout/i.test(orderErrorMessage)
+        ) {
+          onRequireAuth?.();
+        }
+        throw new Error(orderErrorMessage);
       }
 
     //   console.log("🔵 Confirming payment with Stripe...");
