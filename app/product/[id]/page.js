@@ -10,6 +10,7 @@ import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { toast } from "react-toastify";
 import {
+  Trash2,
   ShoppingCart,
   Heart,
   Share2,
@@ -31,6 +32,8 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+const IMAGE_FALLBACK_URL =
+  "https://placehold.co/1200x1200/FFB6C1/FFFFFF?text=No+Image";
 
 // Enhanced Product Image Zoom Component
 const ProductImageZoom = ({
@@ -41,22 +44,43 @@ const ProductImageZoom = ({
   onImageLoad = () => {},
   onImageError = () => {},
 }) => {
+  const ZOOM_SCALE = 1.8;
+
   const [isHovered, setIsHovered] = useState(false);
-  const [cursorPosition, setCursorPosition] = useState({ x: 50, y: 50 });
   const [isMobile, setIsMobile] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const [resolvedSrc, setResolvedSrc] = useState(src);
+  const [resolvedSrc, setResolvedSrc] = useState(
+    highResSrc || src || IMAGE_FALLBACK_URL,
+  );
 
   const containerRef = useRef(null);
+  const imageRef = useRef(null);
+  const cursorRef = useRef(null);
+  const rafRef = useRef(null);
 
   useEffect(() => {
-    setResolvedSrc(highResSrc || src);
-    setIsImageLoaded(false);
+    const nextSrc = highResSrc || src || IMAGE_FALLBACK_URL;
+    setResolvedSrc((prev) => (prev === nextSrc ? prev : nextSrc));
   }, [src, highResSrc]);
 
   useEffect(() => {
+    setIsImageLoaded(false);
+  }, [resolvedSrc]);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768 || "ontouchstart" in window);
+      const coarsePointer = window.matchMedia(
+        "(hover: none), (pointer: coarse)",
+      ).matches;
+      setIsMobile(coarsePointer || window.innerWidth < 768);
     };
 
     checkIfMobile();
@@ -65,37 +89,46 @@ const ProductImageZoom = ({
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-  const calculateZoomPosition = (clientX, clientY) => {
-    if (!containerRef.current) return;
+  const updateZoomPosition = (clientX, clientY) => {
+    if (!containerRef.current || !imageRef.current) return;
 
-    const container = containerRef.current;
-    const rect = container.getBoundingClientRect();
-
+    const rect = containerRef.current.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
-    const x = ((clientX - rect.left) / rect.width) * 100;
-    const y = ((clientY - rect.top) / rect.height) * 100;
+    const x = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+    const y = Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100));
 
-    const clamp = (value) => Math.min(100, Math.max(0, value));
-
-    setCursorPosition({ x: clamp(x), y: clamp(y) });
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      if (imageRef.current) {
+        imageRef.current.style.transformOrigin = `${x}% ${y}%`;
+      }
+      if (cursorRef.current) {
+        cursorRef.current.style.left = `${x}%`;
+        cursorRef.current.style.top = `${y}%`;
+      }
+    });
   };
 
-  const handleMouseEnter = () => {
+  const handleMouseEnter = (e) => {
     if (!isMobile) {
       setIsHovered(true);
+      updateZoomPosition(e.clientX, e.clientY);
     }
   };
 
   const handleMouseLeave = () => {
     if (!isMobile) {
       setIsHovered(false);
+      if (imageRef.current) {
+        imageRef.current.style.transformOrigin = "50% 50%";
+      }
     }
   };
 
   const handleMouseMove = (e) => {
     if (!isMobile) {
-      calculateZoomPosition(e.clientX, e.clientY);
+      updateZoomPosition(e.clientX, e.clientY);
     }
   };
 
@@ -105,11 +138,8 @@ const ProductImageZoom = ({
   };
 
   const handleImageError = (e) => {
-    const fallback =
-      "https://placehold.co/1200x1200/FFB6C1/FFFFFF?text=No+Image";
-
-    if (resolvedSrc !== fallback) {
-      setResolvedSrc(fallback);
+    if (resolvedSrc !== IMAGE_FALLBACK_URL) {
+      setResolvedSrc(IMAGE_FALLBACK_URL);
       setIsImageLoaded(false);
       return;
     }
@@ -126,31 +156,25 @@ const ProductImageZoom = ({
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
       style={{
-        touchAction: isMobile ? "none" : "auto",
-        cursor: isHovered && !isMobile ? "none" : "default",
+        cursor: !isMobile ? "zoom-in" : "default",
       }}
     >
-      <motion.img
+      <img
+        key={resolvedSrc}
+        ref={imageRef}
         src={resolvedSrc}
         alt={alt}
         className="w-full h-full object-cover select-none"
-        animate={{
-          scale: isHovered && !isMobile ? 2 : 1,
-          transformOrigin: `${cursorPosition.x}% ${cursorPosition.y}%`,
-        }}
-        transition={{
-          type: "tween",
-          ease: "easeOut",
-          duration: 0.3,
-        }}
+        loading="eager"
+        decoding="async"
         onLoad={handleImageLoad}
         onError={handleImageError}
         draggable={false}
         style={{
-          transformOrigin:
-            isHovered && !isMobile
-              ? `${cursorPosition.x}% ${cursorPosition.y}%`
-              : "center center",
+          transform: isHovered && !isMobile ? `scale(${ZOOM_SCALE})` : "scale(1)",
+          transformOrigin: "50% 50%",
+          transition: "transform 180ms ease-out",
+          willChange: "transform",
         }}
       />
 
@@ -163,11 +187,9 @@ const ProductImageZoom = ({
       <AnimatePresence>
         {isHovered && !isMobile && (
           <motion.div
-            className="absolute pointer-events-none z-10"
-            style={{
-              left: cursorPosition.x - 12,
-              top: cursorPosition.y - 12,
-            }}
+            ref={cursorRef}
+            className="absolute pointer-events-none z-10 -translate-x-1/2 -translate-y-1/2"
+            style={{ left: "50%", top: "50%" }}
             initial={{
               opacity: 0,
               scale: 0.5,
@@ -186,19 +208,12 @@ const ProductImageZoom = ({
               duration: 0.15,
             }}
           >
-            <div>
-              <Plus className="w-7 h-7 text-black" />
+            <div className="w-7 h-7 rounded-full border border-white/90 bg-black/20 backdrop-blur-[1px] flex items-center justify-center shadow-sm">
+              <Plus className="w-4 h-4 text-white" />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {isMobile && (
-        <div
-          className="absolute inset-0 z-20"
-          style={{ touchAction: "none" }}
-        />
-      )}
     </div>
   );
 };
@@ -248,14 +263,54 @@ export default function ProductDetail() {
     comment: "",
   });
 
+  const [reviewsEnabled, setReviewsEnabled] = useState(true);
+  const [canDeleteReviews, setCanDeleteReviews] = useState(false);
+  const [staffToken, setStaffToken] = useState("");
+  const [deletingReviewId, setDeletingReviewId] = useState("");
+
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, [user]);
+    const syncAuthState = () => {
+      try {
+        const userData = localStorage.getItem("user");
+        setUser(userData ? JSON.parse(userData) : null);
+      } catch {
+        setUser(null);
+      }
+
+      try {
+        const token = localStorage.getItem("staffUserToken") || "";
+        const rawStaff = localStorage.getItem("staffUserData");
+        let canDelete = false;
+
+        if (token && rawStaff) {
+          const staff = JSON.parse(rawStaff);
+          const perms = Array.isArray(staff?.permissions)
+            ? staff.permissions
+            : [];
+          canDelete =
+          perms.includes("products:update") ||
+            perms.includes("*");
+        }
+
+        setStaffToken(token);
+        setCanDeleteReviews(canDelete);
+      } catch {
+        setStaffToken("");
+        setCanDeleteReviews(false);
+      }
+    };
+
+    syncAuthState();
+    window.addEventListener("storage", syncAuthState);
+    window.addEventListener("staff-auth-changed", syncAuthState);
+
+    return () => {
+      window.removeEventListener("storage", syncAuthState);
+      window.removeEventListener("staff-auth-changed", syncAuthState);
+    };
+  }, []);
 
   useEffect(() => {
     if (productId) {
@@ -287,6 +342,22 @@ export default function ProductDetail() {
         }
 
         fetchRelatedProducts(data.product.id);
+        setReviewsEnabled(data.product.allowReviews !== false);
+        if (data.product.allowReviews === false) {
+          setReviews([]);
+          setReviewsSummary({
+            averageRating: 0,
+            totalReviews: 0,
+            distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+          });
+          setReviewPagination({
+            page: 1,
+            limit: 10,
+            total: 0,
+            pages: 1,
+            hasNext: false,
+          });
+        }
       } else {
         throw new Error(data.message || "Product not found");
       }
@@ -339,6 +410,26 @@ export default function ProductDetail() {
       const data = await response.json();
 
       if (data.success) {
+        const enabled = data.reviewsEnabled !== false;
+        setReviewsEnabled(enabled);
+
+        if (!enabled) {
+          setReviews([]);
+          setReviewsSummary({
+            averageRating: 0,
+            totalReviews: 0,
+            distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+          });
+          setReviewPagination({
+            page: 1,
+            limit: 10,
+            total: 0,
+            pages: 1,
+            hasNext: false,
+          });
+          return;
+        }
+
         setReviews((prev) =>
           append ? [...prev, ...(data.reviews || [])] : data.reviews || [],
         );
@@ -361,32 +452,47 @@ export default function ProductDetail() {
   };
 
   useEffect(() => {
-    if (productId) {
-      fetchProductReviews(1, false, reviewSort);
+    if (!productId || !product) return;
+    if (product.allowReviews === false) return;
+    fetchProductReviews(1, false, reviewSort);
+  }, [productId, product, reviewSort]);
+
+  useEffect(() => {
+    if (
+      (product?.allowReviews === false || reviewsEnabled === false) &&
+      activeTab === "reviews"
+    ) {
+      setActiveTab("description");
     }
-  }, [productId, reviewSort]);
+  }, [product?.allowReviews, reviewsEnabled, activeTab]);
 
   useEffect(() => {
     setSelectedImageIndex(0);
     setShowAllThumbnails(false);
   }, [product?.id]);
 
+  const normalizeImageValue = (value) => {
+    if (typeof value !== "string") return "";
+    return value.trim();
+  };
+
   const getProductImages = () => {
-    const images = [];
+    const uniqueImages = new Set();
 
-    if (product?.image) {
-      images.push(product?.image);
+    const addImage = (value) => {
+      const normalized = normalizeImageValue(value);
+      if (!normalized) return;
+      uniqueImages.add(normalized);
+    };
+
+    addImage(product?.image);
+
+    if (Array.isArray(product?.images)) {
+      product.images.forEach(addImage);
     }
 
-    if (product?.images && product?.images.length > 0) {
-      product?.images.forEach((img) => {
-        if (img && img !== product?.image) {
-          images.push(img);
-        }
-      });
-    }
-
-    return images.length > 0 ? images : ["/placeholder-product.jpg"];
+    const images = Array.from(uniqueImages);
+    return images.length > 0 ? images : [IMAGE_FALLBACK_URL];
   };
 
   const productImages = getProductImages();
@@ -452,6 +558,36 @@ export default function ProductDetail() {
       toast.error(err.message || "Failed to submit review");
     } finally {
       setReviewsSubmitting(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!canDeleteReviews || !staffToken) return;
+
+    setDeletingReviewId(reviewId);
+    try {
+      const response = await fetch(
+        `${API_BASE}/product/${productId}/reviews/${reviewId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${staffToken}`,
+          },
+        },
+      );
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to delete review");
+      }
+
+      toast.success("Review deleted");
+      await fetchProductReviews(1, false, reviewSort);
+    } catch (err) {
+      console.error("Error deleting review:", err);
+      toast.error(err.message || "Failed to delete review");
+    } finally {
+      setDeletingReviewId("");
     }
   };
 
@@ -568,35 +704,45 @@ export default function ProductDetail() {
   };
 
   const getImageSrc = (imageSrc) => {
-    if (!imageSrc)
-      return "https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams";
+    if (typeof imageSrc !== "string") return IMAGE_FALLBACK_URL;
 
-    const baseURL = API_URL || "http://localhost:4000";
+    const cleanSrc = imageSrc.trim();
+    if (!cleanSrc) return IMAGE_FALLBACK_URL;
+
+    const baseURL = (API_URL || "http://localhost:4000").replace(/\/$/, "");
 
     // Handle old Railway URLs
-    if (imageSrc.includes("railway.app")) {
-      const filename = imageSrc.split("/images/")[1];
+    if (cleanSrc.includes("railway.app")) {
+      const filename = cleanSrc.split("/images/")[1];
       if (filename) {
         return `${baseURL}/images/${filename}`;
       }
     }
 
-    if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
-      return imageSrc;
+    if (/^(https?:\/\/|data:|blob:)/i.test(cleanSrc)) {
+      return cleanSrc;
     }
 
-    if (imageSrc.startsWith("/images/")) {
-      return `${baseURL}${imageSrc}`;
+    if (cleanSrc.startsWith("/images/") || cleanSrc.startsWith("/uploads/")) {
+      return `${baseURL}${cleanSrc}`;
     }
 
     if (
-      !imageSrc.includes("/") &&
-      /\.(jpg|jpeg|png|gif|webp)$/i.test(imageSrc)
+      !cleanSrc.includes("/") &&
+      /\.(jpg|jpeg|png|gif|webp|avif|svg)$/i.test(cleanSrc)
     ) {
-      return `${baseURL}/images/${imageSrc}`;
+      return `${baseURL}/images/${cleanSrc}`;
     }
 
-    return imageSrc;
+    if (cleanSrc.startsWith("images/") || cleanSrc.startsWith("uploads/")) {
+      return `${baseURL}/${cleanSrc}`;
+    }
+
+    if (cleanSrc.startsWith("/")) {
+      return cleanSrc;
+    }
+
+    return `${baseURL}/${cleanSrc}`;
   };
 
   const getHighResSrc = (imageSrc) => {
@@ -607,6 +753,13 @@ export default function ProductDetail() {
     }
 
     return normalSrc;
+  };
+
+  const handleInlineImageError = (e) => {
+    if (e?.currentTarget?.src !== IMAGE_FALLBACK_URL) {
+      e.currentTarget.onerror = null;
+      e.currentTarget.src = IMAGE_FALLBACK_URL;
+    }
   };
 
   if (loading) {
@@ -671,6 +824,9 @@ export default function ProductDetail() {
 
   const isInWishlist = checkIsInWishlist(product.id);
 
+  const canShowReviews =
+    product.allowReviews !== false && reviewsEnabled !== false;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -722,11 +878,9 @@ export default function ProductDetail() {
                     src={getImageSrc(activeImage)}
                     alt={product.name}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src =
-                        "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image";
-                    }}
+                    loading="eager"
+                    decoding="async"
+                    onError={handleInlineImageError}
                   />
                 </div>
 
@@ -746,6 +900,9 @@ export default function ProductDetail() {
                           src={getImageSrc(image)}
                           alt={`${product.name} ${index + 1}`}
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                          onError={handleInlineImageError}
                         />
                       </button>
                     ))}
@@ -754,7 +911,7 @@ export default function ProductDetail() {
                       <button
                         onClick={() => {
                           setShowAllThumbnails(true);
-                          setSelectedImageIndex(visibleThumbnails.length);
+                          setSelectedImageIndex(THUMBNAIL_INITIAL_COUNT);
                         }}
                         className="flex-shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-pink-300 bg-pink-50 text-pink-700 font-semibold"
                       >
@@ -789,6 +946,9 @@ export default function ProductDetail() {
                           src={getImageSrc(image)}
                           alt={`${product.name} ${index + 1}`}
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                          onError={handleInlineImageError}
                         />
                       </button>
                     ))}
@@ -797,7 +957,7 @@ export default function ProductDetail() {
                       <button
                         onClick={() => {
                           setShowAllThumbnails(true);
-                          setSelectedImageIndex(visibleThumbnails.length);
+                          setSelectedImageIndex(THUMBNAIL_INITIAL_COUNT);
                         }}
                         className="h-[90px] rounded-lg border-2 border-dashed border-pink-300 bg-pink-50 text-pink-700 font-bold"
                       >
@@ -848,12 +1008,14 @@ export default function ProductDetail() {
                       />
                     ))}
                   </div>
-                  <span className="text-sm sm:text-base text-gray-600">
-                    {reviewsSummary.totalReviews > 0
-                      ? averageRating.toFixed(1)
-                      : "0.0"}{" "}
-                    • {reviewsSummary.totalReviews} reviews
-                  </span>
+                  {canShowReviews && (
+                    <span className="text-sm sm:text-base text-gray-600">
+                      {reviewsSummary.totalReviews > 0
+                        ? averageRating.toFixed(1)
+                        : "0.0"}{" "}
+                      • {reviewsSummary.totalReviews} reviews
+                    </span>
+                  )}
                 </div>
 
                 {/* Price */}
@@ -1073,7 +1235,9 @@ export default function ProductDetail() {
                 {[
                   { id: "description", label: "Description" },
                   { id: "specifications", label: "Specs" },
-                  { id: "reviews", label: "Reviews" },
+                  ...(canShowReviews
+                    ? [{ id: "reviews", label: "Reviews" }]
+                    : []),
                   { id: "shipping", label: "Shipping" },
                 ].map((tab) => (
                   <button
@@ -1349,13 +1513,53 @@ export default function ProductDetail() {
                           key={review._id}
                           className="border border-gray-200 rounded-xl p-4"
                         >
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="font-semibold text-gray-900">
-                              {review.userName}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(review.createdAt).toLocaleDateString()}
-                            </p>
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="flex items-center gap-3 min-w-0">
+                              {review.userAvatar ? (
+                                <img
+                                  src={getImageSrc(review.userAvatar)}
+                                  alt={review.userName || "Reviewer"}
+                                  className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                                  loading="lazy"
+                                  decoding="async"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-pink-100 text-pink-700 flex items-center justify-center text-sm font-semibold border border-pink-200">
+                                  {(review.userName || "U")
+                                    .trim()
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </div>
+                              )}
+
+                              <div className="min-w-0">
+                                <p className="font-semibold text-gray-900 truncate">
+                                  {review.userName}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(
+                                    review.createdAt,
+                                  ).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+
+                            {canDeleteReviews && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteReview(review._id)}
+                                disabled={deletingReviewId === review._id}
+                                className="p-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60"
+                                title="Delete review"
+                              >
+                                {deletingReviewId === review._id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-1 mb-2">
@@ -1388,20 +1592,34 @@ export default function ProductDetail() {
                       ))
                     )}
 
-                    {reviewPagination.hasNext && (
-                      <div className="pt-2">
-                        <button
-                          onClick={() =>
-                            fetchProductReviews(
-                              reviewPagination.page + 1,
-                              true,
-                              reviewSort,
-                            )
-                          }
-                          className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-                        >
-                          Load More Reviews
-                        </button>
+                    {(reviewPagination.hasNext ||
+                      reviewPagination.page > 1) && (
+                      <div className="pt-2 flex flex-wrap gap-2">
+                        {reviewPagination.hasNext && (
+                          <button
+                            onClick={() =>
+                              fetchProductReviews(
+                                reviewPagination.page + 1,
+                                true,
+                                reviewSort,
+                              )
+                            }
+                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+                          >
+                            View More Reviews
+                          </button>
+                        )}
+
+                        {reviewPagination.page > 1 && (
+                          <button
+                            onClick={() =>
+                              fetchProductReviews(1, false, reviewSort)
+                            }
+                            className="px-4 py-2 border border-pink-300 text-pink-700 rounded-lg text-sm hover:bg-pink-50"
+                          >
+                            Close Reviews
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

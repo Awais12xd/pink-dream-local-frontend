@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Header from "../components/Header";
@@ -8,8 +8,6 @@ import ProductCard from "../components/ProductCard";
 import {
   Filter,
   Search,
-  Grid,
-  List,
   ChevronDown,
   Loader2,
   AlertCircle,
@@ -30,6 +28,7 @@ const STATIC_CATEGORIES = [
   "Activewear",
   "Swimwear",
 ];
+const ITEMS_PER_PAGE = 6;
 
 // Debounce hook - optimized
 function useDebounce(value, delay) {
@@ -56,6 +55,7 @@ export default function Shop() {
   const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState(["All"]);
   const [dynamicCategories, setDynamicCategories] = useState([]);
+  const [availableBrands, setAvailableBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
@@ -66,20 +66,22 @@ export default function Shop() {
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState("All");
+  const [stockFilter, setStockFilter] = useState("all");
+  const [featuredOnly, setFeaturedOnly] = useState(false);
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
 
   // UI states
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState("grid");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(12);
   const [totalProducts, setTotalProducts] = useState(0);
   const [hasMoreProducts, setHasMoreProducts] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
   const [categoryCounts, setCategoryCounts] = useState({ All: 0 });
+  const latestRequestRef = useRef(0);
 
   // Optimized debounce with shorter delay
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -96,28 +98,66 @@ export default function Shop() {
     [],
   );
 
+  const resetAndFetchProducts = useCallback(() => {
+    setCurrentPage(1);
+    setAllProducts([]);
+    setHasMoreProducts(false);
+    fetchProducts(1, false);
+  }, [
+    selectedCategory,
+    selectedBrand,
+    stockFilter,
+    featuredOnly,
+    sortBy,
+    sortOrder,
+    minPrice,
+    maxPrice,
+    searchTerm,
+  ]);
+
   // Initialize from URL params only once
   useEffect(() => {
     if (!initialDataLoaded) return;
 
     const categoryFromUrl = searchParams.get("category");
     const searchFromUrl = searchParams.get("search");
+    const brandFromUrl = searchParams.get("brand");
+    const stockFromUrl = searchParams.get("stock");
+    const featuredFromUrl = searchParams.get("featured");
     const sortFromUrl = searchParams.get("sort");
     const minPriceFromUrl = searchParams.get("minPrice");
     const maxPriceFromUrl = searchParams.get("maxPrice");
 
     let hasChanges = false;
 
-    if (
-      categoryFromUrl &&
-      decodeURIComponent(categoryFromUrl) !== selectedCategory
-    ) {
-      setSelectedCategory(decodeURIComponent(categoryFromUrl));
+    if (categoryFromUrl && categoryFromUrl !== selectedCategory) {
+      setSelectedCategory(categoryFromUrl);
       hasChanges = true;
     }
 
-    if (searchFromUrl && decodeURIComponent(searchFromUrl) !== searchTerm) {
-      setSearchTerm(decodeURIComponent(searchFromUrl));
+    if ((searchFromUrl || "") !== searchTerm) {
+      setSearchTerm(searchFromUrl || "");
+      hasChanges = true;
+    }
+
+    if (brandFromUrl && brandFromUrl !== selectedBrand) {
+      setSelectedBrand(brandFromUrl);
+      hasChanges = true;
+    }
+
+    if (
+      stockFromUrl &&
+      ["all", "in_stock", "out_of_stock"].includes(stockFromUrl) &&
+      stockFromUrl !== stockFilter
+    ) {
+      setStockFilter(stockFromUrl);
+      hasChanges = true;
+    }
+
+    const featuredFromUrlBoolean =
+      featuredFromUrl === "1" || featuredFromUrl === "true";
+    if (featuredFromUrl !== null && featuredFromUrlBoolean !== featuredOnly) {
+      setFeaturedOnly(featuredFromUrlBoolean);
       hasChanges = true;
     }
 
@@ -146,6 +186,8 @@ export default function Shop() {
       }
     }
 
+    
+
     if (hasChanges) {
       const timer = setTimeout(() => {
         resetAndFetchProducts();
@@ -169,6 +211,10 @@ export default function Shop() {
       const category =
         updates.category !== undefined ? updates.category : selectedCategory;
       const search = updates.search !== undefined ? updates.search : searchTerm;
+      const brand = updates.brand !== undefined ? updates.brand : selectedBrand;
+      const stock = updates.stock !== undefined ? updates.stock : stockFilter;
+      const featured =
+        updates.featured !== undefined ? updates.featured : featuredOnly;
       const sort =
         updates.sort !== undefined ? updates.sort : `${sortBy}-${sortOrder}`;
       const minPriceValue =
@@ -178,11 +224,23 @@ export default function Shop() {
 
       // Only add non-default parameters
       if (category && category !== "All") {
-        params.set("category", encodeURIComponent(category));
+        params.set("category", category);
       }
 
       if (search && search.trim()) {
-        params.set("search", encodeURIComponent(search.trim()));
+        params.set("search", search.trim());
+      }
+
+      if (brand && brand !== "All") {
+        params.set("brand", brand);
+      }
+
+      if (stock && stock !== "all") {
+        params.set("stock", stock);
+      }
+
+      if (featured) {
+        params.set("featured", "1");
       }
 
       if (sort && sort !== "date-desc") {
@@ -204,6 +262,9 @@ export default function Shop() {
     [
       selectedCategory,
       searchTerm,
+      selectedBrand,
+      stockFilter,
+      featuredOnly,
       sortBy,
       sortOrder,
       minPrice,
@@ -223,16 +284,35 @@ export default function Shop() {
     }, 50);
 
     return () => clearTimeout(timer);
-  }, [selectedCategory, sortBy, sortOrder, minPrice, maxPrice]);
+  }, [
+    selectedCategory,
+    selectedBrand,
+    stockFilter,
+    featuredOnly,
+    sortBy,
+    sortOrder,
+    minPrice,
+    maxPrice,
+    initialDataLoaded,
+    resetAndFetchProducts,
+    updateURL,
+  ]);
 
   // Search term handling
   useEffect(() => {
-    if (!initialDataLoaded || debouncedSearchTerm === searchTerm) return;
+    if (!initialDataLoaded) return;
 
     resetAndFetchProducts();
     updateURL({ search: debouncedSearchTerm });
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, initialDataLoaded, resetAndFetchProducts, updateURL]);
 
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Normalize a category key by trimming and lowercasing it.
+ * @param {string} value - The category key to normalize
+ * @returns {string} - The normalized category key
+ */
+/*******  4e08cf44-6dc9-4384-bf2c-e875113bd4a3  *******/
   const normalizeCategoryKey = (value) =>
     String(value || "")
       .trim()
@@ -331,9 +411,8 @@ export default function Shop() {
 
         const categoryFromUrl = searchParams.get("category");
         if (categoryFromUrl) {
-          const decodedCategory = decodeURIComponent(categoryFromUrl);
-          if (combinedCategories.includes(decodedCategory)) {
-            setSelectedCategory(decodedCategory);
+          if (combinedCategories.includes(categoryFromUrl)) {
+            setSelectedCategory(categoryFromUrl);
           } else {
             router.replace("/shop");
             setSelectedCategory("All");
@@ -343,20 +422,30 @@ export default function Shop() {
         setCategories(STATIC_CATEGORIES);
         setDynamicCategories([]);
         setCategoryCounts({ All: 0 });
+        setAvailableBrands([]);
       }
 
-      // Process price range
-      if (filtersData.success && filtersData.filters.priceRange) {
-        const { minPrice: min, maxPrice: max } = filtersData.filters.priceRange;
-        const roundedMin = Math.floor(min);
-        const roundedMax = Math.ceil(max);
-        setPriceRange({ min: roundedMin, max: roundedMax });
+      // Process filter metadata
+      if (filtersData.success && filtersData.filters) {
+        const brands = Array.isArray(filtersData.filters.brands)
+          ? filtersData.filters.brands
+              .filter(Boolean)
+              .sort((a, b) => a.localeCompare(b))
+          : [];
+        setAvailableBrands(brands);
 
-        const minPriceFromUrl = searchParams.get("minPrice");
-        const maxPriceFromUrl = searchParams.get("maxPrice");
+        if (filtersData.filters.priceRange) {
+          const { minPrice: min, maxPrice: max } = filtersData.filters.priceRange;
+          const roundedMin = Math.floor(min);
+          const roundedMax = Math.ceil(max);
+          setPriceRange({ min: roundedMin, max: roundedMax });
 
-        if (!minPriceFromUrl) setMinPrice(roundedMin);
-        if (!maxPriceFromUrl) setMaxPrice(roundedMax);
+          const minPriceFromUrl = searchParams.get("minPrice");
+          const maxPriceFromUrl = searchParams.get("maxPrice");
+
+          if (!minPriceFromUrl) setMinPrice(roundedMin);
+          if (!maxPriceFromUrl) setMaxPrice(roundedMax);
+        }
       }
 
       setInitialDataLoaded(true);
@@ -398,6 +487,7 @@ export default function Shop() {
   };
 
   const fetchProducts = async (page = 1, isLoadMore = false) => {
+    const requestId = ++latestRequestRef.current;
     try {
       if (isLoadMore) {
         setLoadingMore(true);
@@ -407,17 +497,32 @@ export default function Shop() {
 
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: itemsPerPage.toString(),
+        limit: ITEMS_PER_PAGE.toString(),
         sortBy: sortBy,
         sortOrder: sortOrder,
       });
 
-      if (debouncedSearchTerm.trim()) {
-        params.append("search", debouncedSearchTerm.trim());
+      const trimmedSearch = searchTerm.trim();
+      if (trimmedSearch) {
+        params.append("search", trimmedSearch);
       }
 
       if (selectedCategory && selectedCategory !== "All") {
         params.append("category", selectedCategory);
+      }
+
+      if (selectedBrand && selectedBrand !== "All") {
+        params.append("brand", selectedBrand);
+      }
+
+      if (stockFilter === "in_stock") {
+        params.append("inStock", "1");
+      } else if (stockFilter === "out_of_stock") {
+        params.append("inStock", "0");
+      }
+
+      if (featuredOnly) {
+        params.append("featured", "1");
       }
 
       if (minPrice > priceRange.min) {
@@ -435,21 +540,30 @@ export default function Shop() {
       }
 
       const data = await response.json();
+      if (requestId !== latestRequestRef.current) return;
 
       if (data.success) {
+        const incomingProducts = Array.isArray(data.products) ? data.products : [];
+        const apiTotalProducts = Number(data.pagination?.totalProducts || 0);
+
         if (isLoadMore) {
-          setAllProducts((prev) => [...prev, ...data.products]);
+          setAllProducts((prev) => {
+            const merged = [...prev, ...incomingProducts];
+            setHasMoreProducts(merged.length < apiTotalProducts);
+            return merged;
+          });
         } else {
-          setAllProducts(data.products);
+          setAllProducts(incomingProducts);
+          setHasMoreProducts(incomingProducts.length < apiTotalProducts);
         }
 
-        setTotalProducts(data.pagination?.totalProducts || 0);
-        setHasMoreProducts(data.pagination?.hasNextPage || false);
+        setTotalProducts(apiTotalProducts);
         setCurrentPage(page);
       } else {
         throw new Error(data.message || "Failed to fetch products");
       }
     } catch (error) {
+      if (requestId !== latestRequestRef.current) return;
       console.error("Error fetching products:", error);
       if (!isLoadMore) {
         setError(`Failed to load products: ${error.message}`);
@@ -461,19 +575,7 @@ export default function Shop() {
     }
   };
 
-  const resetAndFetchProducts = useCallback(() => {
-    setCurrentPage(1);
-    setAllProducts([]);
-    setHasMoreProducts(false);
-    fetchProducts(1, false);
-  }, [
-    selectedCategory,
-    sortBy,
-    sortOrder,
-    minPrice,
-    maxPrice,
-    debouncedSearchTerm,
-  ]);
+  
 
   const handleCategoryFilter = useCallback(
     (category) => {
@@ -524,6 +626,9 @@ export default function Shop() {
   const clearAllFilters = useCallback(() => {
     setSelectedCategory("All");
     setSearchTerm("");
+    setSelectedBrand("All");
+    setStockFilter("all");
+    setFeaturedOnly(false);
     setMinPrice(priceRange.min);
     setMaxPrice(priceRange.max);
     setSortBy("date");
@@ -671,7 +776,6 @@ export default function Shop() {
 
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {categories.map((category) => {
-                    const isDynamic = dynamicCategories.includes(category);
                     return (
                       <button
                         key={category}
@@ -755,24 +859,50 @@ export default function Shop() {
                       <Filter className="w-4 h-4" />
                       <span>Filters</span>
                     </button>
-
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setViewMode("grid")}
-                        className={`p-2 rounded transition-colors ${viewMode === "grid" ? "bg-pink-100 text-pink-600" : "hover:bg-gray-100"}`}
-                      >
-                        <Grid className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setViewMode("list")}
-                        className={`p-2 rounded transition-colors ${viewMode === "list" ? "bg-pink-100 text-pink-600" : "hover:bg-gray-100"}`}
-                      >
-                        <List className="w-4 h-4" />
-                      </button>
-                    </div>
                   </div>
 
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="relative">
+                      <select
+                        value={selectedBrand}
+                        onChange={(e) => setSelectedBrand(e.target.value)}
+                        className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      >
+                        <option value="All">All Brands</option>
+                        {availableBrands.map((brand) => (
+                          <option key={brand} value={brand}>
+                            {brand}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+
+                    <div className="relative">
+                      <select
+                        value={stockFilter}
+                        onChange={(e) => setStockFilter(e.target.value)}
+                        className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      >
+                        <option value="all">All Stock</option>
+                        <option value="in_stock">In Stock</option>
+                        <option value="out_of_stock">Out of Stock</option>
+                      </select>
+                      <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setFeaturedOnly((prev) => !prev)}
+                      className={`px-4 py-2 rounded-lg text-sm border transition-colors ${
+                        featuredOnly
+                          ? "bg-pink-100 text-pink-700 border-pink-200"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      }`}
+                    >
+                      Featured Only
+                    </button>
+
                     <div className="relative">
                       <select
                         value={`${sortBy}-${sortOrder}`}
@@ -831,13 +961,7 @@ export default function Shop() {
                 </div>
               ) : allProducts.length > 0 ? (
                 <>
-                  <div
-                    className={`grid gap-6 ${
-                      viewMode === "grid"
-                        ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                        : "grid-cols-1"
-                    }`}
-                  >
+                  <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {allProducts.map((product, index) => (
                       <motion.div
                         key={`${product.id}-${index}`}

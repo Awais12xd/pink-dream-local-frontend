@@ -79,86 +79,54 @@ const Contact = () => {
     settings?.generalSettings?.seo?.siteDescription ||
     'Discover the latest trends in fashion. Shop premium clothing, accessories, and more at Pink Dreams.';
 
-  // Extract contact pieces safely
-  const emails = Array.isArray(contactData?.emails) ? contactData.emails : [];
-  const phones = Array.isArray(contactData?.phones) ? contactData.phones : [];
-  // address may be single object or addresses array
-  const address =
-    contactData?.address ||
-    (Array.isArray(contactData?.addresses) ? contactData.addresses[0] : null) ||
-    null;
+  // Extract contact pieces safely (new static shape)
+  const contactEmail = String(contactData?.email || '').trim();
+  const contactPhone = String(contactData?.phone || '').trim();
+  const addressText = String(contactData?.address || '').trim();
   const social = contactData?.social || {};
   const hours = contactData?.hours || {};
 
-  // Build dynamic contact info cards (fallback to static defaults if settings missing)
-  const defaultContactInfo = [
-    {
-      icon: Mail,
-      title: 'Email Us',
-      primary: 'hello@pinkstore.com',
-      secondary: 'support@pinkstore.com',
-      description: 'Send us an email anytime!'
-    },
-    {
-      icon: Phone,
-      title: 'Call Us',
-      primary: '+1 (555) 123-4567',
-      secondary: '+1 (555) 987-6543',
-      description: 'Mon-Fri 9AM-6PM EST'
-    },
-    {
-      icon: MapPin,
-      title: 'Visit Us',
-      primary: '123 Pink Street',
-      secondary: 'Beauty City, BC 12345',
-      description: 'Come see our showroom!'
-    },
-    {
-      icon: Clock,
-      title: 'Business Hours',
-      primary: 'Mon-Fri: 9AM-6PM',
-      secondary: 'Sat: 10AM-4PM',
-      description: 'Closed on Sundays'
-    }
-  ];
+  const weekdaysText =
+    hours?.weekdays && !hours.weekdays.closed
+      ? `${formatTime(hours.weekdays.open)} - ${formatTime(hours.weekdays.close)}`
+      : 'Closed';
+  const saturdayText =
+    hours?.saturday && !hours.saturday.closed
+      ? `${formatTime(hours.saturday.open)} - ${formatTime(hours.saturday.close)}`
+      : 'Closed';
+  const sundayText =
+    hours?.sunday && !hours.sunday.closed
+      ? `${formatTime(hours.sunday.open)} - ${formatTime(hours.sunday.close)}`
+      : 'Closed';
 
   const effectiveContactInfo = [
     {
       icon: Mail,
       title: 'Email Us',
-      primary: emails[0]?.email || defaultContactInfo[0].primary,
-      secondary: emails[1]?.email || defaultContactInfo[0].secondary,
-      description: 'Send us an email anytime!'
+      primary: contactEmail || 'support@pinkdreams.com',
+      secondary: '',
+      description: 'Primary support email'
     },
     {
       icon: Phone,
       title: 'Call Us',
-      primary: phones[0]?.number || defaultContactInfo[1].primary,
-      secondary: phones[1]?.number || defaultContactInfo[1].secondary,
-      description: 'Mon-Fri 9AM-6PM EST' 
+      primary: contactPhone || '+1 (555) 123-4567',
+      secondary: '',
+      description: `Mon - Fri: ${weekdaysText}`
     },
     {
       icon: MapPin,
       title: 'Visit Us',
-      primary: address?.line1 || defaultContactInfo[2].primary,
-      secondary:
-        (address && `${address.city || ''}${address.state ? ', ' + address.state : ''} ${address.zip || ''}`) ||
-        address?.line2 ||
-        defaultContactInfo[2].secondary,
-      description: 'Come see our showroom!'
+      primary: addressText || 'Address not configured',
+      secondary: '',
+      description: 'Store location'
     },
     {
       icon: Clock,
       title: 'Business Hours',
-      primary:
-        hours?.weekdays
-          ? `${formatTime(hours.weekdays.open)} - ${formatTime(hours.weekdays.close)}`
-          : defaultContactInfo[3].primary,
-      secondary:
-        hours?.saturday && !hours.saturday.closed
-          ? `${formatTime(hours.saturday.open)} - ${formatTime(hours.saturday.close)}`
-          : defaultContactInfo[3].secondary,
-      description: hours?.weekdays ? 'Business hours (local time)' : defaultContactInfo[3].description
+      primary: `Mon - Fri: ${weekdaysText}`,
+      secondary: `Sat: ${saturdayText} | Sun: ${sundayText}`,
+      description: 'Business hours (local time)'
     }
   ];
 
@@ -301,11 +269,11 @@ const Contact = () => {
       {/* Header */}
       <Header />
 
-      <div className="bg-white shadow-sm">
+      <div className="bg-[#ec4899] shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">{siteTitle}</h1>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">{siteDescription}</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">{siteTitle}</h1>
+            <p className="text-lg text-gray-100 max-w-3xl mx-auto">{siteDescription}</p>
           </motion.div>
         </div>
       </div>

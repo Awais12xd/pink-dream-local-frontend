@@ -273,6 +273,9 @@ export default function ModernFooter() {
   const { settings } = useContext(SettingContext);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [email, setEmail] = useState("");
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [newsletterMessage, setNewsletterMessage] = useState("");
+  const [newsletterStatus, setNewsletterStatus] = useState("idle");
   
   // Popup state management
   const [activePopup, setActivePopup] = useState(null);
@@ -292,7 +295,11 @@ export default function ModernFooter() {
     FALLBACK_FOOTER_CATEGORIES,
   );
 
-  const storeAddress = settings?.contact.address;
+  const contactSettings = settings?.contact || {};
+  const contactSocial = contactSettings?.social || {};
+  const supportEmail = String(contactSettings?.email || "").trim();
+  const supportNumber = String(contactSettings?.phone || "").trim();
+  const storeAddressText = String(contactSettings?.address || "").trim();
 
   // Enhanced slider content with more engaging copy
   const sliderContent = [
@@ -379,25 +386,25 @@ export default function ModernFooter() {
   const socialLinks = [
     {
       icon: Facebook,
-      href: `${settings?.contact.social.facebook}`,
+      href: contactSocial.facebook || "#",
       color: "hover:text-blue-600",
       count: "125K",
     },
     {
       icon: Instagram,
-      href: `${settings?.contact.social.instagram}`,
+      href: contactSocial.instagram || "#",
       color: "hover:text-pink-600",
       count: "89K",
     },
     {
       icon: Twitter,
-      href: `${settings?.contact.social.twitter}`,
+      href: contactSocial.twitter || "#",
       color: "hover:text-blue-400",
       count: "45K",
     },
     {
       icon: Youtube,
-      href: `${settings?.contact.social.youtube}`,
+      href: contactSocial.youtube || "#",
       color: "hover:text-red-400",
       count: "23K",
     },
@@ -416,14 +423,6 @@ export default function ModernFooter() {
     "🏦 Bank Transfer",
     "💳 Visa/Master",
   ];
-  const supportEmail = settings?.contact.emails.find((e) =>
-    e.label?.toLowerCase().includes("support"),
-  )?.email;
-
-  const supportNumber = settings?.contact.phones.find((e) =>
-    e.label.toLowerCase().includes("support"),
-  );
-
   // Auto-advance slider
   useEffect(() => {
     const timer = setInterval(() => {
@@ -474,10 +473,57 @@ export default function ModernFooter() {
     );
   };
 
-  const handleNewsletterSubmit = (e) => {
+  const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
-    console.log("Newsletter signup:", email);
-    setEmail("");
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setNewsletterStatus("error");
+      setNewsletterMessage("Please enter your email address.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setNewsletterStatus("error");
+      setNewsletterMessage("Please enter a valid email address.");
+      return;
+    }
+
+    setNewsletterLoading(true);
+    setNewsletterMessage("");
+    setNewsletterStatus("idle");
+
+    try {
+      const response = await fetch(`${API_BASE}/newsletter/subscribe`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          name: "",
+          source: "website",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to subscribe.");
+      }
+
+      setNewsletterStatus("success");
+      setNewsletterMessage(
+        data?.message || "Subscribed successfully. Please check your inbox.",
+      );
+      setEmail("");
+    } catch (error) {
+      setNewsletterStatus("error");
+      setNewsletterMessage(error.message || "Failed to subscribe.");
+    } finally {
+      setNewsletterLoading(false);
+    }
   };
 
   return (
@@ -641,27 +687,46 @@ export default function ModernFooter() {
 
             {/* Newsletter */}
             <div className="space-y-3">
-              <h4 className="font-semibold text-gray-800">Stay Updated</h4>
-              <div className="space-y-2">
+              <h4 className="font-semibold text-gray-800">Newsletter</h4>
+              <p className="text-xs text-gray-500">
+                Get product drops and exclusive offers.
+              </p>
+              <form onSubmit={handleNewsletterSubmit} className="space-y-2">
                 <div className="flex">
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (newsletterMessage) {
+                        setNewsletterMessage("");
+                        setNewsletterStatus("idle");
+                      }
+                    }}
                     placeholder="Enter your email"
                     className="flex-1 px-4 py-2 text-sm border border-pink-200 rounded-l-full focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    disabled={newsletterLoading}
                   />
                   <button
-                    onClick={handleNewsletterSubmit}
-                    className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-2 rounded-r-full hover:from-pink-600 hover:to-purple-700 transition-all duration-300 flex items-center"
+                    type="submit"
+                    className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-2 rounded-r-full hover:from-pink-600 hover:to-purple-700 transition-all duration-300 flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={newsletterLoading}
                   >
-                    <Mail className="w-4 h-4" />
+                    {newsletterLoading ? "..." : <Mail className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500">
-                  Get exclusive deals and style tips!
-                </p>
-              </div>
+                {newsletterMessage && (
+                  <p
+                    className={`text-xs ${
+                      newsletterStatus === "success"
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {newsletterMessage}
+                  </p>
+                )}
+              </form>
             </div>
           </motion.div>
 
@@ -743,8 +808,7 @@ export default function ModernFooter() {
                 <div>
                   <p className="text-gray-800 font-medium text-sm">Our Store</p>
                   <p className="text-gray-600 text-sm">
-                    {storeAddress?.line1}, {storeAddress?.line2},{" "}
-                    {storeAddress?.city}, {storeAddress?.country}
+                    {storeAddressText || "Address not configured"}
                   </p>
                 </div>
               </div>
@@ -757,12 +821,12 @@ export default function ModernFooter() {
                 <div>
                   <p className="text-gray-800 font-medium text-sm">Call Us</p>
                   <p className="text-gray-600 text-sm">
-                    {supportNumber?.number}
+                    {supportNumber || "Phone not configured"}
                   </p>
                   <p className="text-gray-500 text-xs capitalize">
-                    {settings?.contact.hours.weekdays.day}{" "}
-                    {settings?.contact.hours.weekdays.open}-
-                    {settings?.contact.hours.weekdays.close} PKT
+                    {settings?.contact?.hours?.weekdays?.day || "weekdays"}{" "}
+                    {settings?.contact?.hours?.weekdays?.open || "09:00"}-
+                    {settings?.contact?.hours?.weekdays?.close || "18:00"} PKT
                   </p>
                 </div>
               </div>
@@ -774,7 +838,9 @@ export default function ModernFooter() {
                 </div>
                 <div>
                   <p className="text-gray-800 font-medium text-sm">Email Us</p>
-                  <p className="text-gray-600 text-sm">{supportEmail}</p>
+                  <p className="text-gray-600 text-sm">
+                    {supportEmail || "support@pinkdreams.com"}
+                  </p>
                   <p className="text-gray-500 text-xs">
                     We reply within 24 hours
                   </p>

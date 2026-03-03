@@ -13,7 +13,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import Newsletter from "./components/Newsletter";
 import { useAuth } from "./context/AuthContext";
 import Image from "next/image";
 
@@ -678,9 +677,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Newsletter */}
-      <Newsletter />
 
       <Footer />
     </div>

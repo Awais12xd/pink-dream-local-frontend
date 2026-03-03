@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 
  // Add Product Page Component with Dynamic + Static Categories
   const AddProductPage = () => { 
-      const token = localStorage.getItem("staffUserToken");
+    const token = localStorage.getItem("staffUserToken");
 
     // Static categories (fallback/default)
     const staticCategories = ['Dresses', 'Tops', 'Bottoms', 'Accessories', 'Shoes', 'Outerwear', 'Activewear', 'Swimwear'];
@@ -36,6 +36,7 @@ import { toast } from 'react-toastify';
     short_description: '',
     available: true,
     featured: false,
+    allowReviews: true,
     
     // Product Images
     images: [],
@@ -395,7 +396,8 @@ import { toast } from 'react-toastify';
           tags: [''],
           related_products: [],
           shipping_class: 'standard',
-          status: 'draft'
+          status: 'draft',
+          allowReviews: true,
         });
 
         toast.success("Product created successfully!")

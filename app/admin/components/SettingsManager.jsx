@@ -6,8 +6,7 @@ import {
   CreditCard,
   Search as SearchIcon,
   Phone,
-  Plus,
-  Trash2,
+  MapPin,
   Save,
   Upload,
   Eye,
@@ -45,11 +44,9 @@ const EMPTY_UI_SETTINGS = {
     bankTransfer: { enabled: false, instructions: "" },
   },
   contact: {
-    emails: [],
-    phones: [],
-    addresses: [
-      { line1: "", line2: "", city: "", state: "", zip: "", country: "" },
-    ],
+    email: "",
+    phone: "",
+    address: "",
     social: { instagram: "", facebook: "", twitter: "", youtube: "" },
     hours: {
       weekdays: { open: "09:00", close: "18:00", closed: false },
@@ -117,11 +114,9 @@ const toUiSettings = (apiSettings) => {
       },
     },
     contact: {
-      emails: s?.contact?.emails || [],
-      phones: s?.contact?.phones || [],
-      addresses: [
-        s?.contact?.address || EMPTY_UI_SETTINGS.contact.addresses[0],
-      ],
+      email: s?.contact?.email || "",
+      phone: s?.contact?.phone || "",
+      address: s?.contact?.address || "",
       social: s?.contact?.social || EMPTY_UI_SETTINGS.contact.social,
       hours: s?.contact?.hours || EMPTY_UI_SETTINGS.contact.hours,
     },
@@ -129,10 +124,6 @@ const toUiSettings = (apiSettings) => {
 };
 
 const buildApiPayload = (uiSettings, secretsDraft) => {
-  const primaryAddress =
-    uiSettings?.contact?.addresses?.[0] ||
-    EMPTY_UI_SETTINGS.contact.addresses[0];
-
   return {
     allowGuestCheckout: uiSettings.general.guestCheckout,
     generalSettings: {
@@ -147,10 +138,9 @@ const buildApiPayload = (uiSettings, secretsDraft) => {
       },
     },
     contact: {
-      emails: uiSettings.contact.emails,
-      phones: uiSettings.contact.phones,
-      // backend model uses `contact.address` (singular)
-      address: primaryAddress,
+      email: uiSettings.contact.email,
+      phone: uiSettings.contact.phone,
+      address: uiSettings.contact.address,
       social: uiSettings.contact.social,
       hours: uiSettings.contact.hours,
     },
@@ -376,59 +366,6 @@ const SettingsManager = () => {
       },
     }));
   };
-
-  // Contact list helpers
-  const addEmail = () =>
-    setSettings((p) => ({
-      ...p,
-      contact: {
-        ...p.contact,
-        emails: [...p.contact.emails, { label: "", email: "" }],
-      },
-    }));
-  const removeEmail = (i) =>
-    setSettings((p) => ({
-      ...p,
-      contact: {
-        ...p.contact,
-        emails: p.contact.emails.filter((_, idx) => idx !== i),
-      },
-    }));
-  const addPhone = () =>
-    setSettings((p) => ({
-      ...p,
-      contact: {
-        ...p.contact,
-        phones: [...p.contact.phones, { label: "", number: "" }],
-      },
-    }));
-  const removePhone = (i) =>
-    setSettings((p) => ({
-      ...p,
-      contact: {
-        ...p.contact,
-        phones: p.contact.phones.filter((_, idx) => idx !== i),
-      },
-    }));
-  const addAddress = () =>
-    setSettings((p) => ({
-      ...p,
-      contact: {
-        ...p.contact,
-        addresses: [
-          ...p.contact.addresses,
-          { line1: "", line2: "", city: "", state: "", zip: "", country: "" },
-        ],
-      },
-    }));
-  const removeAddress = (i) =>
-    setSettings((p) => ({
-      ...p,
-      contact: {
-        ...p.contact,
-        addresses: p.contact.addresses.filter((_, idx) => idx !== i),
-      },
-    }));
 
   const toggleFieldVisibility = (key) => {
     setVisibleFields((p) => ({ ...p, [key]: !p[key] }));
@@ -1074,259 +1011,78 @@ const SettingsManager = () => {
           {/* ═══ CONTACT TAB ══════════════════════════════════════ */}
           {activeTab === "contact" && (
             <div className="space-y-8">
-              {/* Emails */}
+              {/* Contact Details */}
               <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Email Addresses
-                  </h3>
-                  <button
-                    onClick={addEmail}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white rounded-lg hover:bg-pink-600 text-xs font-medium"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Add
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {settings.contact.emails.map((em, i) => (
-                    <div
-                      key={i}
-                      className="flex gap-3 items-start bg-gray-50 p-3 rounded-lg"
-                    >
-                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          value={em.label}
-                          onChange={(e) => {
-                            const n = [...settings.contact.emails];
-                            n[i].label = e.target.value;
-                            setSettings((p) => ({
-                              ...p,
-                              contact: { ...p.contact, emails: n },
-                            }));
-                          }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
-                          placeholder="Label (e.g. Support)"
-                        />
-                        <input
-                          type="email"
-                          value={em.email}
-                          onChange={(e) => {
-                            const n = [...settings.contact.emails];
-                            n[i].email = e.target.value;
-                            setSettings((p) => ({
-                              ...p,
-                              contact: { ...p.contact, emails: n },
-                            }));
-                          }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
-                          placeholder="email@example.com"
-                        />
-                      </div>
-                      <button
-                        onClick={() => removeEmail(i)}
-                        className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                  {settings.contact.emails.length === 0 && (
-                    <div className="text-center py-8">
-                      <Mail className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm text-gray-400">
-                        No email addresses added
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </section>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                  Contact Details
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  These values are shown on the Contact page and footer.
+                </p>
 
-              {/* Phones */}
-              <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Phone Numbers
-                  </h3>
-                  <button
-                    onClick={addPhone}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white rounded-lg hover:bg-pink-600 text-xs font-medium"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Add
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {settings.contact.phones.map((ph, i) => (
-                    <div
-                      key={i}
-                      className="flex gap-3 items-start bg-gray-50 p-3 rounded-lg"
-                    >
-                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          value={ph.label}
-                          onChange={(e) => {
-                            const n = [...settings.contact.phones];
-                            n[i].label = e.target.value;
-                            setSettings((p) => ({
-                              ...p,
-                              contact: { ...p.contact, phones: n },
-                            }));
-                          }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
-                          placeholder="Label"
-                        />
-                        <input
-                          type="tel"
-                          value={ph.number}
-                          onChange={(e) => {
-                            const n = [...settings.contact.phones];
-                            n[i].number = e.target.value;
-                            setSettings((p) => ({
-                              ...p,
-                              contact: { ...p.contact, phones: n },
-                            }));
-                          }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
-                          placeholder="+1 (555) 000-0000"
-                        />
-                      </div>
-                      <button
-                        onClick={() => removePhone(i)}
-                        className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                  {settings.contact.phones.length === 0 && (
-                    <div className="text-center py-8">
-                      <Phone className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm text-gray-400">
-                        No phone numbers added
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </section>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                      <Phone className="w-4 h-4 text-pink-500" /> Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.contact.phone}
+                      onChange={(e) =>
+                        setSettings((p) => ({
+                          ...p,
+                          contact: {
+                            ...p.contact,
+                            phone: e.target.value,
+                          },
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
 
-              {/* Addresses */}
-              <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Addresses
-                  </h3>
-                  <button
-                    onClick={addAddress}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white rounded-lg hover:bg-pink-600 text-xs font-medium"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Add
-                  </button>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                      <Mail className="w-4 h-4 text-pink-500" /> Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={settings.contact.email}
+                      onChange={(e) =>
+                        setSettings((p) => ({
+                          ...p,
+                          contact: {
+                            ...p.contact,
+                            email: e.target.value,
+                          },
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                      placeholder="support@pinkdreams.com"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-4">
-                  {settings.contact.addresses.map((addr, i) => (
-                    <div key={i} className="bg-gray-50 p-4 rounded-lg relative">
-                      <button
-                        onClick={() => removeAddress(i)}
-                        className="absolute top-3 right-3 p-1.5 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-8">
-                        <input
-                          type="text"
-                          value={addr.line1}
-                          onChange={(e) => {
-                            const n = [...settings.contact.addresses];
-                            n[i].line1 = e.target.value;
-                            setSettings((p) => ({
-                              ...p,
-                              contact: { ...p.contact, addresses: n },
-                            }));
-                          }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
-                          placeholder="Street address"
-                        />
-                        <input
-                          type="text"
-                          value={addr.line2}
-                          onChange={(e) => {
-                            const n = [...settings.contact.addresses];
-                            n[i].line2 = e.target.value;
-                            setSettings((p) => ({
-                              ...p,
-                              contact: { ...p.contact, addresses: n },
-                            }));
-                          }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
-                          placeholder="Apt, Suite (optional)"
-                        />
-                        <input
-                          type="text"
-                          value={addr.city}
-                          onChange={(e) => {
-                            const n = [...settings.contact.addresses];
-                            n[i].city = e.target.value;
-                            setSettings((p) => ({
-                              ...p,
-                              contact: { ...p.contact, addresses: n },
-                            }));
-                          }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
-                          placeholder="City"
-                        />
-                        <input
-                          type="text"
-                          value={addr.state}
-                          onChange={(e) => {
-                            const n = [...settings.contact.addresses];
-                            n[i].state = e.target.value;
-                            setSettings((p) => ({
-                              ...p,
-                              contact: { ...p.contact, addresses: n },
-                            }));
-                          }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
-                          placeholder="State / Province"
-                        />
-                        <input
-                          type="text"
-                          value={addr.zip}
-                          onChange={(e) => {
-                            const n = [...settings.contact.addresses];
-                            n[i].zip = e.target.value;
-                            setSettings((p) => ({
-                              ...p,
-                              contact: { ...p.contact, addresses: n },
-                            }));
-                          }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
-                          placeholder="ZIP / Postal"
-                        />
-                        <input
-                          type="text"
-                          value={addr.country}
-                          onChange={(e) => {
-                            const n = [...settings.contact.addresses];
-                            n[i].country = e.target.value;
-                            setSettings((p) => ({
-                              ...p,
-                              contact: { ...p.contact, addresses: n },
-                            }));
-                          }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
-                          placeholder="Country"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  {settings.contact.addresses.length === 0 && (
-                    <div className="text-center py-8">
-                      <p className="text-sm text-gray-400">
-                        No addresses added
-                      </p>
-                    </div>
-                  )}
+
+                <div className="mt-4">
+                  <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-pink-500" /> Physical Address
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.contact.address}
+                    onChange={(e) =>
+                      setSettings((p) => ({
+                        ...p,
+                        contact: {
+                          ...p.contact,
+                          address: e.target.value,
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                    placeholder="123 Fashion Avenue, New York, NY"
+                  />
                 </div>
               </section>
 
@@ -1538,7 +1294,8 @@ const SettingsManager = () => {
       {/* Bottom Action Bar */}
       <div className="bg-white rounded-lg shadow p-4 flex flex-col sm:flex-row justify-end gap-3">
         <button
-          onClick={() => setSettings(defaultSettings)}
+          onClick={loadAdminSettings}
+          disabled={saving}
           className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
         >
           Cancel

@@ -164,7 +164,8 @@ const ProductCard = ({ product }) => {
     >
       {/* Image Container */}
       <div className="relative overflow-hidden rounded-t-3xl">
-        <div onClick={handleDetailClick}>
+        <Link 
+         href={`/product/${product.id}`}>
           <div className="aspect-[4/5] relative cursor-pointer">
             {!imageError ? (
               <img
@@ -186,7 +187,7 @@ const ProductCard = ({ product }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
             <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
           </div>
-        </div>
+        </Link>
 
         {/* Badges */}
         <div className="absolute top-4 left-4 z-10 space-y-2">
@@ -326,13 +327,14 @@ const ProductCard = ({ product }) => {
           )}
         </button>
 
-        <button 
+        <Link 
+         href={`/product/${product.id}`}
           // href={productUrl}
-          onClick={handleDetailClick}
+          // onClick={handleDetailClick}
           className="block w-full text-center mt-2 text-sm text-pink-600 hover:text-pink-700 font-medium transition-colors duration-200"
         >
           View Details →
-        </button>
+        </Link>
       </div>
     </div>
   )
