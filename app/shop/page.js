@@ -82,9 +82,13 @@ export default function Shop() {
   const [productsLoading, setProductsLoading] = useState(false);
   const [categoryCounts, setCategoryCounts] = useState({ All: 0 });
   const latestRequestRef = useRef(0);
+  const requestAbortRef = useRef(null);
 
   // Optimized debounce with shorter delay
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const debouncedMinPrice = useDebounce(minPrice, 250);
+  const debouncedMaxPrice = useDebounce(maxPrice, 250);
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
 
   const sortOptions = useMemo(
     () => [
@@ -97,23 +101,6 @@ export default function Shop() {
     ],
     [],
   );
-
-  const resetAndFetchProducts = useCallback(() => {
-    setCurrentPage(1);
-    setAllProducts([]);
-    setHasMoreProducts(false);
-    fetchProducts(1, false);
-  }, [
-    selectedCategory,
-    selectedBrand,
-    stockFilter,
-    featuredOnly,
-    sortBy,
-    sortOrder,
-    minPrice,
-    maxPrice,
-    searchTerm,
-  ]);
 
   // Initialize from URL params only once
   useEffect(() => {
@@ -137,6 +124,7 @@ export default function Shop() {
 
     if ((searchFromUrl || "") !== searchTerm) {
       setSearchTerm(searchFromUrl || "");
+      setAppliedSearchTerm((searchFromUrl || "").trim());
       hasChanges = true;
     }
 
@@ -187,18 +175,21 @@ export default function Shop() {
     }
 
     
-
-    if (hasChanges) {
-      const timer = setTimeout(() => {
-        resetAndFetchProducts();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
+    if (!hasChanges) return;
   }, [searchParams, initialDataLoaded]);
 
   // Fetch initial data
   useEffect(() => {
     fetchInitialData();
+  }, []);
+
+  // Abort in-flight product requests on unmount
+  useEffect(() => {
+    return () => {
+      if (requestAbortRef.current) {
+        requestAbortRef.current.abort();
+      }
+    };
   }, []);
 
   // Update URL when filters change - optimized
@@ -210,7 +201,8 @@ export default function Shop() {
 
       const category =
         updates.category !== undefined ? updates.category : selectedCategory;
-      const search = updates.search !== undefined ? updates.search : searchTerm;
+      const search =
+        updates.search !== undefined ? updates.search : appliedSearchTerm;
       const brand = updates.brand !== undefined ? updates.brand : selectedBrand;
       const stock = updates.stock !== undefined ? updates.stock : stockFilter;
       const featured =
@@ -218,9 +210,9 @@ export default function Shop() {
       const sort =
         updates.sort !== undefined ? updates.sort : `${sortBy}-${sortOrder}`;
       const minPriceValue =
-        updates.minPrice !== undefined ? updates.minPrice : minPrice;
+        updates.minPrice !== undefined ? updates.minPrice : debouncedMinPrice;
       const maxPriceValue =
-        updates.maxPrice !== undefined ? updates.maxPrice : maxPrice;
+        updates.maxPrice !== undefined ? updates.maxPrice : debouncedMaxPrice;
 
       // Only add non-default parameters
       if (category && category !== "All") {
@@ -257,54 +249,28 @@ export default function Shop() {
 
       const newUrl = params.toString() ? `/shop?${params.toString()}` : "/shop";
 
-      window.history.pushState(null, "", newUrl);
+      window.history.replaceState(null, "", newUrl);
     },
     [
       selectedCategory,
-      searchTerm,
+      appliedSearchTerm,
       selectedBrand,
       stockFilter,
       featuredOnly,
       sortBy,
       sortOrder,
-      minPrice,
-      maxPrice,
+      debouncedMinPrice,
+      debouncedMaxPrice,
       priceRange,
       initialDataLoaded,
     ],
   );
 
-  // Optimized product fetching when filters change
+  // Apply search only after debounce delay
   useEffect(() => {
     if (!initialDataLoaded) return;
-
-    const timer = setTimeout(() => {
-      resetAndFetchProducts();
-      updateURL();
-    }, 50);
-
-    return () => clearTimeout(timer);
-  }, [
-    selectedCategory,
-    selectedBrand,
-    stockFilter,
-    featuredOnly,
-    sortBy,
-    sortOrder,
-    minPrice,
-    maxPrice,
-    initialDataLoaded,
-    resetAndFetchProducts,
-    updateURL,
-  ]);
-
-  // Search term handling
-  useEffect(() => {
-    if (!initialDataLoaded) return;
-
-    resetAndFetchProducts();
-    updateURL({ search: debouncedSearchTerm });
-  }, [debouncedSearchTerm, initialDataLoaded, resetAndFetchProducts, updateURL]);
+    setAppliedSearchTerm(debouncedSearchTerm.trim());
+  }, [debouncedSearchTerm, initialDataLoaded]);
 
 /*************  ✨ Windsurf Command ⭐  *************/
 /**
@@ -488,11 +454,19 @@ export default function Shop() {
 
   const fetchProducts = async (page = 1, isLoadMore = false) => {
     const requestId = ++latestRequestRef.current;
+    let controller = null;
+
     try {
       if (isLoadMore) {
         setLoadingMore(true);
       } else {
+        if (requestAbortRef.current) {
+          requestAbortRef.current.abort();
+        }
+        controller = new AbortController();
+        requestAbortRef.current = controller;
         setProductsLoading(true);
+        setError(null);
       }
 
       const params = new URLSearchParams({
@@ -502,7 +476,7 @@ export default function Shop() {
         sortOrder: sortOrder,
       });
 
-      const trimmedSearch = searchTerm.trim();
+      const trimmedSearch = appliedSearchTerm.trim();
       if (trimmedSearch) {
         params.append("search", trimmedSearch);
       }
@@ -525,15 +499,17 @@ export default function Shop() {
         params.append("featured", "1");
       }
 
-      if (minPrice > priceRange.min) {
-        params.append("minPrice", minPrice.toString());
+      if (debouncedMinPrice > priceRange.min) {
+        params.append("minPrice", debouncedMinPrice.toString());
       }
 
-      if (maxPrice < priceRange.max) {
-        params.append("maxPrice", maxPrice.toString());
+      if (debouncedMaxPrice < priceRange.max) {
+        params.append("maxPrice", debouncedMaxPrice.toString());
       }
 
-      const response = await fetch(`${API_BASE}/allproducts?${params}`);
+      const response = await fetch(`${API_BASE}/allproducts?${params}`, {
+        signal: controller?.signal,
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -564,16 +540,43 @@ export default function Shop() {
       }
     } catch (error) {
       if (requestId !== latestRequestRef.current) return;
+      if (error?.name === "AbortError") return;
       console.error("Error fetching products:", error);
       if (!isLoadMore) {
         setError(`Failed to load products: ${error.message}`);
       }
     } finally {
+      if (requestId !== latestRequestRef.current) return;
       setLoading(false);
       setLoadingMore(false);
       setProductsLoading(false);
+      if (!isLoadMore && requestAbortRef.current === controller) {
+        requestAbortRef.current = null;
+      }
     }
   };
+
+  // Product fetching (search + filters)
+  useEffect(() => {
+    if (!initialDataLoaded) return;
+
+    setCurrentPage(1);
+    setHasMoreProducts(false);
+    fetchProducts(1, false);
+    updateURL({ search: appliedSearchTerm });
+  }, [
+    initialDataLoaded,
+    selectedCategory,
+    selectedBrand,
+    stockFilter,
+    featuredOnly,
+    sortBy,
+    sortOrder,
+    debouncedMinPrice,
+    debouncedMaxPrice,
+    appliedSearchTerm,
+    updateURL,
+  ]);
 
   
 
@@ -626,6 +629,7 @@ export default function Shop() {
   const clearAllFilters = useCallback(() => {
     setSelectedCategory("All");
     setSearchTerm("");
+    setAppliedSearchTerm("");
     setSelectedBrand("All");
     setStockFilter("all");
     setFeaturedOnly(false);
@@ -634,14 +638,9 @@ export default function Shop() {
     setSortBy("date");
     setSortOrder("desc");
     setCurrentPage(1);
-    setAllProducts([]);
     setHasMoreProducts(false);
 
-    window.history.pushState(null, "", "/shop");
-
-    setTimeout(() => {
-      fetchProducts(1, false);
-    }, 50);
+    window.history.replaceState(null, "", "/shop");
   }, [priceRange]);
 
   const categoryDisplayName = useMemo(() => {
@@ -945,7 +944,10 @@ export default function Shop() {
                     searchTerm === debouncedSearchTerm &&
                     searchTerm.length > 0 && (
                       <button
-                        onClick={() => setSearchTerm("")}
+                        onClick={() => {
+                          setSearchTerm("");
+                          setAppliedSearchTerm("");
+                        }}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         ✕
@@ -955,12 +957,18 @@ export default function Shop() {
               </motion.div>
 
               {/* Products Grid */}
-              {productsLoading ? (
+              {productsLoading && allProducts.length === 0 ? (
                 <div className="flex justify-center items-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-pink-600" />
                 </div>
               ) : allProducts.length > 0 ? (
                 <>
+                  {productsLoading && (
+                    <div className="mb-4 flex items-center justify-center gap-2 text-sm text-pink-600">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Updating results...
+                    </div>
+                  )}
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {allProducts.map((product, index) => (
                       <motion.div
