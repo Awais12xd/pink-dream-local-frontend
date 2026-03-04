@@ -22,6 +22,7 @@ import {
   Youtube,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import Image from "next/image";
 
 const EMPTY_UI_SETTINGS = {
   general: {
@@ -427,11 +428,11 @@ const SettingsManager = () => {
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-pink-400 transition-colors bg-gray-50/50 min-h-[140px] flex flex-col items-center justify-center">
         {imageData ? (
           <>
-            <img
+            <Image
               src={imageData.url}
               alt={label}
               className="max-h-16 max-w-full object-contain rounded mb-2"
-            />
+             width={1200} height={1200} sizes="100vw"/>
             <p className="text-xs text-gray-500 truncate max-w-full">
               {imageData.name}
             </p>

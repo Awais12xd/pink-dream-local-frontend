@@ -23,6 +23,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { getImageSrc, handleImageError } from "../utils/imageUtils";
+import Image from "next/image";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -230,12 +231,12 @@ const OrderDetailsModal = ({ orderId, isOpen, onClose, onCancelSuccess }) => {
                     );
                     return (
                       <div key={`${item.name}-${idx}`} className="border rounded-xl p-3 flex gap-3">
-                        <img
+                        <Image
                           src={getImageSrc(item.image)}
                           onError={handleImageError}
                           alt={item.name}
                           className="w-16 h-16 rounded-lg object-cover bg-gray-100"
-                        />
+                         width={1200} height={1200} sizes="100vw"/>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900">{item.name}</p>
                           <p className="text-sm text-gray-500">

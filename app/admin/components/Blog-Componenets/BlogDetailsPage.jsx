@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import "./Blog.css";
 import Authorized from "@/app/components/Authorized";
+import Image from "next/image";
 import {
   getOptimizedImageSrc,
   handleImageError,
@@ -329,7 +330,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
 
           <div className="">
             <div className="w-full aspect-video relative bg-gray-100 rounded-lg overflow-hidden h-[300px] sm:h-[500px]">
-              <img
+              <Image
                 src={getOptimizedImageSrc(blog?.image, "detail")}
                 alt="blog"
                 className="h-full w-full object-cover"
@@ -338,7 +339,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
                 loading="eager"
                 decoding="async"
                 onError={handleImageError}
-              />
+               sizes="100vw"/>
               <div className="absolute right-4 top-4 flex space-x-2">
                 <span
                   className={` px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(blog?.status)}`}
@@ -393,7 +394,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
             <div className="flex sm:flex-row flex-col gap-2 sm:gap-4 w-full">
               <div className=" ">
                 <div className="flex items-center justify-center">
-                  <img
+                  <Image
                     src={getOptimizedImageSrc(blog?.author?.profileImage, "avatar")}
                     alt="author"
                     className="h-32 w-32 rounded-full object-cover"
@@ -402,7 +403,7 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
                     loading="lazy"
                     decoding="async"
                     onError={handleImageError}
-                  />
+                   sizes="100vw"/>
                 </div>
               </div>
               <div className="flex flex-col gap-4  ">

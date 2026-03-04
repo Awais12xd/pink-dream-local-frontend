@@ -38,6 +38,7 @@ import {
   handleImageError,
 } from "@/app/utils/imageUtils";
 import { formatCurrency } from "@/app/utils/formatters";
+import Image from "next/image";
 
 const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
       const token = "";
@@ -295,7 +296,7 @@ const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
               {/* Main Image */}
               <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                 {validImages.length > 0 ? (
-                  <img
+                  <Image
                     src={getOptimizedImageSrc(validImages[activeImageIndex] || validImages[0], "detail")}
                     alt={product.name}
                     className="w-full h-full object-cover"
@@ -304,7 +305,7 @@ const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
                     loading="eager"
                     decoding="async"
                     onError={handleImageError}
-                  />
+                   sizes="100vw"/>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <Camera className="w-16 h-16 text-gray-400" />
@@ -323,7 +324,7 @@ const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
                         activeImageIndex === index ? 'border-blue-500' : 'border-transparent'
                       }`}
                     >
-                      <img
+                      <Image
                         src={getOptimizedImageSrc(image, "thumb")}
                         alt={`${product.name} ${index + 1}`}
                         className="w-full h-full object-cover"
@@ -332,7 +333,7 @@ const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
                         loading="lazy"
                         decoding="async"
                         onError={handleImageError}
-                      />
+                       sizes="100vw"/>
                     </button>
                   ))}
                   {validImages.length > 4 && !showAllImages && (

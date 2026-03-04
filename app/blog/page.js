@@ -442,11 +442,11 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
         {/* Author & Meta */}
         <div className="flex  mb-4 justify-start  w-full ">
           <div className="flex items-center gap-2 ">
-            <img
+            <Image
             src={post.author.profileImage}
             alt={post.author.name}
             className="w-10 h-10 rounded-full object-cover"
-          />
+           width={1200} height={1200} sizes="100vw"/>
             <div className="flex flex-col gap-y-0.5 ">
               <span className="font-medium text-gray-800">
                 {post.author.name}

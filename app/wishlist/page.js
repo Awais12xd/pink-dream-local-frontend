@@ -8,6 +8,7 @@ import Footer from '../components/Footer'
 import { useWishlist } from '../context/WishlistContext'
 import { toast } from 'react-toastify'
 import { getImageSrc, handleImageError } from '../utils/imageUtils'
+import Image from "next/image";
 
 // API Configuration
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
@@ -335,12 +336,12 @@ const addAllToCart = async () => {
                   {/* Product Image */}
                   <div className="relative h-48 bg-gradient-to-br from-pink-100 to-pink-200 overflow-hidden">
                     {product.image ? (
-                      <img
+                      <Image
                         src={getImageSrc(product.image)}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         onError={handleImageError}
-                      />
+                       width={1200} height={1200} sizes="100vw"/>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <ShoppingBag className="w-12 h-12 text-pink-400" />

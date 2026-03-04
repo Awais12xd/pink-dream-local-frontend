@@ -13,6 +13,7 @@ import {
   handleImageError as fallbackImageOnError,
 } from "../utils/imageUtils";
 import { formatCurrency } from "../utils/formatters";
+import Image from "next/image";
 
 const ProductCard = ({ product }) => {
   const [loading, setLoading] = useState(false)
@@ -134,7 +135,7 @@ const ProductCard = ({ product }) => {
          href={`/product/${product.id}`}>
           <div className="aspect-[4/5] relative cursor-pointer">
             {!imageError ? (
-              <img
+              <Image
                 src={imageSrc}
                 alt={product.name || 'Product'}
                 className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
@@ -147,7 +148,7 @@ const ProductCard = ({ product }) => {
                   handleImageError();
                   fallbackImageOnError(e, ERROR_IMAGE);
                 }}
-              />
+               sizes="100vw"/>
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-pink-50 to-rose-50 flex items-center justify-center">
                 <div className="text-center">

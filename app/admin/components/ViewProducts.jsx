@@ -22,6 +22,7 @@ import {
   handleImageError,
 } from "@/app/utils/imageUtils";
 import { formatCurrency } from "@/app/utils/formatters";
+import Image from "next/image";
 
 const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
   const token = "";
@@ -174,7 +175,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
           </div>
 
           <div className="relative">
-            <img
+            <Image
               src={selectedProductImages[currentImageIndex]}
               alt={`Product image ${currentImageIndex + 1}`}
               className="w-full h-96 object-contain bg-gray-50"
@@ -183,7 +184,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
               loading="eager"
               decoding="async"
               onError={handleImageError}
-            />
+             sizes="100vw"/>
 
             {selectedProductImages.length > 1 && (
               <>
@@ -240,7 +241,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
-                    <img
+                    <Image
                       src={image}
                       alt={`Thumbnail ${index + 1}`}
                       className="w-full h-full object-cover"
@@ -249,7 +250,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
                       loading="lazy"
                       decoding="async"
                       onError={handleImageError}
-                    />
+                     sizes="100vw"/>
                   </button>
                 ))}
               </div>
@@ -267,7 +268,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
     return (
       <div className="flex items-center mr-3">
         <div className="relative">
-          <img
+          <Image
             src={getOptimizedImageSrc(product?.image, "thumb")}
             alt={product.name}
             className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
@@ -276,7 +277,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
             loading="lazy"
             decoding="async"
             onError={handleImageError}
-          />
+           sizes="100vw"/>
         </div>
       </div>
     );

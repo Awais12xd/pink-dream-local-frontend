@@ -23,6 +23,7 @@ import {
   Package,
 } from "lucide-react";
 import Authorized from "@/app/components/Authorized";
+import Image from "next/image";
 
 const BlogCategoriesPage = () => {
       const token = "";
@@ -478,11 +479,11 @@ const BlogCategoriesPage = () => {
                   {/* Image Preview */}
                   {imagePreview && (
                     <div className="mb-4 relative">
-                      <img
+                      <Image
                         src={imagePreview}
                         alt="Category preview"
                         className="w-full h-48 object-cover rounded-lg border-2 border-pink-200"
-                      />
+                       width={1200} height={1200} sizes="100vw"/>
                       <button
                         type="button"
                         onClick={handleRemoveImage}
@@ -712,7 +713,7 @@ const BlogCategoriesPage = () => {
                     >
                       <td className="px-6 py-4">
                         {category.image ? (
-                          <img
+                          <Image
                             src={category.image}
                             alt={category.name}
                             className="w-12 h-12 object-cover rounded-lg border-2 border-pink-200"
@@ -720,7 +721,7 @@ const BlogCategoriesPage = () => {
                               e.target.style.display = "none";
                               e.target.nextSibling.style.display = "flex";
                             }}
-                          />
+                           width={1200} height={1200} sizes="100vw"/>
                         ) : null}
                         <div
                           className="w-12 h-12 bg-gradient-to-br from-pink-100 to-rose-100 rounded-lg flex items-center justify-center border-2 border-pink-200"

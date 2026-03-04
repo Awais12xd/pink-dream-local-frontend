@@ -14,6 +14,7 @@ import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { useAuth } from "../../context/AuthContext"; // Add this import
+import Image from "next/image";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -175,11 +176,11 @@ function SuccessContent() {
                     >
                       <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
                         {item.image ? (
-                          <img
+                          <Image
                             src={item.image}
                             alt={item.name}
                             className="w-full h-full object-cover"
-                          />
+                           width={1200} height={1200} sizes="100vw"/>
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center">
                             <Package className="w-6 h-6 text-pink-400" />

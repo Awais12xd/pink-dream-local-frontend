@@ -2,6 +2,7 @@ import React, { useCallback, useState, useEffect } from 'react'
 import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
   AlertCircle, Check, Loader, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
+import Image from "next/image";
 
 
  // Add Product Page Component with Dynamic + Static Categories
@@ -631,11 +632,11 @@ import { toast } from 'react-toastify';
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {newProduct.images.map((img, index) => (
                       <div key={index} className="relative group">
-                        <img
+                        <Image
                           src={img}
                           alt={`Product ${index + 1}`}
                           className="w-full h-32 object-cover rounded-lg border-2 border-pink-200"
-                        />
+                         width={1200} height={1200} sizes="100vw"/>
                         {index === 0 && (
                           <div className="absolute top-2 left-2 bg-pink-500 text-white text-xs px-2 py-1 rounded">
                             Main

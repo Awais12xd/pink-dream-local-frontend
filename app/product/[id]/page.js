@@ -21,6 +21,7 @@ import {
 } from "../../utils/imageUtils";
 import { formatCurrency } from "../../utils/formatters";
 import { toast } from "react-toastify";
+import Image from "next/image";
 import {
   Trash2,
   ShoppingCart,
@@ -169,7 +170,7 @@ const ProductImageZoom = ({
         cursor: !isMobile ? "zoom-in" : "default",
       }}
     >
-      <img
+      <Image
         key={resolvedSrc}
         ref={imageRef}
         src={resolvedSrc}
@@ -189,7 +190,7 @@ const ProductImageZoom = ({
           transition: "transform 180ms ease-out",
           willChange: "transform",
         }}
-      />
+       sizes="100vw"/>
 
       {!isImageLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
@@ -809,7 +810,7 @@ export default function ProductDetail() {
               {/* Mobile */}
               <div className="sm:hidden">
                 <div className="relative h-[320px] rounded-xl overflow-hidden bg-gray-50 mb-4">
-                  <img
+                  <Image
                     src={getOptimizedImageSrc(activeImage, "detail")}
                     alt={product.name}
                     className="w-full h-full object-cover"
@@ -819,7 +820,7 @@ export default function ProductDetail() {
                     fetchPriority="high"
                     decoding="async"
                     onError={sharedHandleImageError}
-                  />
+                   sizes="100vw"/>
                 </div>
 
                 {productImages.length > 1 && (
@@ -834,7 +835,7 @@ export default function ProductDetail() {
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
-                        <img
+                        <Image
                           src={getOptimizedImageSrc(image, "thumb")}
                           alt={`${product.name} ${index + 1}`}
                           className="w-full h-full object-cover"
@@ -843,7 +844,7 @@ export default function ProductDetail() {
                           loading="lazy"
                           decoding="async"
                           onError={sharedHandleImageError}
-                        />
+                         sizes="100vw"/>
                       </button>
                     ))}
 
@@ -882,7 +883,7 @@ export default function ProductDetail() {
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
-                        <img
+                        <Image
                           src={getOptimizedImageSrc(image, "thumb")}
                           alt={`${product.name} ${index + 1}`}
                           className="w-full h-full object-cover"
@@ -891,7 +892,7 @@ export default function ProductDetail() {
                           loading="lazy"
                           decoding="async"
                           onError={sharedHandleImageError}
-                        />
+                         sizes="100vw"/>
                       </button>
                     ))}
 
@@ -1458,7 +1459,7 @@ export default function ProductDetail() {
                           <div className="flex items-start justify-between gap-3 mb-2">
                             <div className="flex items-center gap-3 min-w-0">
                               {review.userAvatar ? (
-                                <img
+                                <Image
                                   src={getOptimizedImageSrc(
                                     review.userAvatar,
                                     "avatar",
@@ -1477,7 +1478,7 @@ export default function ProductDetail() {
                                       AVATAR_FALLBACK_IMAGE,
                                     )
                                   }
-                                />
+                                 sizes="100vw"/>
                               ) : (
                                 <div className="w-10 h-10 rounded-full bg-pink-100 text-pink-700 flex items-center justify-center text-sm font-semibold border border-pink-200">
                                   {(review.userName || "U")

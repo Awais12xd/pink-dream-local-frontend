@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import Image from "next/image";
 import {
   Settings, CreditCard, Search as SearchIcon, Phone,
   Plus, Trash2, Save, Upload, Eye, EyeOff,
@@ -126,7 +127,7 @@ const SettingsManager = () => {
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-pink-400 transition-colors bg-gray-50/50 min-h-[140px] flex flex-col items-center justify-center">
         {imageData ? (
           <>
-            <img src={imageData.url} alt={label} className="max-h-16 max-w-full object-contain rounded mb-2" />
+            <Image src={imageData.url} alt={label} className="max-h-16 max-w-full object-contain rounded mb-2"  width={1200} height={1200} sizes="100vw"/>
             <p className="text-xs text-gray-500 truncate max-w-full">{imageData.name}</p>
             <div className="flex gap-2 mt-2">
               <button onClick={() => fileRef.current?.click()} className="text-xs px-3 py-1 bg-pink-100 text-pink-600 rounded hover:bg-pink-200 font-medium">Change</button>

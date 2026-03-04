@@ -46,6 +46,7 @@ import {
   handleImageError,
 } from "@/app/utils/imageUtils";
 import { formatCurrency, toSafeNumber } from "@/app/utils/formatters";
+import Image from "next/image";
 
 const AdminOrders = () => {
   const token = "";
@@ -1481,7 +1482,7 @@ const AdminOrders = () => {
                     >
                       <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
                         {item.image ? (
-                          <img
+                          <Image
                             src={getOptimizedImageSrc(item.image, "thumb")}
                             alt={item.name}
                             className="w-full h-full object-cover"
@@ -1490,7 +1491,7 @@ const AdminOrders = () => {
                             loading="lazy"
                             decoding="async"
                             onError={handleImageError}
-                          />
+                           sizes="100vw"/>
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
                             <Package size={20} className="text-gray-600" />
@@ -1580,7 +1581,7 @@ const AdminOrders = () => {
                             rel="noreferrer"
                             className="block"
                           >
-                            <img
+                            <Image
                               src={getOptimizedImageSrc(selectedOrder.paymentMeta.receiptImageUrl, "detail")}
                               alt={`Receipt for order ${selectedOrder.orderId}`}
                               className="w-full max-h-[420px] object-contain rounded-lg border border-gray-200 bg-white"
@@ -1589,7 +1590,7 @@ const AdminOrders = () => {
                               loading="lazy"
                               decoding="async"
                               onError={handleImageError}
-                            />
+                             sizes="100vw"/>
                           </a>
                           <a
                             href={selectedOrder.paymentMeta.receiptImageUrl}

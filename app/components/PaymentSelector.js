@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { toast } from 'react-toastify'
+import Image from "next/image";
 
 const CheckoutForm = dynamic(() => import("./CheckoutForm"));
 const PayPalButton = dynamic(() => import("./PayPalButton"));
@@ -449,11 +450,11 @@ export default function PaymentSelector({
                 ) : (
                   <div className="space-y-3">
                     {bankReceiptPreview ? (
-                      <img
+                      <Image
                         src={bankReceiptPreview}
                         alt="Bank transfer receipt preview"
                         className="w-full max-h-64 object-contain rounded-lg border border-gray-200 bg-gray-50"
-                      />
+                       width={1200} height={1200} sizes="100vw"/>
                     ) : null}
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs text-gray-600 truncate">

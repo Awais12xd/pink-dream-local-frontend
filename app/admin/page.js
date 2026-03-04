@@ -734,7 +734,7 @@ const AdminPanel = () => {
 
       return (
         <div className="flex items-center mr-3">
-          <img
+          <Image
             src={getOptimizedImageSrc(images[0], "thumb")}
             alt={product.name}
             className="w-10 h-10 rounded object-cover"
@@ -742,7 +742,7 @@ const AdminPanel = () => {
             height={40}
             loading="lazy"
             onError={handleImageError}
-          />
+           sizes="100vw"/>
         </div>
       );
     };

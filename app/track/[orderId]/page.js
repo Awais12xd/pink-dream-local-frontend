@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from "next/image";
 
 const TrackOrderPage = () => {
     const params = useParams();
@@ -206,11 +207,11 @@ const TrackOrderPage = () => {
                         <div className="space-y-4">
                             {order.items.map((item, index) => (
                                 <div key={index} className="flex items-center space-x-4 p-3 border border-gray-200 rounded-lg">
-                                    <img 
+                                    <Image 
                                         src={item.image} 
                                         alt={item.name}
                                         className="w-16 h-16 object-cover rounded-lg"
-                                    />
+                                     width={1200} height={1200} sizes="100vw"/>
                                     <div className="flex-1">
                                         <h3 className="font-medium text-gray-900">{item.name}</h3>
                                         <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>

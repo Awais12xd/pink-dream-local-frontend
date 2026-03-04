@@ -1,3 +1,4 @@
+import Image from "next/image";
 // Profile Header Component - FIXED VERSION
 const ProfileHeader = ({ user, stats }) => {
   // Removed the useEffect that was calling onRefreshStats
@@ -15,7 +16,7 @@ const ProfileHeader = ({ user, stats }) => {
         <div className="relative">
           <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center overflow-hidden border-4 border-white/30">
             {user?.avatar ? (
-              <img 
+              <Image 
                 src={user.avatar} 
                 alt="Profile" 
                 className="w-full h-full object-cover"
@@ -23,7 +24,7 @@ const ProfileHeader = ({ user, stats }) => {
                   e.target.style.display = 'none';
                   e.target.nextSibling.style.display = 'flex';
                 }}
-              />
+               width={1200} height={1200} sizes="100vw"/>
             ) : null}
             <div className={`w-full h-full flex items-center justify-center ${user?.avatar ? 'hidden' : ''}`}>
               <User size={40} className="text-white" />

@@ -98,11 +98,11 @@ const Header = () => {
         >
           <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-pink-400 via-pink-500 to-rose-500 rounded-full flex items-center justify-center flex-shrink-0">
             {user.avatar ? (
-              <img
+              <Image
                 src={user.avatar}
                 alt={user.name}
                 className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
-              />
+               width={1200} height={1200} sizes="100vw"/>
             ) : (
               <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             )}
@@ -413,11 +413,11 @@ const Header = () => {
                   <div className="flex items-center space-x-3 mb-4">
                     <div className="w-10 h-10 bg-gradient-to-br from-pink-400 via-pink-500 to-rose-500 rounded-full flex items-center justify-center flex-shrink-0">
                       {user.avatar ? (
-                        <img
+                        <Image
                           src={user.avatar}
                           alt={user.name}
                           className="w-10 h-10 rounded-full object-cover"
-                        />
+                         width={1200} height={1200} sizes="100vw"/>
                       ) : (
                         <User className="w-6 h-6 text-white" />
                       )}

@@ -20,6 +20,7 @@ import {
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import CKEditorInput from "./CkEditorInput";
+import Image from "next/image";
 
 
 const EditBlogPage = ({ blog, onSave, onCancel }) => {
@@ -539,11 +540,11 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
           {/* Image Preview */}
           {imagePreview && (
             <div className="mb-4 relative">
-              <img
+              <Image
                 src={imagePreview}
                 alt="Blog preview"
                 className="w-full h-80 object-cover rounded-lg border-2 border-pink-200"
-              />
+               width={1200} height={1200} sizes="100vw"/>
               <button
                 type="button"
                 onClick={handleRemoveImage}

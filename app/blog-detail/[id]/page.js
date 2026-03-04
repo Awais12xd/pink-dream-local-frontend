@@ -398,7 +398,7 @@ export default function BlogDetail() {
                 <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between bg-white/80 backdrop-blur rounded-lg p-3 shadow-sm lg:hidden">
                   <div className="flex items-center space-x-3">
                     {/* <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-100">
-                      <img
+                      <Image
                         src={author?.profileImage || ""}
                         alt={author?.name || "Author"}
                         className="w-full h-full object-cover"
@@ -406,7 +406,7 @@ export default function BlogDetail() {
                           e.target.src =
                             "/placeholders/avatar-placeholder.svg";
                         }}
-                      />
+                       width={1200} height={1200} sizes="100vw"/>
                     </div> */}
                     <div className="relative rounded-full overflow-hidden bg-gray-100 w-9 h-9">
                       <Image
@@ -456,7 +456,7 @@ export default function BlogDetail() {
                 {/* <div className="hidden lg:flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
-                      <img src={author?.profileImage || ""} alt={author?.name || "Author"} className="w-full h-full object-cover" onError={(e)=>{e.target.src = "/placeholders/avatar-placeholder.svg"}} />
+                      <Image src={author?.profileImage || ""} alt={author?.name || "Author"} className="w-full h-full object-cover" onError={(e)=>{e.target.src = "/placeholders/avatar-placeholder.svg"}}  width={1200} height={1200} sizes="100vw"/>
                     </div>
                     <div>
                       <div className="text-sm font-medium text-gray-800">{author?.name || "Unknown"}</div>
@@ -684,7 +684,7 @@ export default function BlogDetail() {
                 <div className="bg-white border rounded-lg p-4 shadow-sm">
                   <div className="flex flex-col items-center space-y-4">
                     {/* <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100">
-                      <img
+                      <Image
                         src={author?.profileImage || ""}
                         alt={author?.name || "Author"}
                         className="w-full h-full object-cover border"
@@ -692,7 +692,7 @@ export default function BlogDetail() {
                           e.target.src =
                             "/placeholders/avatar-placeholder.svg";
                         }}
-                      />
+                       width={1200} height={1200} sizes="100vw"/>
                     </div> */}
                     <div className="relative rounded-full overflow-hidden bg-gray-100 w-14 h-14">
                       <Image

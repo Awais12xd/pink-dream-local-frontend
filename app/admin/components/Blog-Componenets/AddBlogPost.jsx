@@ -21,6 +21,7 @@ import "react-quill/dist/quill.snow.css";
 import "./Blog.css";
 import dynamic from "next/dynamic";
 import { toast } from "react-toastify";
+import Image from "next/image";
 
 const CKEditorInput = dynamic(() => import("./CkEditorInput.jsx"), {
   ssr: false,
@@ -607,11 +608,11 @@ const AddBlogPage = () => {
                 {/* Image Preview */}
                 {imagePreview && (
                   <div className="mb-4 relative">
-                    <img
+                    <Image
                       src={imagePreview}
                       alt="Blog preview"
                       className="w-full h-80 object-cover rounded-lg border-2 border-pink-200"
-                    />
+                     width={1200} height={1200} sizes="100vw"/>
                     <button
                       type="button"
                       onClick={handleRemoveImage}
@@ -673,11 +674,11 @@ const AddBlogPage = () => {
                     {/* Image Preview */}
                     {imageAuthorPreview && (
                       <div className="mb-4 relative">
-                        <img
+                        <Image
                           src={imageAuthorPreview}
                           alt="Author image preview"
                           className=" h-32 w-32 object-cover rounded-full  border-pink-200"
-                        />
+                         width={1200} height={1200} sizes="100vw"/>
                         <button
                           type="button"
                           onClick={handleRemoveAuthorImage}

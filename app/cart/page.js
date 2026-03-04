@@ -27,6 +27,7 @@ import { toast } from "react-toastify";
 import { getImageSrc, handleImageError } from "../utils/imageUtils";
 import LoginModal from "../components/LoginModal";
 import { SettingContext } from "../context/SettingContext";
+import Image from "next/image";
 
 export default function CartPage() {
   const router = useRouter();
@@ -374,12 +375,12 @@ export default function CartPage() {
                   <div className="flex items-center space-x-6">
                     {/* Product Image */}
                     <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                      <img
+                      <Image
                         src={getImageSrc(item.image)}
                         alt={item.name}
                         onError={handleImageError}
                         className="w-full h-full object-cover"
-                      />
+                       width={1200} height={1200} sizes="100vw"/>
                     </div>
 
                     {/* Product Details */}

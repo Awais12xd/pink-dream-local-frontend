@@ -16,6 +16,7 @@ import {
   Plus,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import Image from "next/image";
 import {
   getOptimizedImageSrc,
   handleImageError,
@@ -574,7 +575,7 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
           </div>
 
           <div className="relative">
-            <img
+            <Image
               src={getOptimizedImageSrc(formData.images[previewImageIndex], "detail")}
               alt="Preview"
               className="w-full h-[70vh] object-contain bg-gray-50"
@@ -583,7 +584,7 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
               loading="eager"
               decoding="async"
               onError={handleImageError}
-            />
+             sizes="100vw"/>
 
             {formData.images.length > 1 && (
               <>
@@ -914,7 +915,7 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
                   key={`${img}-${idx}`}
                   className="relative group border rounded-lg overflow-hidden"
                 >
-                  <img
+                  <Image
                     src={getOptimizedImageSrc(img, "thumb")}
                     alt={`product-${idx + 1}`}
                     className="w-full h-32 object-cover"
@@ -923,7 +924,7 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
                     loading="lazy"
                     decoding="async"
                     onError={handleImageError}
-                  />
+                   sizes="100vw"/>
                   {formData.image === img && (
                     <div className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-1 rounded-full inline-flex items-center gap-1">
                       <Star className="w-3 h-3 fill-current" />
