@@ -576,6 +576,7 @@ export default function ModernFooter() {
                     sizes="(max-width: 640px) 100vw,
                                    (max-width: 1024px) 100vw,
                                    100vw"
+                                   priority="high"
                   />
                 </Link>
               ) : (

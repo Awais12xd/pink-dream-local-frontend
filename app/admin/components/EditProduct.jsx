@@ -18,6 +18,7 @@ import {
 import { toast } from "react-toastify";
 import Image from "next/image";
 import {
+  getImageDimensions,
   getOptimizedImageSrc,
   handleImageError,
 } from "@/app/utils/imageUtils";
@@ -548,6 +549,7 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
 
   const ImagePreviewModal = () => {
     if (!showPreview || !formData.images.length) return null;
+    const previewImage = getImageDimensions("adminPreview");
 
     const next = () =>
       setPreviewImageIndex((p) =>
@@ -579,12 +581,13 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
               src={getOptimizedImageSrc(formData.images[previewImageIndex], "detail")}
               alt="Preview"
               className="w-full h-[70vh] object-contain bg-gray-50"
-              width={1200}
-              height={1200}
-              loading="eager"
-              decoding="async"
+              width={previewImage.width}
+              height={previewImage.height}
+              priority
+              quality={78}
               onError={handleImageError}
-             sizes="100vw"/>
+              sizes={previewImage.sizes}
+            />
 
             {formData.images.length > 1 && (
               <>
@@ -611,6 +614,7 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
   const sectionTitleCls = "text-base font-semibold text-gray-900 mb-4";
   const inputCls =
     "w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+  const editorThumb = getImageDimensions("adminEditorThumb");
 
   if (!product) {
     return (
@@ -919,12 +923,12 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
                     src={getOptimizedImageSrc(img, "thumb")}
                     alt={`product-${idx + 1}`}
                     className="w-full h-32 object-cover"
-                    width={240}
-                    height={128}
-                    loading="lazy"
-                    decoding="async"
+                    width={editorThumb.width}
+                    height={editorThumb.height}
+                    quality={72}
                     onError={handleImageError}
-                   sizes="100vw"/>
+                    sizes={editorThumb.sizes}
+                  />
                   {formData.image === img && (
                     <div className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-1 rounded-full inline-flex items-center gap-1">
                       <Star className="w-3 h-3 fill-current" />

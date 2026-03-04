@@ -12,32 +12,83 @@ const ERROR_IMAGE = `${PLACEHOLDER_BASE}/product-placeholder.svg`;
 const AVATAR_FALLBACK_IMAGE = `${PLACEHOLDER_BASE}/avatar-placeholder.svg`;
 
 const IMAGE_CONTEXTS = {
-  thumb: { width: 160, height: 160, sizes: "160px", priority: false },
+  thumb: {
+    width: 160,
+    height: 160,
+    sizes: "160px",
+    priority: false,
+    crop: "fill",
+  },
   card: {
     width: 640,
     height: 800,
     sizes: "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw",
     priority: false,
+    crop: "fill",
   },
   list: {
     width: 720,
     height: 900,
     sizes: "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw",
     priority: false,
+    crop: "fill",
+  },
+  blogCard: {
+    width: 960,
+    height: 640,
+    sizes: "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 420px",
+    priority: false,
+    crop: "fill",
+  },
+  blogHero: {
+    width: 1600,
+    height: 900,
+    sizes: "(max-width: 768px) 100vw, 75vw",
+    priority: true,
+    crop: "limit",
+  },
+  adminPreview: {
+    width: 1440,
+    height: 960,
+    sizes: "(max-width: 1024px) 100vw, 1024px",
+    priority: false,
+    crop: "limit",
+  },
+  adminEditorThumb: {
+    width: 320,
+    height: 180,
+    sizes: "(max-width: 768px) 45vw, 180px",
+    priority: false,
+    crop: "fill",
+  },
+  adminTableThumb: {
+    width: 80,
+    height: 80,
+    sizes: "40px",
+    priority: false,
+    crop: "fill",
   },
   detail: {
     width: 1200,
     height: 1200,
     sizes: "(max-width: 768px) 100vw, 50vw",
     priority: true,
+    crop: "limit",
   },
   zoom: {
     width: 1800,
     height: 1800,
     sizes: "(max-width: 768px) 100vw, 50vw",
     priority: false,
+    crop: "limit",
   },
-  avatar: { width: 96, height: 96, sizes: "96px", priority: false },
+  avatar: {
+    width: 96,
+    height: 96,
+    sizes: "96px",
+    priority: false,
+    crop: "fill",
+  },
 };
 
 const toSafeString = (value) => (typeof value === "string" ? value.trim() : "");
@@ -65,7 +116,7 @@ const buildCloudinaryTransform = (context = "detail") => {
   const quality = cfg.quality || "auto";
   const format = cfg.format || "auto";
   const dpr = cfg.dpr || "auto";
-  const crop = cfg.crop || "fill";
+  const crop = cfg.crop || "limit";
 
   const chunks = [`f_${format}`, `q_${quality}`, `dpr_${dpr}`];
   if (crop) chunks.push(`c_${crop}`);

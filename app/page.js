@@ -564,6 +564,7 @@ export default function Home() {
                               alt={category}
                               fill
                               sizes="(max-width: 768px) 96px, 112px"
+                              quality={72}
                               className="object-cover group-hover:scale-110 transition-transform duration-300"
                             />
                             <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 to-purple-500/20 group-hover:from-pink-500/40 group-hover:to-purple-500/40 transition-all duration-300" />
@@ -656,6 +657,8 @@ export default function Home() {
                   alt={testimonial.name}
                   width={64}
                   height={64}
+                  sizes="64px"
+                  quality={70}
                   className="w-16 h-16 rounded-full mx-auto mb-4 object-cover"
                 />
                 <div className="flex justify-center mb-4">

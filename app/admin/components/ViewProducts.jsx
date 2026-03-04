@@ -18,6 +18,7 @@ import Authorized from "@/app/components/Authorized";
 import { toast } from "react-toastify";
 import Link from "next/link";
 import {
+  getImageDimensions,
   getOptimizedImageSrc,
   handleImageError,
 } from "@/app/utils/imageUtils";
@@ -133,6 +134,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
   // Image Modal Component
   const ImageModal = () => {
     if (!showImageModal || selectedProductImages.length === 0) return null;
+    const previewImage = getImageDimensions("adminPreview");
 
     const nextImage = () => {
       setCurrentImageIndex((prev) =>
@@ -179,12 +181,13 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
               src={selectedProductImages[currentImageIndex]}
               alt={`Product image ${currentImageIndex + 1}`}
               className="w-full h-96 object-contain bg-gray-50"
-              width={1200}
-              height={1200}
-              loading="eager"
-              decoding="async"
+              width={previewImage.width}
+              height={previewImage.height}
+              priority
+              quality={78}
               onError={handleImageError}
-             sizes="100vw"/>
+              sizes={previewImage.sizes}
+            />
 
             {selectedProductImages.length > 1 && (
               <>
@@ -242,15 +245,15 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
                     }`}
                   >
                     <Image
-                      src={image}
+                      src={getOptimizedImageSrc(image, "thumb")}
                       alt={`Thumbnail ${index + 1}`}
                       className="w-full h-full object-cover"
                       width={96}
                       height={96}
-                      loading="lazy"
-                      decoding="async"
+                      quality={72}
                       onError={handleImageError}
-                     sizes="100vw"/>
+                      sizes="64px"
+                    />
                   </button>
                 ))}
               </div>
@@ -269,15 +272,15 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
       <div className="flex items-center mr-3">
         <div className="relative">
           <Image
-            src={getOptimizedImageSrc(product?.image, "thumb")}
+            src={getOptimizedImageSrc(product?.image, "adminTableThumb")}
             alt={product.name}
             className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
             width={40}
             height={40}
-            loading="lazy"
-            decoding="async"
+            quality={72}
             onError={handleImageError}
-           sizes="100vw"/>
+            sizes="40px"
+          />
         </div>
       </div>
     );

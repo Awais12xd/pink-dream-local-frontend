@@ -1021,7 +1021,7 @@ export default function Shop() {
                       >
                         <ProductCard
                           product={product}
-                          priority={index < 2 && currentPage === 1}
+                          priority={index < 2}
                         />
                       </motion.div>
                     ))}

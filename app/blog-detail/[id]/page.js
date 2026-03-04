@@ -317,7 +317,7 @@ export default function BlogDetail() {
     comments = [],
     commentsEnabled,
   } = blog;
-  const heroImageSrc = getOptimizedImageSrc(image, "detail");
+  const heroImageSrc = getOptimizedImageSrc(image, "blogHero");
   const authorAvatarSrc = getOptimizedImageSrc(
     author?.profileImage,
     "avatar",
@@ -377,6 +377,7 @@ export default function BlogDetail() {
            50vw"
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                     priority
+                    quality={78}
                   />
                 </div>
 
@@ -411,10 +412,11 @@ export default function BlogDetail() {
                     <div className="relative rounded-full overflow-hidden bg-gray-100 w-9 h-9">
                       <Image
                         src={authorAvatarSrc}
-                        alt={author?.name}
+                        alt={author?.name || "Author"}
                         fill
                         sizes="36px"
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        quality={70}
                       />
                     </div>
                     <div className="text-xs">
@@ -697,10 +699,11 @@ export default function BlogDetail() {
                     <div className="relative rounded-full overflow-hidden bg-gray-100 w-14 h-14">
                       <Image
                         src={authorAvatarSrc}
-                        alt={author?.name}
+                        alt={author?.name || "Author"}
                         fill
                         sizes="56px"
                         className="object-cover border transition-transform duration-300 group-hover:scale-105"
+                        quality={70}
                       />
                     </div>
                     <div>

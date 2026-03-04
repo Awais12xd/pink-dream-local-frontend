@@ -20,7 +20,11 @@ import {
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import Link from "next/link";
-import { normalizeImageUrl } from "../utils/imageUtils";
+import { toast } from "react-toastify";
+import {
+  AVATAR_FALLBACK_IMAGE,
+  getOptimizedImageSrc,
+} from "../utils/imageUtils";
 import Image from "next/image";
 
 // Sample blog data - replace with your actual data source
@@ -387,7 +391,18 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
   };
  
 
-  const BlogCard = ({ post, featured = false, priority = false }) => (
+  const BlogCard = ({ post, featured = false, priority = false }) => {
+    const coverSrc = getOptimizedImageSrc(post?.image, "blogCard");
+    const authorAvatarSrc = getOptimizedImageSrc(
+      post?.author?.profileImage,
+      "avatar",
+      AVATAR_FALLBACK_IMAGE,
+    );
+    const coverSizes = featured
+      ? "(max-width: 768px) 100vw, (max-width: 1280px) 66vw, 720px"
+      : "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 420px";
+
+    return (
     <motion.article
       layout
       initial={{ opacity: 0, y: 20 }}
@@ -405,13 +420,14 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
         
         <Image
         fill
-       sizes="(max-width: 768px) 100vw, 50vw"
-          src={post.image}
+       sizes={coverSizes}
+          src={coverSrc}
           alt={post.title}
           className={`w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
             featured ? "h-64 md:h-80" : "h-48"
           }`}
           priority={priority}
+          quality={75}
 
         />
         </div>
@@ -443,10 +459,14 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
         <div className="flex  mb-4 justify-start  w-full ">
           <div className="flex items-center gap-2 ">
             <Image
-            src={post.author.profileImage}
-            alt={post.author.name}
+            src={authorAvatarSrc}
+            alt={post?.author?.name || "Author"}
             className="w-10 h-10 rounded-full object-cover"
-           width={1200} height={1200} sizes="100vw"/>
+           width={40}
+           height={40}
+           sizes="40px"
+           quality={70}
+            />
             <div className="flex flex-col gap-y-0.5 ">
               <span className="font-medium text-gray-800">
                 {post.author.name}
@@ -531,7 +551,8 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
         </div>
       </div>
     </motion.article>
-  );
+    );
+  };
 
   const featuredPosts = posts && posts.filter((post) => post.featured);
   const regularPosts = posts && posts.filter((post) => !post.featured);

@@ -15,6 +15,10 @@ import Pagination from "@/app/components/Pagination";
 import Authorized from "@/app/components/Authorized";
 import { toast } from "react-toastify";
 import Image from "next/image";
+import {
+  AVATAR_FALLBACK_IMAGE,
+  getOptimizedImageSrc,
+} from "@/app/utils/imageUtils";
 
 const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
@@ -482,10 +486,18 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2 items-center">
                         <Image
-                          src={blog.author?.profileImage}
+                          src={getOptimizedImageSrc(
+                            blog.author?.profileImage,
+                            "avatar",
+                            AVATAR_FALLBACK_IMAGE,
+                          )}
                           alt={blog.author?.name || "Author"}
                           className="rounded-full h-10 w-10 object-cover"
-                         width={1200} height={1200} sizes="100vw"/>
+                          width={40}
+                          height={40}
+                          sizes="40px"
+                          quality={70}
+                        />
                         <div className="text-sm font-medium text-gray-900">
                           {blog.author?.name || "-"}
                         </div>

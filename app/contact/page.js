@@ -54,30 +54,9 @@ const Contact = () => {
     settings?.generalSettings?.contact ||
     null;
 
-  // branding / seo top-level fallbacks
-  const branding =
-    settings?.branding ||
-    settings?.generalSettings?.branding ||
-    settings?.generalSettings?.branding ||
-    null;
-
-  const seo =
-    settings?.seo ||
-    settings?.generalSettings?.seo ||
-    settings?.generalSettings?.seo ||
-    null;
-
-  const siteTitle =
-    settings?.siteTitle ||
-    seo?.siteTitle ||
-    settings?.generalSettings?.seo?.siteTitle ||
-    'Pink Dreams - Premium Fashion Store';
-
-  const siteDescription =
-    settings?.siteDescription ||
-    seo?.siteDescription ||
-    settings?.generalSettings?.seo?.siteDescription ||
-    'Discover the latest trends in fashion. Shop premium clothing, accessories, and more at Pink Dreams.';
+  const contactBannerTitle = 'Contact Us';
+  const contactBannerDescription =
+    'Questions about your order, returns, products, or partnerships? Our team is here to help.';
 
   // Extract contact pieces safely (new static shape)
   const contactEmail = String(contactData?.email || '').trim();
@@ -272,8 +251,8 @@ const Contact = () => {
       <div className="bg-[#ec4899] shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">{siteTitle}</h1>
-            <p className="text-lg text-gray-100 max-w-3xl mx-auto">{siteDescription}</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">{contactBannerTitle}</h1>
+            <p className="text-lg text-gray-100 max-w-3xl mx-auto">{contactBannerDescription}</p>
           </motion.div>
         </div>
       </div>
