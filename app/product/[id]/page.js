@@ -1630,7 +1630,7 @@ export default function ProductDetail() {
                     transition={{ duration: 0.5, delay: 0.1 * index }}
                     className="w-full"
                   >
-                    <ProductCard product={relatedProduct} />
+                    <ProductCard product={relatedProduct} priority={index < 1} />
                   </motion.div>
                 ))}
               </div>

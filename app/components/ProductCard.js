@@ -9,13 +9,14 @@ import { useRouter } from "next/navigation"
 import {
   FALLBACK_IMAGE,
   ERROR_IMAGE,
+  getImageDimensions,
   getOptimizedImageSrc,
   handleImageError as fallbackImageOnError,
 } from "../utils/imageUtils";
 import { formatCurrency } from "../utils/formatters";
 import Image from "next/image";
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, priority = false }) => {
   const [loading, setLoading] = useState(false)
   const router = useRouter();
   const [addingToCart, setAddingToCart] = useState(false)
@@ -118,6 +119,7 @@ const ProductCard = ({ product }) => {
 
   const itemQuantity = getItemQuantity ? getItemQuantity(product.id) : 0
   const inCart = isInCart ? isInCart(product.id) : false
+  const cardImage = getImageDimensions("card")
 
   const handleDetailClick = () => {
     router.push(`/product/${product.id}`);
@@ -139,16 +141,16 @@ const ProductCard = ({ product }) => {
                 src={imageSrc}
                 alt={product.name || 'Product'}
                 className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                width={640}
-                height={800}
-                loading="lazy"
-                decoding="async"
-                fetchPriority="low"
+                width={cardImage.width}
+                height={cardImage.height}
+                sizes={cardImage.sizes}
+                priority={priority}
+                quality={70}
                 onError={(e) => {
                   handleImageError();
                   fallbackImageOnError(e, ERROR_IMAGE);
                 }}
-               sizes="100vw"/>
+              />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-pink-50 to-rose-50 flex items-center justify-center">
                 <div className="text-center">

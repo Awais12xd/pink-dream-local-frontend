@@ -435,7 +435,7 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
-                  <ProductCard product={product} />
+                  <ProductCard product={product} priority={index < 2} />
                 </motion.div>
               ))}
             </div>

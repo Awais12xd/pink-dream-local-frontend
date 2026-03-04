@@ -1019,7 +1019,10 @@ export default function Shop() {
                           delay: (index % 12) * 0.05,
                         }}
                       >
-                        <ProductCard product={product} />
+                        <ProductCard
+                          product={product}
+                          priority={index < 2 && currentPage === 1}
+                        />
                       </motion.div>
                     ))}
                   </div>
