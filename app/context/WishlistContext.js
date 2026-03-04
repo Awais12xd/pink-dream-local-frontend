@@ -19,7 +19,7 @@ export function WishlistProvider({ children }) {
   useEffect(() => {
     const handleUserLoggedIn = (event) => {
       const { userId, userData } = event.detail
-      console.log('🔄 Wishlist: User logged in event received', userData?.name)
+      undefined
       
       // Clear logout flag
       isLoggingOutRef.current = false
@@ -39,7 +39,7 @@ export function WishlistProvider({ children }) {
     }
 
     const handleUserLoggedOut = (event) => {
-      console.log('🔄 Wishlist: User logged out event received')
+      undefined
       
       // Set logout flag to prevent race conditions
       isLoggingOutRef.current = true
@@ -63,7 +63,7 @@ export function WishlistProvider({ children }) {
       // Set user AFTER clearing everything
       setUser(tempUser)
       
-      console.log('✅ Wishlist: Switched to temporary user with empty wishlist')
+      undefined
       
       // Clear logout flag after a delay to allow things to settle
       setTimeout(() => {
@@ -71,14 +71,14 @@ export function WishlistProvider({ children }) {
       }, 500)
     }
 
-    console.log('🎧 WishlistContext: Setting up event listeners')
+    undefined
     
     // Add event listeners
     window.addEventListener('userLoggedIn', handleUserLoggedIn)
     window.addEventListener('userLoggedOut', handleUserLoggedOut)
 
     return () => {
-      console.log('🎧 WishlistContext: Cleaning up event listeners')
+      undefined
       window.removeEventListener('userLoggedIn', handleUserLoggedIn)
       window.removeEventListener('userLoggedOut', handleUserLoggedOut)
     }
@@ -97,7 +97,7 @@ export function WishlistProvider({ children }) {
         if (token && userData) {
           const parsedUser = JSON.parse(userData)
           setUser(parsedUser)
-          console.log('🔄 Wishlist: Found authenticated user on startup:', parsedUser.name)
+          undefined
         } else {
           // If no user, try to get temporary userId or create one
           let tempUserId = localStorage.getItem('tempUserId')
@@ -106,7 +106,7 @@ export function WishlistProvider({ children }) {
             localStorage.setItem('tempUserId', tempUserId)
           }
           setUser({ id: tempUserId, isTemp: true })
-          console.log('🔄 Wishlist: Created temporary user for guest:', tempUserId)
+          undefined
         }
         
         hasInitializedRef.current = true
@@ -127,12 +127,12 @@ export function WishlistProvider({ children }) {
   useEffect(() => {
     // Don't load if we're in the middle of a logout process
     if (isLoggingOutRef.current) {
-      console.log('🛑 Wishlist: Skipping load due to logout in progress')
+      undefined
       return
     }
     
     if (user?.id && hasInitializedRef.current) {
-      console.log('🔄 Wishlist: User changed, loading wishlist for:', user.isTemp ? 'temp user' : user.name)
+      undefined
       
       if (user.isTemp) {
         loadTemporaryWishlist()
@@ -148,20 +148,20 @@ export function WishlistProvider({ children }) {
 
     try {
       setIsLoading(true)
-      console.log('📥 Loading authenticated wishlist for user:', userData.id)
+      undefined
 
       const response = await fetch(`${API_BASE}/wishlist/${userData.id}`)
       const data = await response.json()
 
       // Double-check we're not logging out
       if (isLoggingOutRef.current) {
-        console.log('🛑 Wishlist: Aborting load due to logout')
+        undefined
         return
       }
 
       if (data.success) {
         setWishlist(data.wishlist || [])
-        console.log(`✅ Loaded ${data.wishlist?.length || 0} items from authenticated wishlist`)
+        undefined
       } else {
         console.error('Failed to load authenticated wishlist:', data.message)
         setWishlist([])
@@ -182,13 +182,13 @@ export function WishlistProvider({ children }) {
   const loadTemporaryWishlist = () => {
     // Don't load if we're logging out
     if (isLoggingOutRef.current) {
-      console.log('🛑 Wishlist: Skipping temp load due to logout')
+      undefined
       return
     }
     
     try {
       setIsLoading(true)
-      console.log('📥 Loading temporary wishlist from localStorage')
+      undefined
       
       const localWishlist = localStorage.getItem('wishlist')
       if (localWishlist) {
@@ -196,15 +196,15 @@ export function WishlistProvider({ children }) {
         
         // Double-check we're not logging out
         if (isLoggingOutRef.current) {
-          console.log('🛑 Wishlist: Aborting temp load due to logout')
+          undefined
           return
         }
         
         setWishlist(Array.isArray(parsedWishlist) ? parsedWishlist : [])
-        console.log(`✅ Loaded ${parsedWishlist?.length || 0} items from temporary wishlist`)
+        undefined
       } else {
         setWishlist([])
-        console.log('✅ No temporary wishlist found, starting empty')
+        undefined
       }
     } catch (error) {
       console.error('Error loading temporary wishlist:', error)
@@ -236,7 +236,7 @@ export function WishlistProvider({ children }) {
       // Check if item already exists
       const existingItem = wishlist.find(item => item.id === product.id)
       if (existingItem) {
-        console.log('Product already in wishlist:', product.name)
+        undefined
         return
       }
 
@@ -261,7 +261,7 @@ export function WishlistProvider({ children }) {
       if (user.isTemp) {
         const updatedWishlist = [...wishlist, newItem]
         localStorage.setItem('wishlist', JSON.stringify(updatedWishlist))
-        console.log('💾 Saved to temporary wishlist:', product.name)
+        undefined
         return
       }
 
@@ -290,7 +290,7 @@ export function WishlistProvider({ children }) {
         throw new Error(data.message)
       }
       
-      console.log('💾 Saved to authenticated wishlist:', product.name)
+      undefined
     } catch (error) {
       console.error('Error adding to wishlist:', error)
       // Revert optimistic update
@@ -310,7 +310,7 @@ export function WishlistProvider({ children }) {
       if (user.isTemp) {
         const updatedWishlist = wishlist.filter(item => item.id !== productId)
         localStorage.setItem('wishlist', JSON.stringify(updatedWishlist))
-        console.log('🗑️ Removed from temporary wishlist:', productId)
+        undefined
         return
       }
 
@@ -337,7 +337,7 @@ export function WishlistProvider({ children }) {
         throw new Error(data.message)
       }
       
-      console.log('🗑️ Removed from authenticated wishlist:', productId)
+      undefined
     } catch (error) {
       console.error('Error removing from wishlist:', error)
       // Revert optimistic update
@@ -376,7 +376,7 @@ export function WishlistProvider({ children }) {
       // If temporary user, clear localStorage
       if (user.isTemp) {
         localStorage.setItem('wishlist', JSON.stringify([]))
-        console.log('🧹 Cleared temporary wishlist')
+        undefined
         return
       }
 
@@ -394,7 +394,7 @@ export function WishlistProvider({ children }) {
         throw new Error(data.message)
       }
       
-      console.log('🧹 Cleared authenticated wishlist')
+      undefined
     } catch (error) {
       console.error('Error clearing wishlist:', error)
       // Revert optimistic update

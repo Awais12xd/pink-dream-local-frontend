@@ -1,4 +1,6 @@
 // lib/permissions.js
+import { hasStaffPermission } from "./staffAuth";
+
 export function computePermissions(roles = []) {
   // roles: [{ name, permissions: [...] }]
   const perms = new Set();
@@ -6,17 +8,6 @@ export function computePermissions(roles = []) {
   return perms;
 }
 
-export function hasPermission(staffUser , permission) {
-
-  const staffUserData = JSON.parse(staffUser)
-  if (!staffUserData) return false;
-  // super-protected users
-  if (staffUserData.isProtected) return true;
-
-//    const token = localStorage.getItem('staffUserDataToken');
-//    const storedAdminData = localStorage.getItem('staffUserDataData');
-  return staffUserData?.permissions?.includes(permission);
-   
-      
-
+export function hasPermission(staffUser, permission) {
+  return hasStaffPermission(staffUser, permission);
 }

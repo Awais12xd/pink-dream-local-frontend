@@ -207,7 +207,7 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
     try {
       setOauthLoading(true);
       setErrors({});
-      console.log("🔍 Starting Google OAuth...");
+      undefined;
       loginWithGoogle();
     } catch (error) {
       console.error("Google login error:", error);
@@ -222,7 +222,7 @@ const LoginModal = ({ isOpen, onClose, onAuthSuccess }) => {
     try {
       setOauthLoading(true);
       setErrors({});
-      console.log("🔍 Starting Facebook OAuth...");
+      undefined;
       loginWithFacebook();
     } catch (error) {
       console.error("Facebook login error:", error);

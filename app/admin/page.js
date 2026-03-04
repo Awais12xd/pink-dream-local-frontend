@@ -62,6 +62,13 @@ import Image from "next/image";
 import Authorized from "../components/Authorized";
 import NotificationBell from "./components/NotificationBell";
 import NotificationsManager from "./components/Notifications";
+import { adminFetch } from "../utils/adminApi";
+import { clearStoredStaffAuth, setStoredStaffUser } from "../utils/staffAuth";
+import {
+  getOptimizedImageSrc,
+  handleImageError,
+} from "../utils/imageUtils";
+import { formatCurrency, formatPercent, toSafeNumber } from "../utils/formatters";
 
 // client-only admin sub-pages
 const RolesManager = dynamic(() => import("./components/RolesManager"), {
@@ -183,12 +190,7 @@ const AdminPanel = () => {
   // Fetch dashboard stats
   const fetchStats = useCallback(async () => {
     try {
-      const token = localStorage.getItem("staffUserToken");
-      const response = await fetch(`${API_BASE}/dashboard/stats`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await adminFetch("/dashboard/stats");
       const data = await response.json();
 
       if (data.success) {
@@ -197,21 +199,15 @@ const AdminPanel = () => {
     } catch (error) {
       console.error("Error fetching stats:", error);
     }
-  }, [API_BASE]);
+  }, []);
 
   // Fetch analytics data
   const fetchAnalytics = useCallback(async () => {
     setAnalyticsLoading(true);
     try {
-      const token = localStorage.getItem("staffUserToken");
-      const headers = {
-        Authorization: `Bearer ${token}`,
-      };
-
       // Sales Overview
-      const salesResponse = await fetch(
-        `${API_BASE}/analytics/sales-overview?period=${analyticsPeriod}&year=${analyticsYear}`,
-        { headers },
+      const salesResponse = await adminFetch(
+        `/analytics/sales-overview?period=${analyticsPeriod}&year=${analyticsYear}`,
       );
       const salesData = await salesResponse.json();
       if (salesData.success) {
@@ -219,9 +215,8 @@ const AdminPanel = () => {
       }
 
       // Product Performance
-      const productResponse = await fetch(
-        `${API_BASE}/analytics/product-performance?year=${analyticsYear}&month=${analyticsMonth}`,
-        { headers },
+      const productResponse = await adminFetch(
+        `/analytics/product-performance?year=${analyticsYear}&month=${analyticsMonth}`,
       );
       const productData = await productResponse.json();
       if (productData.success) {
@@ -229,9 +224,8 @@ const AdminPanel = () => {
       }
 
       // Category Performance
-      const categoryResponse = await fetch(
-        `${API_BASE}/analytics/category-performance?year=${analyticsYear}`,
-        { headers },
+      const categoryResponse = await adminFetch(
+        `/analytics/category-performance?year=${analyticsYear}`,
       );
       const categoryData = await categoryResponse.json();
       if (categoryData.success) {
@@ -239,10 +233,7 @@ const AdminPanel = () => {
       }
 
       // Revenue Metrics
-      const revenueResponse = await fetch(
-        `${API_BASE}/analytics/revenue-metrics`,
-        { headers },
-      );
+      const revenueResponse = await adminFetch("/analytics/revenue-metrics");
       const revenueData = await revenueResponse.json();
       if (revenueData.success) {
         setRevenueMetrics(revenueData.metrics);
@@ -252,17 +243,15 @@ const AdminPanel = () => {
     } finally {
       setAnalyticsLoading(false);
     }
-  }, [API_BASE, analyticsPeriod, analyticsYear, analyticsMonth]);
+  }, [analyticsPeriod, analyticsYear, analyticsMonth]);
 
   // Generate sample data
   const generateSampleData = useCallback(async () => {
     try {
-      const token = localStorage.getItem("staffUserToken");
-      const response = await fetch(`${API_BASE}/generate-sample-data`, {
+      const response = await adminFetch("/generate-sample-data", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
@@ -277,116 +266,55 @@ const AdminPanel = () => {
       console.error("Error generating sample data:", error);
       alert("Error generating sample data");
     }
-  }, [API_BASE, fetchAnalytics]);
+  }, [fetchAnalytics]);
 
   // Check if admin is authenticated
   const checkAuthStatus = useCallback(async () => {
     setAuthLoading(true);
     try {
-      const token = localStorage.getItem("staffUserToken");
-      const storedAdminData = localStorage.getItem("staffUserData");
+      const response = await adminFetch("/admin/profile");
+      const data = await response.json();
 
-      if (token && storedAdminData) {
-        // Verify token with server
-        const response = await fetch(`${API_BASE}/admin/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          setIsAuthenticated(true);
-          setAdminData(data.staffUser);
-        } else {
-          // Token invalid, clear storage
-          localStorage.removeItem("staffUserToken");
-          localStorage.removeItem("staffUserData");
-          setIsAuthenticated(false);
-          setAdminData(null);
-        }
+      if (response.ok && data.success) {
+        setIsAuthenticated(true);
+        setAdminData(data.staffUser);
+        setStoredStaffUser(data.staffUser || null);
       } else {
+        clearStoredStaffAuth();
         setIsAuthenticated(false);
         setAdminData(null);
       }
     } catch (error) {
       console.error("Auth check error:", error);
+      clearStoredStaffAuth();
       setIsAuthenticated(false);
       setAdminData(null);
     } finally {
       setAuthLoading(false);
     }
-  }, [API_BASE]);
+  }, []);
 
   // Handle successful login
   const handleLoginSuccess = useCallback((admin) => {
+    setStoredStaffUser(admin || null);
     setIsAuthenticated(true);
     setAdminData(admin);
     setActiveTab("dashboard");
   }, []);
 
   // Handle logout
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     if (window.confirm("Are you sure you want to logout?")) {
-      localStorage.removeItem("staffUserToken");
-      localStorage.removeItem("staffUserData");
+      try {
+        await adminFetch("/admin/logout", { method: "POST" });
+      } catch (error) {
+        console.error("Logout request failed:", error);
+      }
+      clearStoredStaffAuth();
       setIsAuthenticated(false);
       setAdminData(null);
       setActiveTab("dashboard");
       window.dispatchEvent(new Event("staff-auth-changed"));
-    }
-  }, []);
-
-  // Image utility functions
-  const getImageSrc = useCallback(
-    (
-      imageSrc,
-      fallback = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams",
-    ) => {
-      if (!imageSrc) return fallback;
-
-      const baseURL = API_BASE || "http://localhost:4000";
-
-      // Handle old Railway URLs
-      if (imageSrc.includes("railway.app")) {
-        const filename = imageSrc.split("/images/")[1];
-        if (filename) {
-          return `${baseURL}/images/${filename}`;
-        }
-      }
-
-      if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
-        return imageSrc;
-      }
-
-      if (imageSrc.startsWith("/images/")) {
-        return `${baseURL}${imageSrc}`;
-      }
-
-      if (
-        !imageSrc.includes("/") &&
-        /\.(jpg|jpeg|png|gif|webp)$/i.test(imageSrc)
-      ) {
-        return `${baseURL}/images/${imageSrc}`;
-      }
-
-      if (imageSrc.startsWith("images/")) {
-        return `${baseURL}/${imageSrc}`;
-      }
-
-      return `${baseURL}/${imageSrc}`;
-    },
-    [API_BASE],
-  );
-
-  const handleImageError = useCallback((e) => {
-    if (
-      e.target.src !==
-      "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image"
-    ) {
-      e.target.onerror = null;
-      e.target.src = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image";
     }
   }, []);
 
@@ -409,12 +337,8 @@ const AdminPanel = () => {
     async (blog) => {
       if (window.confirm("Are you sure you want to delete this blog?")) {
         try {
-          const token = localStorage.getItem("staffUserToken");
-          const response = await fetch(`${API_BASE}/blog/${blog._id}`, {
+          const response = await adminFetch(`/blog/${blog._id}`, {
             method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
           });
 
           if (response.ok) {
@@ -454,12 +378,8 @@ const AdminPanel = () => {
     async (product) => {
       if (window.confirm("Are you sure you want to delete this product?")) {
         try {
-          const token = localStorage.getItem("staffUserToken");
-          const response = await fetch(`${API_BASE}/products/${product._id}`, {
+          const response = await adminFetch(`/products/${product._id}`, {
             method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
           });
 
           if (response.ok) {
@@ -547,6 +467,48 @@ const AdminPanel = () => {
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
+
+  // Transition layer: while on admin panel, force cookie-based auth for API calls
+  // so legacy component fetches keep working during migration away from localStorage tokens.
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const originalFetch = window.fetch.bind(window);
+    const normalizedApiBase = API_BASE.replace(/\/$/, "");
+
+    window.fetch = async (input, init = {}) => {
+      const requestUrl =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input?.url || "";
+
+      if (!requestUrl.startsWith(normalizedApiBase)) {
+        return originalFetch(input, init);
+      }
+
+      const headers = new Headers(init?.headers || {});
+      const authHeader = headers.get("Authorization");
+      if (
+        !authHeader ||
+        !authHeader.trim() ||
+        /^Bearer\s*(null|undefined)?\s*$/i.test(authHeader)
+      ) {
+        headers.delete("Authorization");
+      }
+
+      return originalFetch(input, {
+        ...init,
+        headers,
+        credentials: "include",
+      });
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, [API_BASE]);
 
   // Effects
   useEffect(() => {
@@ -675,7 +637,7 @@ const AdminPanel = () => {
                   Today Revenue
                 </p>
                 <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                  ${revenueMetrics.today || 0}
+                  {formatCurrency(revenueMetrics.today)}
                 </p>
               </div>
               <div className="p-3 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl shadow-md">
@@ -691,11 +653,11 @@ const AdminPanel = () => {
                   Monthly Revenue
                 </p>
                 <p className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-                  ${Number(revenueMetrics.month || 0).toFixed(2)}
+                  {formatCurrency(revenueMetrics.month)}
                 </p>
                 <p className="text-xs text-gray-500">
                   {revenueMetrics.monthGrowth >= 0 ? "+" : ""}
-                  {Number(revenueMetrics.monthGrowth || 0).toFixed(2)}% from
+                  {formatPercent(revenueMetrics.monthGrowth)} from
                   last month
                 </p>
               </div>
@@ -713,7 +675,7 @@ const AdminPanel = () => {
                   Yearly Revenue
                 </p>
                 <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  ${revenueMetrics.year || 0}
+                  {formatCurrency(revenueMetrics.year)}
                 </p>
               </div>
               <div className="p-3 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl shadow-md">
@@ -729,17 +691,16 @@ const AdminPanel = () => {
                   Avg Order Value
                 </p>
                 <p className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-                  $
-                  {(
-                    (revenueMetrics.month || 0) /
-                    Math.max(
-                      salesData.reduce(
-                        (acc, item) => acc + (item.total_orders || 0),
-                        0,
+                  {formatCurrency(
+                    toSafeNumber(revenueMetrics.month) /
+                      Math.max(
+                        salesData.reduce(
+                          (acc, item) => acc + (item.total_orders || 0),
+                          0,
+                        ),
+                        1,
                       ),
-                      1,
-                    )
-                  ).toFixed(2)}
+                  )}
                 </p>
               </div>
               <div className="p-3 bg-gradient-to-br from-orange-400 to-rose-500 rounded-xl shadow-md">
@@ -774,9 +735,12 @@ const AdminPanel = () => {
       return (
         <div className="flex items-center mr-3">
           <img
-            src={getImageSrc(images[0])}
+            src={getOptimizedImageSrc(images[0], "thumb")}
             alt={product.name}
             className="w-10 h-10 rounded object-cover"
+            width={40}
+            height={40}
+            loading="lazy"
             onError={handleImageError}
           />
         </div>
@@ -877,7 +841,7 @@ const AdminPanel = () => {
                   <div>
                     <p className="text-sm font-medium">{product.name}</p>
                     <p className="text-xs text-gray-500">
-                      ${product.new_price}
+                      {formatCurrency(product.new_price)}
                     </p>
                   </div>
                 </div>
@@ -929,7 +893,6 @@ const AdminPanel = () => {
                     sizes="(max-width: 640px) 100vw,
            (max-width: 1024px) 100vw,
            100vw"
-                    priority={true}
                   />
                 </div>
               ) : (

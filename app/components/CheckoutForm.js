@@ -38,6 +38,7 @@ export default function CheckoutForm({
   orderId,
   userId,
   cartItems,
+  promoCode,
   shippingAddress,
   onSuccess,
   onError,
@@ -50,6 +51,11 @@ export default function CheckoutForm({
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const authToken =
+    typeof window !== "undefined" ? localStorage.getItem("token") : "";
+  const authHeaders = authToken
+    ? { Authorization: `Bearer ${authToken}` }
+    : {};
 
   // Separate billing address state (editable)
   const [billingAddress, setBillingAddress] = useState({
@@ -143,25 +149,25 @@ export default function CheckoutForm({
     setError("");
 
     try {
-    //   console.log("🔵 Creating Stripe payment intent...", {
-    //     amount,
-    //     orderId,
-    //     userId,
-    //   });
 
       // Step 1: Create payment intent
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/payment/create-payment-intent`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount, orderId, userId }),
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({
+            amount,
+            orderId,
+            userId,
+            items: cartItems,
+            promoCode: promoCode?.code || "",
+          }),
         },
       );
 
       const data = await response.json().catch(() => ({}));
 
-    //   console.log("💳 Payment intent response:", data);
 
       if (!response.ok || !data.success) {
         throw new Error(
@@ -169,7 +175,6 @@ export default function CheckoutForm({
         );
       }
 
-    //   console.log("🔵 Creating order in database...");
 
       // Step 2: Create order in database
       const orderResponse = await fetch(
@@ -178,32 +183,14 @@ export default function CheckoutForm({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...authHeaders,
           },
           body: JSON.stringify({
             userId,
             items: cartItems,
+            promoCode: promoCode?.code || "",
             shippingAddress,
             billingAddress: currentBilling,
-            amount: {
-              subtotal: cartItems.reduce(
-                (sum, item) => sum + item.price * item.quantity,
-                0,
-              ),
-              shipping:
-                cartItems.reduce(
-                  (sum, item) => sum + item.price * item.quantity,
-                  0,
-                ) > 75
-                  ? 0
-                  : 9.99,
-              tax:
-                cartItems.reduce(
-                  (sum, item) => sum + item.price * item.quantity,
-                  0,
-                ) * 0.08,
-              discount: 0,
-              total: amount,
-            },
             paymentIntentId: data.paymentIntentId,
             paymentMethod: "stripe",
           }),
@@ -211,7 +198,6 @@ export default function CheckoutForm({
       );
 
       const orderData = await orderResponse.json();
-    //   console.log("📦 Order creation response:", orderData);
 
       if (!orderResponse.ok || !orderData.success) {
         const orderErrorMessage = orderData.message || "Failed to create order";
@@ -224,7 +210,6 @@ export default function CheckoutForm({
         throw new Error(orderErrorMessage);
       }
 
-    //   console.log("🔵 Confirming payment with Stripe...");
 
       // Step 3: Confirm payment with Stripe
       const result = await stripe.confirmCardPayment(data.clientSecret, {
@@ -250,14 +235,14 @@ export default function CheckoutForm({
         setError(result.error.message);
         onError?.(result.error);
       } else {
-        console.log("✅ Stripe payment successful!");
+        undefined;
 
         // Step 4: Confirm payment on backend
         const confirmResponse = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/payment/confirm`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...authHeaders },
             body: JSON.stringify({
               paymentIntentId: result.paymentIntent.id,
               orderId: orderData.orderId,
@@ -266,7 +251,6 @@ export default function CheckoutForm({
         );
 
         const confirmData = await confirmResponse.json().catch(() => ({}));
-        // console.log("✅ Payment confirmation response:", confirmData);
 
         if (confirmData.success) {
           toast.success("💳 Credit card payment successful!");

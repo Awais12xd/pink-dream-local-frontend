@@ -30,7 +30,7 @@ const CKEditorInput = dynamic(() => import("./CkEditorInput.jsx"), {
 
 // Add Product Page Component with Dynamic + Static Categories
 const AddBlogPage = () => {
-      const token = localStorage.getItem("staffUserToken");
+      const token = "";
 
   // Static categories (fallback/default)
   const staticCategories = [
@@ -139,9 +139,7 @@ const AddBlogPage = () => {
           }
         } else {
           // If no dynamic categories, use only static categories
-          console.warn(
-            "No active categories found from backend, using static categories",
-          );
+          undefined;
           setAllCategories(staticCategories);
           setDynamicCategories([]);
 
@@ -155,7 +153,7 @@ const AddBlogPage = () => {
       } catch (error) {
         console.error("Error fetching categories:", error);
         // On error, fallback to static categories
-        console.log("Using static categories as fallback");
+        undefined;
         setAllCategories(staticCategories);
         setDynamicCategories([]);
 
@@ -257,7 +255,7 @@ const AddBlogPage = () => {
           authorProfileImage: data.imageUrl,
         }));
         setImageAuthorPreview(data.imageUrl);
-        console.log("✅Author Image uploaded:", data.imageUrl);
+        undefined;
       } else {
         alert(data.message || "Failed to upload image");
       }
@@ -323,7 +321,7 @@ const AddBlogPage = () => {
           image: data.imageUrl,
         }));
         setImagePreview(data.imageUrl);
-        console.log("✅ Image uploaded:", data.imageUrl);
+        undefined;
       } else {
         alert(data.message || "Failed to upload image");
       }
@@ -467,7 +465,7 @@ const AddBlogPage = () => {
         // Optionally switch to products list
         // setActiveTab('products');
       } else {
-        console.log(data);
+        undefined;
         alert(`❌ Failed to add blog: ${data}`);
       }
     } catch (error) {

@@ -569,7 +569,6 @@ const EnhancedLoginPage = ({ onAuthSuccess }) => {
                 className="text-white/60 hover:text-white/80 text-sm transition-colors"
                 onClick={() => {
                   // Handle forgot password
-                  // console.log('Forgot password clicked')
                 }}
               >
                 Forgot your password?

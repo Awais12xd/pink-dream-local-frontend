@@ -16,6 +16,14 @@ import { toast } from 'react-toastify'
 
 const CheckoutForm = dynamic(() => import("./CheckoutForm"));
 const PayPalButton = dynamic(() => import("./PayPalButton"));
+const StripeProvider = dynamic(
+  () => import("../context/StripeContext").then((mod) => mod.StripeProvider),
+  { ssr: false },
+);
+const PayPalProvider = dynamic(
+  () => import("../context/PayPalContext").then((mod) => mod.PayPalProvider),
+  { ssr: false },
+);
 
 const DEFAULT_METHODS = {
   stripe: { enabled: true },
@@ -38,6 +46,8 @@ export default function PaymentSelector({
   onError,
   isLoading,
   paymentMethods = DEFAULT_METHODS,
+  paymentCredentials = {},
+  promoCode = null,
   isAuthenticated = false,
   allowGuestCheckout = true,
   onRequireAuth,
@@ -54,6 +64,10 @@ export default function PaymentSelector({
     const order = ['stripe', 'paypal', 'cod', 'bankTransfer']
     return order.filter((k) => methods?.[k]?.enabled)
   }, [methods])
+
+  const stripePublishableKey =
+    paymentCredentials?.stripe?.publishableKey || "";
+  const paypalClientId = paymentCredentials?.paypal?.clientId || "";
 
   useEffect(() => {
     if (!enabledMethods.length) {
@@ -170,23 +184,22 @@ export default function PaymentSelector({
 
     try {
       const paymentMethod = isBankTransfer ? 'bank_transfer' : 'cod'
+      const authToken =
+        typeof window !== "undefined" ? localStorage.getItem("token") : "";
+      const authHeaders = authToken
+        ? { Authorization: `Bearer ${authToken}` }
+        : {};
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/offline/create-order`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           orderId,
           userId,
           items: cartItems,
           shippingAddress,
           billingAddress: shippingAddress,
-          amount: amountBreakdown || {
-            subtotal: cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0),
-            shipping: cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0) > 75 ? 0 : 9.99,
-            tax: cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0) * 0.08,
-            discount: 0,
-            total: amount,
-          },
+          promoCode: promoCode?.code || "",
           paymentMethod,
         }),
       })
@@ -326,37 +339,55 @@ export default function PaymentSelector({
         {selectedMethod === 'stripe' && (
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-pink-200">
             <h3 className="text-lg font-semibold text-gray-800 mb-6">Credit Card Payment</h3>
-            <CheckoutForm
-              amount={amount}
-              orderId={orderId}
-              userId={userId}
-              cartItems={cartItems}
-              shippingAddress={shippingAddress}
-              onSuccess={onSuccess}
-              onError={onError}
-              isLoading={isLoading}
-              isAuthenticated={isAuthenticated}
-              allowGuestCheckout={allowGuestCheckout}
-              onRequireAuth={onRequireAuth}
-            />
+            {!stripePublishableKey ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Card payments are not configured right now.
+              </div>
+            ) : (
+              <StripeProvider>
+                <CheckoutForm
+                  amount={amount}
+                  orderId={orderId}
+                  userId={userId}
+                  cartItems={cartItems}
+                  promoCode={promoCode}
+                  shippingAddress={shippingAddress}
+                  onSuccess={onSuccess}
+                  onError={onError}
+                  isLoading={isLoading}
+                  isAuthenticated={isAuthenticated}
+                  allowGuestCheckout={allowGuestCheckout}
+                  onRequireAuth={onRequireAuth}
+                />
+              </StripeProvider>
+            )}
           </div>
         )}
 
         {selectedMethod === 'paypal' && (
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-blue-200">
             <h3 className="text-lg font-semibold text-gray-800 mb-6">PayPal Payment</h3>
-            <PayPalButton
-              amount={amount}
-              orderId={orderId}
-              userId={userId}
-              cartItems={cartItems}
-              shippingAddress={shippingAddress}
-              onSuccess={onSuccess}
-              onError={onError}
-              isAuthenticated={isAuthenticated}
-              allowGuestCheckout={allowGuestCheckout}
-              onRequireAuth={onRequireAuth}
-            />
+            {!paypalClientId ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                PayPal is not configured right now.
+              </div>
+            ) : (
+              <PayPalProvider>
+                <PayPalButton
+                  amount={amount}
+                  orderId={orderId}
+                  userId={userId}
+                  cartItems={cartItems}
+                  promoCode={promoCode}
+                  shippingAddress={shippingAddress}
+                  onSuccess={onSuccess}
+                  onError={onError}
+                  isAuthenticated={isAuthenticated}
+                  allowGuestCheckout={allowGuestCheckout}
+                  onRequireAuth={onRequireAuth}
+                />
+              </PayPalProvider>
+            )}
           </div>
         )}
 

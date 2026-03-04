@@ -41,9 +41,13 @@ import {
 } from "lucide-react";
 import "./Blog.css";
 import Authorized from "@/app/components/Authorized";
+import {
+  getOptimizedImageSrc,
+  handleImageError,
+} from "@/app/utils/imageUtils";
 
 const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
-      const token = localStorage.getItem("staffUserToken");
+      const token = "";
 
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,55 +57,6 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
   const [notification, setNotification] = useState(null);
   
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-
-  // Image utility functions
-  const getImageSrc = (
-    imageSrc,
-    fallback = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams",
-  ) => {
-    if (!imageSrc) return fallback;
-
-    const baseURL = API_BASE || "http://localhost:4000";
-
-    // Handle old Railway URLs
-    if (imageSrc.includes("railway.app")) {
-      const filename = imageSrc.split("/images/")[1];
-      if (filename) {
-        return `${baseURL}/images/${filename}`;
-      }
-    }
-
-    if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
-      return imageSrc;
-    }
-
-    if (imageSrc.startsWith("/images/")) {
-      return `${baseURL}${imageSrc}`;
-    }
-
-    if (
-      !imageSrc.includes("/") &&
-      /\.(jpg|jpeg|png|gif|webp)$/i.test(imageSrc)
-    ) {
-      return `${baseURL}/images/${imageSrc}`;
-    }
-
-    if (imageSrc.startsWith("images/")) {
-      return `${baseURL}/${imageSrc}`;
-    }
-
-    return `${baseURL}/${imageSrc}`;
-  };
-
-  const handleImageError = (e) => {
-    if (
-      e.target.src !==
-      "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image"
-    ) {
-      e.target.onerror = null;
-      e.target.src = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image";
-    }
-  };
 
   useEffect(() => {
     if (blogId) {
@@ -375,9 +330,13 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
           <div className="">
             <div className="w-full aspect-video relative bg-gray-100 rounded-lg overflow-hidden h-[300px] sm:h-[500px]">
               <img
-                src={getImageSrc(blog?.image)}
+                src={getOptimizedImageSrc(blog?.image, "detail")}
                 alt="blog"
                 className="h-full w-full object-cover"
+                width={1200}
+                height={675}
+                loading="eager"
+                decoding="async"
                 onError={handleImageError}
               />
               <div className="absolute right-4 top-4 flex space-x-2">
@@ -435,9 +394,13 @@ const BlogDetailsPage = ({ blogId, onEdit, onBack, onDelete }) => {
               <div className=" ">
                 <div className="flex items-center justify-center">
                   <img
-                    src={blog?.author?.profileImage}
+                    src={getOptimizedImageSrc(blog?.author?.profileImage, "avatar")}
                     alt="author"
                     className="h-32 w-32 rounded-full object-cover"
+                    width={128}
+                    height={128}
+                    loading="lazy"
+                    decoding="async"
                     onError={handleImageError}
                   />
                 </div>

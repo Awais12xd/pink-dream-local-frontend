@@ -90,7 +90,7 @@ export const useCart = () => {
           setCart(backendCart)
           dispatchCartUpdate()
         } catch (backendError) {
-          console.warn('Backend cart not available:', backendError.message)
+          undefined
           setError('Cart service unavailable')
           setCart([])
         }
@@ -118,7 +118,7 @@ export const useCart = () => {
       const sessionCart = loadSessionCart()
       if (sessionCart.length === 0) return
 
-      console.log('Syncing session cart to backend:', sessionCart)
+      undefined
 
       const response = await fetch(`${API_BASE}/cart/sync`, {
         method: 'POST',
@@ -133,16 +133,16 @@ export const useCart = () => {
 
       const data = await response.json()
       if (data.success) {
-        console.log('Session cart synced successfully')
+        undefined
         // Clear session cart after successful sync
         clearSessionCart()
         // Reload cart from backend
         await loadCart()
       } else {
-        console.warn('Failed to sync session cart:', data.message)
+        undefined
       }
     } catch (error) {
-      console.warn('Error syncing session cart to backend:', error)
+      undefined
     }
   }, [user, loadSessionCart, clearSessionCart, loadCart])
 
@@ -193,13 +193,13 @@ export const useCart = () => {
 
           const data = await response.json()
           if (!data.success) {
-            console.warn('Backend add failed:', data.message)
+            undefined
             setError('Failed to add item to cart')
             // Revert optimistic update
             setCart(cart)
           }
         } catch (backendError) {
-          console.warn('Backend not available for add operation:', backendError.message)
+          undefined
           setError('Cart service unavailable')
           // Revert optimistic update
           setCart(cart)
@@ -238,13 +238,13 @@ export const useCart = () => {
 
           const data = await response.json()
           if (!data.success) {
-            console.warn('Backend remove failed:', data.message)
+            undefined
             setError('Failed to remove item from cart')
             // Revert optimistic update
             setCart(cart)
           }
         } catch (backendError) {
-          console.warn('Backend not available for remove operation:', backendError.message)
+          undefined
           setError('Cart service unavailable')
           // Revert optimistic update
           setCart(cart)
@@ -293,13 +293,13 @@ export const useCart = () => {
 
           const data = await response.json()
           if (!data.success) {
-            console.warn('Backend update failed:', data.message)
+            undefined
             setError('Failed to update cart')
             // Revert optimistic update
             setCart(cart)
           }
         } catch (backendError) {
-          console.warn('Backend not available for update operation:', backendError.message)
+          undefined
           setError('Cart service unavailable')
           // Revert optimistic update
           setCart(cart)
@@ -348,11 +348,11 @@ export const useCart = () => {
 
           const data = await response.json()
           if (!data.success) {
-            console.warn('Backend clear failed:', data.message)
+            undefined
             setError('Failed to clear cart')
           }
         } catch (backendError) {
-          console.warn('Backend not available for clear operation:', backendError.message)
+          undefined
           setError('Cart service unavailable')
         }
       } else {

@@ -197,7 +197,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false)
 
   let totalCategoriesBlogs = 0;
-  console.log(posts)
+  undefined
 
   const fetchBlogs = async (page = 1, isLoadMore = false) => {
     if (isLoadMore) {
@@ -369,7 +369,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
             url,
           });
         } catch (err) {
-          console.log("Share canceled or failed:", err);
+          undefined;
         }
       } else {
         navigator.clipboard.writeText(url);
@@ -387,7 +387,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
   };
  
 
-  const BlogCard = ({ post, featured = false }) => (
+  const BlogCard = ({ post, featured = false, priority = false }) => (
     <motion.article
       layout
       initial={{ opacity: 0, y: 20 }}
@@ -411,7 +411,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
           className={`w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
             featured ? "h-64 md:h-80" : "h-48"
           }`}
-          priority={featured}
+          priority={priority}
 
         />
         </div>
@@ -707,8 +707,13 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
                 </motion.h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <AnimatePresence>
-                    {featuredPosts.map((post) => (
-                      <BlogCard key={post.id} post={post} featured={true} />
+                    {featuredPosts.map((post, index) => (
+                      <BlogCard
+                        key={post.id}
+                        post={post}
+                        featured={true}
+                        priority={index === 0}
+                      />
                     ))}
                   </AnimatePresence>
                 </div>

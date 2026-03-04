@@ -26,7 +26,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 const TeamManager = () => {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("staffUserToken")
+      ? ""
       : null;
 
   const [members, setMembers] = useState([]);

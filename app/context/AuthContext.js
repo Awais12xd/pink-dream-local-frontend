@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
       clearRateLimit()
     }, retryAfter * 1000)
 
-    console.log(`🚨 Rate limit hit: ${data.type} - retry after ${retryAfter}s`)
+    undefined
   }
 
   const formatRetryTime = (seconds) => {
@@ -109,7 +109,7 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('user', JSON.stringify(updatedUser))
           
           // Don't dispatch login event here as it's just verification
-          console.log('Token verified successfully for user:', updatedUser.id)
+          undefined
         }
       } else if (response.status === 429) {
         // Handle rate limit on token verification
@@ -117,7 +117,7 @@ export const AuthProvider = ({ children }) => {
         handleRateLimitError(data, response)
       } else {
         // Token is invalid, clear auth state
-        console.log('Token verification failed, clearing auth state')
+        undefined
         handleInvalidToken()
       }
     } catch (error) {
@@ -193,7 +193,7 @@ export const AuthProvider = ({ children }) => {
       })
 
       const data = await response.json()
-      console.log('Login response:', data)
+      undefined
 
       // Handle rate limiting
       if (response.status === 429) {
@@ -229,7 +229,7 @@ export const AuthProvider = ({ children }) => {
         }))
         
         setIsLoading(false)
-        console.log('User logged in successfully:', userData.email)
+        undefined
         return { success: true, user: userData, message: data.message }
       } else {
         setIsLoading(false)
@@ -261,7 +261,7 @@ export const AuthProvider = ({ children }) => {
       })
 
       const data = await response.json()
-      console.log('Register response:', data)
+      undefined
 
       // Handle rate limiting
       if (response.status === 429) {
@@ -298,7 +298,7 @@ export const AuthProvider = ({ children }) => {
         }))
         
         setIsLoading(false)
-        console.log('User registered successfully:', newUserData.email)
+        undefined
         return { success: true, user: newUserData, message: data.message }
       } else {
         setIsLoading(false)
@@ -367,7 +367,7 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      console.log('🔍 Initiating Google OAuth login...')
+      undefined
       window.location.href = `${API_URL}/auth/google`
     } catch (error) {
       console.error('Google login error:', error)
@@ -386,7 +386,7 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      console.log('🔍 Initiating Facebook OAuth login...')
+      undefined
       window.location.href = `${API_URL}/auth/facebook`
     } catch (error) {
       console.error('Facebook login error:', error)
@@ -398,7 +398,7 @@ export const AuthProvider = ({ children }) => {
   const handleOAuthCallback = async (authToken, provider) => {
     try {
       setIsLoading(true)
-      console.log(`🔄 Processing ${provider} OAuth callback...`)
+      undefined
 
       if (!authToken) {
         return { success: false, error: 'No authentication token received' }
@@ -458,7 +458,7 @@ if (shouldDispatchLoginEvent) {
 }
 
           
-          console.log(`✅ ${provider} OAuth login successful:`, userData.name)
+          undefined
           
           return { 
             success: true, 
@@ -552,7 +552,7 @@ if (shouldDispatchLoginEvent) {
       }
       
       if (data.success && data.redirectUrl) {
-        console.log(`🔗 Redirecting to link ${provider} account...`)
+        undefined
         window.location.href = `${API_URL}${data.redirectUrl}`
       }
       
@@ -596,7 +596,7 @@ if (shouldDispatchLoginEvent) {
       if (data.success) {
         // Refresh user profile to get updated OAuth status
         await verifyToken(token)
-        console.log(`🔓 ${provider} account unlinked successfully`)
+        undefined
       }
       
       return data
@@ -612,7 +612,7 @@ if (shouldDispatchLoginEvent) {
 // Enhanced logout with wishlist clearing
   const logout = async () => {
     const currentUser = user // Store reference before clearing
-    console.log('🔄 AuthContext: Starting logout process for user:', currentUser?.name)
+    undefined
     
     try {
       if (token) {
@@ -647,7 +647,7 @@ if (shouldDispatchLoginEvent) {
     setUser(null)
     setToken(null)
     
-    console.log('🔄 AuthContext: User state cleared, dispatching logout event')
+    undefined
     
     // Dispatch the logout event immediately
     const logoutEvent = new CustomEvent('userLoggedOut', {
@@ -658,9 +658,9 @@ if (shouldDispatchLoginEvent) {
     })
     
     window.dispatchEvent(logoutEvent)
-    console.log('✅ AuthContext: userLoggedOut event dispatched')
+    undefined
     
-    console.log('✅ AuthContext: Logout process completed')
+    undefined
   }
 
   // Enhanced profile update

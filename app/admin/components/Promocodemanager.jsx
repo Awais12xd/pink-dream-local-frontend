@@ -29,13 +29,14 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import Authorized from "@/app/components/Authorized";
 import { toast } from "react-toastify";
+import { formatCurrency, formatNumber } from "@/app/utils/formatters";
 const PromoCodeManager = () => {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-  const token = localStorage.getItem("staffUserToken");
+  const token = "";
   const getAuthHeaders = () => {
     const token =
       typeof window !== "undefined"
-        ? localStorage.getItem("staffUserToken")
+        ? ""
         : null;
 
     return token ? { Authorization: `Bearer ${token}` } : {};
@@ -677,12 +678,12 @@ const PromoCodeManager = () => {
                         <div>
                           <p className="font-semibold text-gray-800">
                             {promo.discountType === "percentage"
-                              ? `${promo.discountValue}%`
-                              : `$${promo.discountValue}`}
+                              ? `${formatNumber(promo.discountValue, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`
+                              : formatCurrency(promo.discountValue)}
                           </p>
                           {promo.minPurchaseAmount > 0 && (
                             <p className="text-xs text-gray-500">
-                              Min: ${promo.minPurchaseAmount}
+                              Min: {formatCurrency(promo.minPurchaseAmount)}
                             </p>
                           )}
                         </div>

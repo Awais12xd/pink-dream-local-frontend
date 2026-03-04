@@ -9,6 +9,7 @@ function PayPalButtonInner({
   orderId,
   userId,
   cartItems,
+  promoCode,
   shippingAddress,
   onSuccess,
   onError,
@@ -18,6 +19,11 @@ function PayPalButtonInner({
 }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [{ isPending }] = usePayPalScriptReducer();
+  const authToken =
+    typeof window !== "undefined" ? localStorage.getItem("token") : "";
+  const authHeaders = authToken
+    ? { Authorization: `Bearer ${authToken}` }
+    : {};
 
   const mapPayPalError = (res, data, fallback) => {
     const msg = data?.message || data?.error || fallback;
@@ -59,8 +65,14 @@ function PayPalButtonInner({
         `${process.env.NEXT_PUBLIC_API_URL}/payment/paypal/create-order`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount, orderId, userId, items: cartItems }),
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({
+            amount,
+            orderId,
+            userId,
+            items: cartItems,
+            promoCode: promoCode?.code || "",
+          }),
         },
       );
 
@@ -94,33 +106,14 @@ function PayPalButtonInner({
         `${process.env.NEXT_PUBLIC_API_URL}/payment/paypal/capture-order`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({
             orderID: data.orderID,
             orderId,
             userId,
             items: cartItems,
+            promoCode: promoCode?.code || "",
             shippingAddress,
-            amount: {
-              subtotal: cartItems.reduce(
-                (sum, item) => sum + item.price * item.quantity,
-                0,
-              ),
-              shipping:
-                cartItems.reduce(
-                  (sum, item) => sum + item.price * item.quantity,
-                  0,
-                ) > 75
-                  ? 0
-                  : 9.99,
-              tax:
-                cartItems.reduce(
-                  (sum, item) => sum + item.price * item.quantity,
-                  0,
-                ) * 0.08,
-              discount: 0,
-              total: amount,
-            },
           }),
         },
       );

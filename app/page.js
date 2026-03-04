@@ -156,7 +156,7 @@ export default function Home() {
         setCategories(combinedCategories.slice(0, 6));
       } else {
         // Fallback to static categories
-        console.warn("No dynamic categories found, using static categories");
+        undefined;
         setCategories(STATIC_CATEGORIES.slice(0, 6));
         setDynamicCategories([]);
       }

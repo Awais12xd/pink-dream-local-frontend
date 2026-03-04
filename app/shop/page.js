@@ -28,7 +28,9 @@ const STATIC_CATEGORIES = [
   "Activewear",
   "Swimwear",
 ];
-const ITEMS_PER_PAGE = 6;
+const INITIAL_PRODUCTS_LIMIT = 10;
+const LOAD_MORE_PRODUCTS_LIMIT = 6;
+const SEARCH_DEBOUNCE_MS = 450;
 
 // Debounce hook - optimized
 function useDebounce(value, delay) {
@@ -71,23 +73,23 @@ export default function Shop() {
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000);
+  const [appliedMinPrice, setAppliedMinPrice] = useState(0);
+  const [appliedMaxPrice, setAppliedMaxPrice] = useState(1000);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
 
   // UI states
   const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
   const [hasMoreProducts, setHasMoreProducts] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [hasLoadedProductsOnce, setHasLoadedProductsOnce] = useState(false);
   const [categoryCounts, setCategoryCounts] = useState({ All: 0 });
   const latestRequestRef = useRef(0);
   const requestAbortRef = useRef(null);
 
-  // Optimized debounce with shorter delay
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
-  const debouncedMinPrice = useDebounce(minPrice, 250);
-  const debouncedMaxPrice = useDebounce(maxPrice, 250);
+  // Optimized debounce to reduce API churn while keeping search responsive
+  const debouncedSearchTerm = useDebounce(searchTerm, SEARCH_DEBOUNCE_MS);
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
 
   const sortOptions = useMemo(
@@ -162,6 +164,7 @@ export default function Shop() {
       const minPriceValue = parseInt(minPriceFromUrl);
       if (!isNaN(minPriceValue) && minPriceValue !== minPrice) {
         setMinPrice(minPriceValue);
+        setAppliedMinPrice(minPriceValue);
         hasChanges = true;
       }
     }
@@ -170,6 +173,7 @@ export default function Shop() {
       const maxPriceValue = parseInt(maxPriceFromUrl);
       if (!isNaN(maxPriceValue) && maxPriceValue !== maxPrice) {
         setMaxPrice(maxPriceValue);
+        setAppliedMaxPrice(maxPriceValue);
         hasChanges = true;
       }
     }
@@ -210,9 +214,9 @@ export default function Shop() {
       const sort =
         updates.sort !== undefined ? updates.sort : `${sortBy}-${sortOrder}`;
       const minPriceValue =
-        updates.minPrice !== undefined ? updates.minPrice : debouncedMinPrice;
+        updates.minPrice !== undefined ? updates.minPrice : appliedMinPrice;
       const maxPriceValue =
-        updates.maxPrice !== undefined ? updates.maxPrice : debouncedMaxPrice;
+        updates.maxPrice !== undefined ? updates.maxPrice : appliedMaxPrice;
 
       // Only add non-default parameters
       if (category && category !== "All") {
@@ -259,8 +263,8 @@ export default function Shop() {
       featuredOnly,
       sortBy,
       sortOrder,
-      debouncedMinPrice,
-      debouncedMaxPrice,
+      appliedMinPrice,
+      appliedMaxPrice,
       priceRange,
       initialDataLoaded,
     ],
@@ -411,6 +415,8 @@ export default function Shop() {
 
           if (!minPriceFromUrl) setMinPrice(roundedMin);
           if (!maxPriceFromUrl) setMaxPrice(roundedMax);
+          if (!minPriceFromUrl) setAppliedMinPrice(roundedMin);
+          if (!maxPriceFromUrl) setAppliedMaxPrice(roundedMax);
         }
       }
 
@@ -452,7 +458,11 @@ export default function Shop() {
     }
   };
 
-  const fetchProducts = async (page = 1, isLoadMore = false) => {
+  const fetchProducts = async (
+    offset = 0,
+    limit = INITIAL_PRODUCTS_LIMIT,
+    isLoadMore = false,
+  ) => {
     const requestId = ++latestRequestRef.current;
     let controller = null;
 
@@ -470,8 +480,8 @@ export default function Shop() {
       }
 
       const params = new URLSearchParams({
-        page: page.toString(),
-        limit: ITEMS_PER_PAGE.toString(),
+        offset: offset.toString(),
+        limit: limit.toString(),
         sortBy: sortBy,
         sortOrder: sortOrder,
       });
@@ -499,12 +509,12 @@ export default function Shop() {
         params.append("featured", "1");
       }
 
-      if (debouncedMinPrice > priceRange.min) {
-        params.append("minPrice", debouncedMinPrice.toString());
+      if (appliedMinPrice > priceRange.min) {
+        params.append("minPrice", appliedMinPrice.toString());
       }
 
-      if (debouncedMaxPrice < priceRange.max) {
-        params.append("maxPrice", debouncedMaxPrice.toString());
+      if (appliedMaxPrice < priceRange.max) {
+        params.append("maxPrice", appliedMaxPrice.toString());
       }
 
       const response = await fetch(`${API_BASE}/allproducts?${params}`, {
@@ -521,10 +531,15 @@ export default function Shop() {
       if (data.success) {
         const incomingProducts = Array.isArray(data.products) ? data.products : [];
         const apiTotalProducts = Number(data.pagination?.totalProducts || 0);
+        setHasLoadedProductsOnce(true);
 
         if (isLoadMore) {
           setAllProducts((prev) => {
-            const merged = [...prev, ...incomingProducts];
+            const seen = new Set(prev.map((p) => String(p._id || p.id)));
+            const dedupedIncoming = incomingProducts.filter(
+              (product) => !seen.has(String(product._id || product.id)),
+            );
+            const merged = [...prev, ...dedupedIncoming];
             setHasMoreProducts(merged.length < apiTotalProducts);
             return merged;
           });
@@ -534,7 +549,6 @@ export default function Shop() {
         }
 
         setTotalProducts(apiTotalProducts);
-        setCurrentPage(page);
       } else {
         throw new Error(data.message || "Failed to fetch products");
       }
@@ -560,9 +574,8 @@ export default function Shop() {
   useEffect(() => {
     if (!initialDataLoaded) return;
 
-    setCurrentPage(1);
     setHasMoreProducts(false);
-    fetchProducts(1, false);
+    fetchProducts(0, INITIAL_PRODUCTS_LIMIT, false);
     updateURL({ search: appliedSearchTerm });
   }, [
     initialDataLoaded,
@@ -572,8 +585,8 @@ export default function Shop() {
     featuredOnly,
     sortBy,
     sortOrder,
-    debouncedMinPrice,
-    debouncedMaxPrice,
+    appliedMinPrice,
+    appliedMaxPrice,
     appliedSearchTerm,
     updateURL,
   ]);
@@ -621,10 +634,17 @@ export default function Shop() {
     [minPrice],
   );
 
+  const handleApplyPriceFilter = useCallback(() => {
+    const safeMin = Math.max(minPrice, priceRange.min);
+    const safeMax = Math.min(maxPrice, priceRange.max);
+
+    setAppliedMinPrice(Math.min(safeMin, safeMax));
+    setAppliedMaxPrice(Math.max(safeMin, safeMax));
+  }, [minPrice, maxPrice, priceRange]);
+
   const handleLoadMore = useCallback(() => {
-    const nextPage = currentPage + 1;
-    fetchProducts(nextPage, true);
-  }, [currentPage]);
+    fetchProducts(allProducts.length, LOAD_MORE_PRODUCTS_LIMIT, true);
+  }, [allProducts.length]);
 
   const clearAllFilters = useCallback(() => {
     setSelectedCategory("All");
@@ -635,9 +655,10 @@ export default function Shop() {
     setFeaturedOnly(false);
     setMinPrice(priceRange.min);
     setMaxPrice(priceRange.max);
+    setAppliedMinPrice(priceRange.min);
+    setAppliedMaxPrice(priceRange.max);
     setSortBy("date");
     setSortOrder("desc");
-    setCurrentPage(1);
     setHasMoreProducts(false);
 
     window.history.replaceState(null, "", "/shop");
@@ -646,6 +667,9 @@ export default function Shop() {
   const categoryDisplayName = useMemo(() => {
     return selectedCategory === "All" ? "Our Collection" : selectedCategory;
   }, [selectedCategory]);
+
+  const isPriceFilterDirty =
+    minPrice !== appliedMinPrice || maxPrice !== appliedMaxPrice;
 
   // Loading state
   if (loading && !initialDataLoaded) {
@@ -836,6 +860,21 @@ export default function Shop() {
                   <div className="text-sm text-gray-600 text-center">
                     ${minPrice} - ${maxPrice}
                   </div>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={handleApplyPriceFilter}
+                      disabled={!isPriceFilterDirty}
+                      className="w-full bg-pink-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Apply Price Filter
+                    </button>
+                    {isPriceFilterDirty && (
+                      <p className="text-xs text-center text-gray-500">
+                        Price range changed. Apply to refresh products.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -957,7 +996,7 @@ export default function Shop() {
               </motion.div>
 
               {/* Products Grid */}
-              {productsLoading && allProducts.length === 0 ? (
+              {productsLoading && !hasLoadedProductsOnce ? (
                 <div className="flex justify-center items-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-pink-600" />
                 </div>
@@ -1004,7 +1043,7 @@ export default function Shop() {
                             <span>Loading...</span>
                           </>
                         ) : (
-                          <span>Load More Products</span>
+                          <span>Load 6 More Products</span>
                         )}
                       </button>
                       <p className="text-gray-500 text-sm mt-2">

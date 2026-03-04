@@ -2,10 +2,9 @@
 
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, User, Sparkles, AlertCircle, CheckCircle, Loader, Heart } from 'lucide-react';
+import { setStoredStaffUser, clearStoredStaffAuth } from "../../utils/staffAuth";
 
 const AdminLogin = ({ onLoginSuccess }) => {
-      const token = localStorage.getItem("staffUserToken");
-
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
@@ -27,6 +26,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
     try {
       const response = await fetch(`${API_BASE}/admin/login`, {
         method: 'POST',
+        credentials: "include",
         headers: {
           'Content-Type': 'application/json',
         },
@@ -36,9 +36,8 @@ const AdminLogin = ({ onLoginSuccess }) => {
       const data = await response.json();
 
       if (data.success) {
-        // Store admin token and data
-        localStorage.setItem('staffUserToken', data.token);
-        localStorage.setItem('staffUserData', JSON.stringify(data.staffUser));
+        clearStoredStaffAuth();
+        setStoredStaffUser(data.staffUser || null);
         window.dispatchEvent(new Event("staff-auth-changed"));
 
         

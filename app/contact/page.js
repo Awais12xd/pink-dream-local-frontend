@@ -236,7 +236,7 @@ const Contact = () => {
         setErrors({});
 
         // Optional: Show contact ID to user
-        console.log('Contact ID:', result.contactId);
+        undefined;
 
         // Auto-hide success message after 5 seconds
         setTimeout(() => {

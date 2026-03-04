@@ -8,6 +8,18 @@ import Footer from "../../components/Footer";
 import ProductCard from "../../components/ProductCard";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
+import { adminFetch } from "../../utils/adminApi";
+import {
+  getStoredStaffUser,
+  hasStaffPermission,
+} from "../../utils/staffAuth";
+import {
+  AVATAR_FALLBACK_IMAGE,
+  FALLBACK_IMAGE,
+  getOptimizedImageSrc,
+  handleImageError as sharedHandleImageError,
+} from "../../utils/imageUtils";
+import { formatCurrency } from "../../utils/formatters";
 import { toast } from "react-toastify";
 import {
   Trash2,
@@ -30,10 +42,8 @@ import {
   Zap,
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-const IMAGE_FALLBACK_URL =
-  "https://placehold.co/1200x1200/FFB6C1/FFFFFF?text=No+Image";
+const IMAGE_FALLBACK_URL = FALLBACK_IMAGE;
 
 // Enhanced Product Image Zoom Component
 const ProductImageZoom = ({
@@ -165,7 +175,10 @@ const ProductImageZoom = ({
         src={resolvedSrc}
         alt={alt}
         className="w-full h-full object-cover select-none"
+        width={1200}
+        height={1200}
         loading="eager"
+        fetchPriority="high"
         decoding="async"
         onLoad={handleImageLoad}
         onError={handleImageError}
@@ -265,7 +278,6 @@ export default function ProductDetail() {
 
   const [reviewsEnabled, setReviewsEnabled] = useState(true);
   const [canDeleteReviews, setCanDeleteReviews] = useState(false);
-  const [staffToken, setStaffToken] = useState("");
   const [deletingReviewId, setDeletingReviewId] = useState("");
 
   const [user, setUser] = useState(null);
@@ -280,24 +292,9 @@ export default function ProductDetail() {
       }
 
       try {
-        const token = localStorage.getItem("staffUserToken") || "";
-        const rawStaff = localStorage.getItem("staffUserData");
-        let canDelete = false;
-
-        if (token && rawStaff) {
-          const staff = JSON.parse(rawStaff);
-          const perms = Array.isArray(staff?.permissions)
-            ? staff.permissions
-            : [];
-          canDelete =
-          perms.includes("products:update") ||
-            perms.includes("*");
-        }
-
-        setStaffToken(token);
-        setCanDeleteReviews(canDelete);
+        const staffUser = getStoredStaffUser();
+        setCanDeleteReviews(hasStaffPermission(staffUser, "products:update"));
       } catch {
-        setStaffToken("");
         setCanDeleteReviews(false);
       }
     };
@@ -562,17 +559,14 @@ export default function ProductDetail() {
   };
 
   const handleDeleteReview = async (reviewId) => {
-    if (!canDeleteReviews || !staffToken) return;
+    if (!canDeleteReviews) return;
 
     setDeletingReviewId(reviewId);
     try {
-      const response = await fetch(
+      const response = await adminFetch(
         `${API_BASE}/product/${productId}/reviews/${reviewId}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${staffToken}`,
-          },
         },
       );
 
@@ -681,7 +675,7 @@ export default function ProductDetail() {
           url: window.location.href,
         });
       } catch (error) {
-        console.log("Error sharing:", error);
+        undefined;
       }
     } else {
       navigator.clipboard.writeText(window.location.href);
@@ -700,65 +694,6 @@ export default function ProductDetail() {
   const decrementQuantity = () => {
     if (quantity > 1) {
       setQuantity((prev) => prev - 1);
-    }
-  };
-
-  const getImageSrc = (imageSrc) => {
-    if (typeof imageSrc !== "string") return IMAGE_FALLBACK_URL;
-
-    const cleanSrc = imageSrc.trim();
-    if (!cleanSrc) return IMAGE_FALLBACK_URL;
-
-    const baseURL = (API_URL || "http://localhost:4000").replace(/\/$/, "");
-
-    // Handle old Railway URLs
-    if (cleanSrc.includes("railway.app")) {
-      const filename = cleanSrc.split("/images/")[1];
-      if (filename) {
-        return `${baseURL}/images/${filename}`;
-      }
-    }
-
-    if (/^(https?:\/\/|data:|blob:)/i.test(cleanSrc)) {
-      return cleanSrc;
-    }
-
-    if (cleanSrc.startsWith("/images/") || cleanSrc.startsWith("/uploads/")) {
-      return `${baseURL}${cleanSrc}`;
-    }
-
-    if (
-      !cleanSrc.includes("/") &&
-      /\.(jpg|jpeg|png|gif|webp|avif|svg)$/i.test(cleanSrc)
-    ) {
-      return `${baseURL}/images/${cleanSrc}`;
-    }
-
-    if (cleanSrc.startsWith("images/") || cleanSrc.startsWith("uploads/")) {
-      return `${baseURL}/${cleanSrc}`;
-    }
-
-    if (cleanSrc.startsWith("/")) {
-      return cleanSrc;
-    }
-
-    return `${baseURL}/${cleanSrc}`;
-  };
-
-  const getHighResSrc = (imageSrc) => {
-    const normalSrc = getImageSrc(imageSrc);
-
-    if (normalSrc.includes("unsplash.com")) {
-      return normalSrc.replace(/w=\d+/, "w=1200").replace(/h=\d+/, "h=1200");
-    }
-
-    return normalSrc;
-  };
-
-  const handleInlineImageError = (e) => {
-    if (e?.currentTarget?.src !== IMAGE_FALLBACK_URL) {
-      e.currentTarget.onerror = null;
-      e.currentTarget.src = IMAGE_FALLBACK_URL;
     }
   };
 
@@ -875,12 +810,15 @@ export default function ProductDetail() {
               <div className="sm:hidden">
                 <div className="relative h-[320px] rounded-xl overflow-hidden bg-gray-50 mb-4">
                   <img
-                    src={getImageSrc(activeImage)}
+                    src={getOptimizedImageSrc(activeImage, "detail")}
                     alt={product.name}
                     className="w-full h-full object-cover"
+                    width={1200}
+                    height={1200}
                     loading="eager"
+                    fetchPriority="high"
                     decoding="async"
-                    onError={handleInlineImageError}
+                    onError={sharedHandleImageError}
                   />
                 </div>
 
@@ -897,12 +835,14 @@ export default function ProductDetail() {
                         }`}
                       >
                         <img
-                          src={getImageSrc(image)}
+                          src={getOptimizedImageSrc(image, "thumb")}
                           alt={`${product.name} ${index + 1}`}
                           className="w-full h-full object-cover"
+                          width={160}
+                          height={160}
                           loading="lazy"
                           decoding="async"
-                          onError={handleInlineImageError}
+                          onError={sharedHandleImageError}
                         />
                       </button>
                     ))}
@@ -943,12 +883,14 @@ export default function ProductDetail() {
                         }`}
                       >
                         <img
-                          src={getImageSrc(image)}
+                          src={getOptimizedImageSrc(image, "thumb")}
                           alt={`${product.name} ${index + 1}`}
                           className="w-full h-full object-cover"
+                          width={180}
+                          height={180}
                           loading="lazy"
                           decoding="async"
-                          onError={handleInlineImageError}
+                          onError={sharedHandleImageError}
                         />
                       </button>
                     ))}
@@ -968,8 +910,8 @@ export default function ProductDetail() {
                 )}
 
                 <ProductImageZoom
-                  src={getImageSrc(activeImage)}
-                  highResSrc={getHighResSrc(activeImage)}
+                  src={getOptimizedImageSrc(activeImage, "detail")}
+                  highResSrc={getOptimizedImageSrc(activeImage, "zoom")}
                   alt={product.name}
                   className="flex-1 h-[450px]"
                 />
@@ -1021,11 +963,11 @@ export default function ProductDetail() {
                 {/* Price */}
                 <div className="flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-6">
                   <span className="text-2xl sm:text-3xl font-bold text-pink-600">
-                    ${product.new_price}
+                    {formatCurrency(product.new_price)}
                   </span>
                   {product.old_price > product.new_price && (
                     <span className="text-lg sm:text-xl text-gray-500 line-through">
-                      ${product.old_price}
+                      {formatCurrency(product.old_price)}
                     </span>
                   )}
                   {discountPercentage > 0 && (
@@ -1517,12 +1459,24 @@ export default function ProductDetail() {
                             <div className="flex items-center gap-3 min-w-0">
                               {review.userAvatar ? (
                                 <img
-                                  src={getImageSrc(review.userAvatar)}
+                                  src={getOptimizedImageSrc(
+                                    review.userAvatar,
+                                    "avatar",
+                                    AVATAR_FALLBACK_IMAGE,
+                                  )}
                                   alt={review.userName || "Reviewer"}
                                   className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                                  width={40}
+                                  height={40}
                                   loading="lazy"
                                   decoding="async"
                                   referrerPolicy="no-referrer"
+                                  onError={(e) =>
+                                    sharedHandleImageError(
+                                      e,
+                                      AVATAR_FALLBACK_IMAGE,
+                                    )
+                                  }
                                 />
                               ) : (
                                 <div className="w-10 h-10 rounded-full bg-pink-100 text-pink-700 flex items-center justify-center text-sm font-semibold border border-pink-200">

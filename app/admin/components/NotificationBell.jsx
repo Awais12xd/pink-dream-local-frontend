@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, BellOff, Check, Loader2 } from "lucide-react";
 import { useNotifications } from "@/app/context/NotificationContext";
+import { adminFetch } from "@/app/utils/adminApi";
+import { getStoredStaffUser, getCurrentStaffId } from "@/app/utils/staffAuth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -44,12 +46,7 @@ export default function NotificationBell({ onViewAll }) {
   const ref = useRef(null);
 
   const staffId = useMemo(() => {
-    try {
-      const staff = JSON.parse(localStorage.getItem("staffUserData") || "null");
-      return String(staff?.id || "");
-    } catch {
-      return "";
-    }
+    return getCurrentStaffId(getStoredStaffUser());
   }, []);
 
   const latest = useMemo(() => items.slice(0, 4), [items]);
@@ -83,11 +80,9 @@ export default function NotificationBell({ onViewAll }) {
     setMarkingIds((prev) => Array.from(new Set([...prev, ...uniqueIds])));
 
     try {
-      const token = localStorage.getItem("staffUserToken");
-      const res = await fetch(`${API_BASE}/admin/notifications/read`, {
+      const res = await adminFetch(`${API_BASE}/admin/notifications/read`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ ids: uniqueIds }),

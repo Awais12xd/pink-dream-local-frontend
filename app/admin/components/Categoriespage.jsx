@@ -23,7 +23,7 @@ import {
 import Authorized from "@/app/components/Authorized";
 
 const CategoriesPage = () => {
-      const token = localStorage.getItem("staffUserToken");
+      const token = "";
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);

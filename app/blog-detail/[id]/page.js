@@ -19,6 +19,10 @@ import {
 import "../../admin/components/Blog-Componenets/Blog.css";
 import { useAuth } from "@/app/context/AuthContext";
 import Image from "next/image";
+import {
+  AVATAR_FALLBACK_IMAGE,
+  getOptimizedImageSrc,
+} from "@/app/utils/imageUtils";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -110,23 +114,6 @@ export default function BlogDetail() {
     }
   };
 
-  const getImageSrc = (imageSrc) => {
-    if (!imageSrc)
-      return "https://placehold.co/900x600/FFB6C1/FFFFFF?text=Pink+Dreams";
-    const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-
-    if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
-      return imageSrc;
-    }
-
-    if (imageSrc.startsWith("/images/")) {
-      return `${baseURL}${imageSrc}`;
-    }
-
-    // fallback
-    return `${baseURL}/images/${imageSrc}`;
-  };
-
   const sanitizeHTML = (dirty) => {
     try {
       return { __html: dirty };
@@ -146,7 +133,7 @@ export default function BlogDetail() {
           url,
         });
       } catch (err) {
-        console.log("Share canceled or failed:", err);
+        undefined;
       }
     } else {
       navigator.clipboard.writeText(url);
@@ -330,6 +317,12 @@ export default function BlogDetail() {
     comments = [],
     commentsEnabled,
   } = blog;
+  const heroImageSrc = getOptimizedImageSrc(image, "detail");
+  const authorAvatarSrc = getOptimizedImageSrc(
+    author?.profileImage,
+    "avatar",
+    AVATAR_FALLBACK_IMAGE,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -376,14 +369,14 @@ export default function BlogDetail() {
               <div className="relative">
                 <div className="relative overflow-hidden w-full h-64 sm:h-80 md:h-96">
                   <Image
-                    src={image}
+                    src={heroImageSrc}
                     alt={title}
                     fill
                     sizes="(max-width: 640px) 100vw,
            (max-width: 1024px) 100vw,
            50vw"
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    priority={false}
+                    priority
                   />
                 </div>
 
@@ -411,20 +404,17 @@ export default function BlogDetail() {
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.target.src =
-                            "https://placehold.co/80x80/FFB6C1/FFFFFF?text=U";
+                            "/placeholders/avatar-placeholder.svg";
                         }}
                       />
                     </div> */}
                     <div className="relative rounded-full overflow-hidden bg-gray-100 w-9 h-9">
                       <Image
-                        src={author?.profileImage}
+                        src={authorAvatarSrc}
                         alt={author?.name}
                         fill
-                        sizes="(max-width: 640px) 100vw,
-           (max-width: 1024px) 100vw,
-           50vw"
+                        sizes="36px"
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        priority={false}
                       />
                     </div>
                     <div className="text-xs">
@@ -466,7 +456,7 @@ export default function BlogDetail() {
                 {/* <div className="hidden lg:flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
-                      <img src={author?.profileImage || ""} alt={author?.name || "Author"} className="w-full h-full object-cover" onError={(e)=>{e.target.src = "https://placehold.co/80x80/FFB6C1/FFFFFF?text=U"}} />
+                      <img src={author?.profileImage || ""} alt={author?.name || "Author"} className="w-full h-full object-cover" onError={(e)=>{e.target.src = "/placeholders/avatar-placeholder.svg"}} />
                     </div>
                     <div>
                       <div className="text-sm font-medium text-gray-800">{author?.name || "Unknown"}</div>
@@ -700,20 +690,17 @@ export default function BlogDetail() {
                         className="w-full h-full object-cover border"
                         onError={(e) => {
                           e.target.src =
-                            "https://placehold.co/80x80/FFB6C1/FFFFFF?text=U";
+                            "/placeholders/avatar-placeholder.svg";
                         }}
                       />
                     </div> */}
                     <div className="relative rounded-full overflow-hidden bg-gray-100 w-14 h-14">
                       <Image
-                        src={author?.profileImage}
+                        src={authorAvatarSrc}
                         alt={author?.name}
                         fill
-                        sizes="(max-width: 640px) 100vw,
-           (max-width: 1024px) 100vw,
-           50vw"
+                        sizes="56px"
                         className="object-cover border transition-transform duration-300 group-hover:scale-105"
-                        priority={false}
                       />
                     </div>
                     <div>

@@ -6,44 +6,13 @@ import Link from 'next/link'
 import { useWishlist } from '../context/WishlistContext'
 import { useCart } from '../context/CartContext'
 import { useRouter } from "next/navigation"
-
-// Fallback image URL
-const FALLBACK_IMAGE = 'https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams'
-const ERROR_IMAGE = 'https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image'
-
-// Image utility function
-const getImageSrc = (imageSrc, fallback = FALLBACK_IMAGE) => {
-  if (!imageSrc) return fallback
-  
-  const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-  
-  // If URL contains old Railway domain, replace it
-  if (imageSrc.includes('railway.app')) {
-    const filename = imageSrc.split('/images/')[1]
-    if (filename) {
-      return `${baseURL}/images/${filename}`
-    }
-  }
-  
-  // If already a full URL with correct domain, return as is
-  if (imageSrc.startsWith('http://') || imageSrc.startsWith('https://')) {
-    return imageSrc
-  }
-  
-  if (imageSrc.startsWith('/images/')) {
-    return `${baseURL}${imageSrc}`
-  }
-  
-  if (!imageSrc.includes('/') && /\.(jpg|jpeg|png|gif|webp)$/i.test(imageSrc)) {
-    return `${baseURL}/images/${imageSrc}`
-  }
-  
-  if (imageSrc.startsWith('images/')) {
-    return `${baseURL}/${imageSrc}`
-  }
-  
-  return `${baseURL}/${imageSrc}`
-}
+import {
+  FALLBACK_IMAGE,
+  ERROR_IMAGE,
+  getOptimizedImageSrc,
+  handleImageError as fallbackImageOnError,
+} from "../utils/imageUtils";
+import { formatCurrency } from "../utils/formatters";
 
 const ProductCard = ({ product }) => {
   const [loading, setLoading] = useState(false)
@@ -78,7 +47,7 @@ const ProductCard = ({ product }) => {
     
     // Set image source or use fallback
     if (mainImage) {
-      setImageSrc(getImageSrc(mainImage))
+      setImageSrc(getOptimizedImageSrc(mainImage, "card"))
       setImageError(false)
     } else {
       setImageSrc(FALLBACK_IMAGE)
@@ -121,7 +90,7 @@ const ProductCard = ({ product }) => {
     try {
       const success = await addToCart(product)
       if (success) {
-        console.log(`Added ${product.name} to cart`)
+        undefined
         setTimeout(() => {
           setAddingToCart(false)
         }, 500)
@@ -142,11 +111,8 @@ const ProductCard = ({ product }) => {
   }
 
   const handleImageError = () => {
-    if (!imageError) {
-      console.error('Image failed to load:', imageSrc)
-      setImageError(true)
-      setImageSrc(ERROR_IMAGE)
-    }
+    setImageError(true)
+    setImageSrc(ERROR_IMAGE)
   }
 
   const itemQuantity = getItemQuantity ? getItemQuantity(product.id) : 0
@@ -172,8 +138,15 @@ const ProductCard = ({ product }) => {
                 src={imageSrc}
                 alt={product.name || 'Product'}
                 className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                onError={handleImageError}
+                width={640}
+                height={800}
                 loading="lazy"
+                decoding="async"
+                fetchPriority="low"
+                onError={(e) => {
+                  handleImageError();
+                  fallbackImageOnError(e, ERROR_IMAGE);
+                }}
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-pink-50 to-rose-50 flex items-center justify-center">
@@ -286,11 +259,11 @@ const ProductCard = ({ product }) => {
 
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-            ${typeof product.new_price === 'number' ? product.new_price.toFixed(2) : product.new_price}
+            {formatCurrency(product.new_price)}
           </span>
           {product.old_price && product.old_price !== product.new_price && (
             <span className="text-sm text-gray-500 line-through">
-              ${typeof product.old_price === 'number' ? product.old_price.toFixed(2) : product.old_price}
+              {formatCurrency(product.old_price)}
             </span>
           )}
         </div>

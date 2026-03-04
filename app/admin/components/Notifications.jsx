@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { toast } from "react-toastify";
+import { adminFetch } from "@/app/utils/adminApi";
+import { getStoredStaffUser, getCurrentStaffId } from "@/app/utils/staffAuth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -129,14 +131,8 @@ export default function NotificationsManager() {
     count: 0,
   });
 
-  const staffUser = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem("staffUserData") || "null");
-    } catch {
-      return null;
-    }
-  }, []);
-  const currentStaffId = staffUser?.id;
+  const staffUser = useMemo(() => getStoredStaffUser(), []);
+  const currentStaffId = getCurrentStaffId(staffUser);
 
   const notificationTypes = [
     "blog",
@@ -177,7 +173,6 @@ export default function NotificationsManager() {
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("staffUserToken");
       const params = new URLSearchParams();
       params.set("page", currentPage);
       params.set("limit", itemsPerPage);
@@ -187,9 +182,8 @@ export default function NotificationsManager() {
       if (severityFilter) params.set("severity", severityFilter);
       if (typeFilter) params.set("type", typeFilter);
 
-      const res = await fetch(
+      const res = await adminFetch(
         `${API_BASE}/admin/notifications?${params.toString()}`,
-        { headers: { Authorization: `Bearer ${token}` } },
       );
       const data = await res.json();
 
@@ -270,11 +264,9 @@ export default function NotificationsManager() {
 
   const markAsRead = async (id) => {
     try {
-      const token = localStorage.getItem("staffUserToken");
-      const res = await fetch(`${API_BASE}/admin/notifications/read`, {
+      const res = await adminFetch(`${API_BASE}/admin/notifications/read`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ ids: [id] }),
@@ -300,11 +292,9 @@ export default function NotificationsManager() {
   const markAllFilteredAsRead = async () => {
     setActionLoading(true);
     try {
-      const token = localStorage.getItem("staffUserToken");
-      const res = await fetch(`${API_BASE}/admin/notifications/read-all`, {
+      const res = await adminFetch(`${API_BASE}/admin/notifications/read-all`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -352,14 +342,11 @@ export default function NotificationsManager() {
   const executeDelete = async () => {
     setActionLoading(true);
     try {
-      const token = localStorage.getItem("staffUserToken");
-
       if (deleteConfirm.mode === "single") {
-        const res = await fetch(
+        const res = await adminFetch(
           `${API_BASE}/admin/notifications/${deleteConfirm.id}`,
           {
             method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` },
           },
         );
         const data = await res.json();
@@ -369,10 +356,9 @@ export default function NotificationsManager() {
         }
         toast.success("Notification deleted");
       } else {
-        const res = await fetch(`${API_BASE}/admin/notifications/delete-bulk`, {
+        const res = await adminFetch(`${API_BASE}/admin/notifications/delete-bulk`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ ids: selectedIds }),

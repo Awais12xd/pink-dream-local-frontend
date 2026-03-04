@@ -137,7 +137,7 @@ export function CartProvider({ children }) {
           const backendCart = await loadBackendCart(user.id);
           setCart(backendCart);
         } catch (backendError) {
-          console.warn("Backend cart not available:", backendError.message);
+          undefined;
           setError("Cart service unavailable");
           setCart([]);
         }
@@ -164,7 +164,7 @@ export function CartProvider({ children }) {
       const sessionCart = loadSessionCart();
       if (sessionCart.length === 0) return;
 
-      console.log("Syncing session cart to backend:", sessionCart);
+      undefined;
 
       const response = await fetch(`${API_BASE}/cart/sync`, {
         method: "POST",
@@ -179,16 +179,16 @@ export function CartProvider({ children }) {
 
       const data = await response.json();
       if (data.success) {
-        console.log("Session cart synced successfully");
+        undefined;
         // Clear session cart after successful sync
         clearSessionCart();
         // Reload cart from backend
         await loadCart();
       } else {
-        console.warn("Failed to sync session cart:", data.message);
+        undefined;
       }
     } catch (error) {
-      console.warn("Error syncing session cart to backend:", error);
+      undefined;
     }
   }, [user, loadSessionCart, clearSessionCart, loadCart]);
 
@@ -421,14 +421,11 @@ export function CartProvider({ children }) {
 
           const data = await response.json();
           if (!data.success) {
-            console.warn("Backend clear failed:", data.message);
+            undefined;
             setError("Failed to clear cart");
           }
         } catch (backendError) {
-          console.warn(
-            "Backend not available for clear operation:",
-            backendError.message,
-          );
+          undefined;
           setError("Cart service unavailable");
         }
       } else {

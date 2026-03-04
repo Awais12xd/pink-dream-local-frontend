@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   ArrowLeft, 
   Edit, 
   Trash2, 
@@ -33,9 +33,14 @@ import {
   Minus,
   RulerIcon
 } from 'lucide-react';
+import {
+  getOptimizedImageSrc,
+  handleImageError,
+} from "@/app/utils/imageUtils";
+import { formatCurrency } from "@/app/utils/formatters";
 
 const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
-      const token = localStorage.getItem("staffUserToken");
+      const token = "";
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,46 +50,6 @@ const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
   const [notification, setNotification] = useState(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-
-  // Image utility functions
-  const getImageSrc = (imageSrc, fallback = 'https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams') => {
-    if (!imageSrc) return fallback
-    
-    const baseURL = API_BASE || 'http://localhost:4000'
-    
-    // Handle old Railway URLs
-    if (imageSrc.includes('railway.app')) {
-      const filename = imageSrc.split('/images/')[1]
-      if (filename) {
-        return `${baseURL}/images/${filename}`
-      }
-    }
-    
-    if (imageSrc.startsWith('http://') || imageSrc.startsWith('https://')) {
-      return imageSrc
-    }
-    
-    if (imageSrc.startsWith('/images/')) {
-      return `${baseURL}${imageSrc}`
-    }
-    
-    if (!imageSrc.includes('/') && /\.(jpg|jpeg|png|gif|webp)$/i.test(imageSrc)) {
-      return `${baseURL}/images/${imageSrc}`
-    }
-    
-    if (imageSrc.startsWith('images/')) {
-      return `${baseURL}/${imageSrc}`
-    }
-    
-    return `${baseURL}/${imageSrc}`
-  }
-
-  const handleImageError = (e) => {
-    if (e.target.src !== 'https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image') {
-      e.target.onerror = null
-      e.target.src = 'https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image'
-    }
-  }
 
   useEffect(() => {
     if (productId) {
@@ -331,9 +296,13 @@ const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
               <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                 {validImages.length > 0 ? (
                   <img
-                    src={getImageSrc(validImages[activeImageIndex] || validImages[0])}
+                    src={getOptimizedImageSrc(validImages[activeImageIndex] || validImages[0], "detail")}
                     alt={product.name}
                     className="w-full h-full object-cover"
+                    width={1200}
+                    height={1200}
+                    loading="eager"
+                    decoding="async"
                     onError={handleImageError}
                   />
                 ) : (
@@ -355,9 +324,13 @@ const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
                       }`}
                     >
                       <img
-                        src={getImageSrc(image)}
+                        src={getOptimizedImageSrc(image, "thumb")}
                         alt={`${product.name} ${index + 1}`}
                         className="w-full h-full object-cover"
+                        width={180}
+                        height={180}
+                        loading="lazy"
+                        decoding="async"
                         onError={handleImageError}
                       />
                     </button>
@@ -421,10 +394,14 @@ const ProductDetails = ({ productId, onEdit, onBack, onDelete }) => {
 
               {/* Pricing */}
               <div className="flex items-center gap-4 mb-4">
-                <span className="text-3xl font-bold text-green-600">${product.new_price}</span>
+                <span className="text-3xl font-bold text-green-600">
+                  {formatCurrency(product.new_price)}
+                </span>
                 {product.old_price > product.new_price && (
                   <>
-                    <span className="text-xl text-gray-500 line-through">${product.old_price}</span>
+                    <span className="text-xl text-gray-500 line-through">
+                      {formatCurrency(product.old_price)}
+                    </span>
                     <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-medium">
                       {discountPercentage}% OFF
                     </span>

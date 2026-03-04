@@ -135,7 +135,7 @@ export default function SettingsProvider({ initialSettings = null, children }) {
         setHeadFromSettings(s);
         if (s) writeSettingsCache(s);
       } catch (err) {
-        console.warn("Failed to fetch public settings (client):", err);
+        undefined;
         if (!cached) setSettings(null);
       }
     }

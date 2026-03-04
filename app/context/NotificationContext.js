@@ -3,23 +3,12 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { toast } from "react-toastify";
 import NotificationToast from "../admin/components/NotificationToast";
+import { adminFetch } from "../utils/adminApi";
+import { getStoredStaffUser, getCurrentStaffId } from "../utils/staffAuth";
 
 const NotificationContext = createContext(null);
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const PREF_KEY_PREFIX = "staff:realtime-notifications";
-
-const getStoredStaff = () => {
-  try {
-    return JSON.parse(localStorage.getItem("staffUserData") || "null");
-  } catch {
-    return null;
-  }
-};
-
-const getStaffId = (staff = null) => {
-  const s = staff || getStoredStaff();
-  return String(s?.id || s?._id || "");
-};
 
 const getPrefKey = (staffId) => `${PREF_KEY_PREFIX}:${staffId}`;
 
@@ -51,7 +40,7 @@ export function NotificationProvider({ children }) {
     window.addEventListener("staff-realtime-notifications-changed", onPrefChange);
 
     const onStorage = (e) => {
-      if (e.key === "staffUserToken" || e.key === "staffUserData") onAuthChange();
+      if (e.key === "staffUserData" || e.key === "staffUserToken") onAuthChange();
       if (e.key && e.key.startsWith(`${PREF_KEY_PREFIX}:`)) onPrefChange();
     };
     window.addEventListener("storage", onStorage);
@@ -64,16 +53,15 @@ export function NotificationProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("staffUserToken");
-    const staffUser = getStoredStaff();
-    const staffId = getStaffId(staffUser);
+    const staffUser = getStoredStaffUser();
+    const staffId = getCurrentStaffId(staffUser);
 
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;
     }
 
-    if (!token || !staffUser) {
+    if (!staffUser) {
       setItems([]);
       setUnreadCount(0);
       setRealtimeEnabled(true);
@@ -91,9 +79,7 @@ export function NotificationProvider({ children }) {
 
     const loadHistory = async () => {
       try {
-        const res = await fetch(`${API_BASE}/admin/notifications?limit=50`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await adminFetch(`${API_BASE}/admin/notifications?limit=50`);
         const data = await res.json();
 
         if (data.success) {
@@ -113,7 +99,7 @@ export function NotificationProvider({ children }) {
 
     loadHistory();
 
-    socketRef.current = io(API_BASE, { auth: { token } });
+    socketRef.current = io(API_BASE, { withCredentials: true });
 
     socketRef.current.on("notification:new", (notif) => {
       setItems((prev) => [notif, ...prev]);
@@ -141,7 +127,7 @@ export function NotificationProvider({ children }) {
   }, [authVersion, prefsVersion]);
 
   const setRealtimeEnabledForCurrentStaff = (enabled) => {
-    const staffId = getStaffId();
+    const staffId = getCurrentStaffId();
     if (!staffId) return;
 
     writeRealtimePref(staffId, enabled);

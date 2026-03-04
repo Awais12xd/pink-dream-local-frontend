@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 
  // Add Product Page Component with Dynamic + Static Categories
   const AddProductPage = () => { 
-    const token = localStorage.getItem("staffUserToken");
+    const token = "";
 
     // Static categories (fallback/default)
     const staticCategories = ['Dresses', 'Tops', 'Bottoms', 'Accessories', 'Shoes', 'Outerwear', 'Activewear', 'Swimwear'];
@@ -124,7 +124,7 @@ import { toast } from 'react-toastify';
           }
         } else {
           // If no dynamic categories, use only static categories
-          console.warn('No active categories found from backend, using static categories');
+          undefined;
           setAllCategories(staticCategories);
           setDynamicCategories([]);
           
@@ -138,7 +138,7 @@ import { toast } from 'react-toastify';
       } catch (error) {
         console.error('Error fetching categories:', error);
         // On error, fallback to static categories
-        console.log('Using static categories as fallback');
+        undefined;
         setAllCategories(staticCategories);
         setDynamicCategories([]);
         

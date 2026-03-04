@@ -21,8 +21,6 @@ import PaymentSelector from "../components/PaymentSelector";
 import LoginModal from "../components/LoginModal";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { StripeProvider } from "../context/StripeContext";
-import { PayPalProvider } from "../context/PayPalContext";
 import { SettingContext } from "../context/SettingContext";
 import { toast } from "react-toastify";
 import { getImageSrc, handleImageError } from "../utils/imageUtils";
@@ -223,7 +221,7 @@ function CheckoutContent() {
           sessionStorage.setItem("lastSuccessfulOrder", JSON.stringify(order));
         }
       } catch (e) {
-        console.warn("Could not cache successful order:", e);
+        undefined;
       }
 
       router.push(
@@ -687,6 +685,9 @@ function CheckoutContent() {
                 paymentMethods={filteredPaymentMethods}
                 isAuthenticated={!!user}
                 allowGuestCheckout={allowGuestCheckout}
+                paymentCredentials={
+                  publicSettings?.paymentSettings?.credentialsPublic || {}
+                }
                 onRequireAuth={() => setIsLoginModalOpen(true)}
               />
 
@@ -725,11 +726,5 @@ function CheckoutContent() {
 }
 
 export default function CheckoutPage() {
-  return (
-    <StripeProvider>
-      <PayPalProvider>
-        <CheckoutContent />
-      </PayPalProvider>
-    </StripeProvider>
-  );
+  return <CheckoutContent />;
 }

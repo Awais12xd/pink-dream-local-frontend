@@ -16,6 +16,10 @@ import {
   Plus,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import {
+  getOptimizedImageSrc,
+  handleImageError,
+} from "@/app/utils/imageUtils";
 
 const FALLBACK_CATEGORIES = [
   "Dresses",
@@ -188,7 +192,7 @@ const getInitialData = (product) => ({
 const EditProductPage = ({ product, onSave, onCancel }) => {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("staffUserToken")
+      ? ""
       : null;
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -204,50 +208,6 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
 
   const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
   const [loadingCategories, setLoadingCategories] = useState(false);
-
-  const getImageSrc = (
-    imageSrc,
-    fallback = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams",
-  ) => {
-    if (!imageSrc) return fallback;
-
-    const baseURL = API_BASE || "http://localhost:4000";
-
-    // Handle old Railway URLs
-    if (imageSrc.includes("railway.app")) {
-      const filename = imageSrc.split("/images/")[1];
-      if (filename) {
-        return `${baseURL}/images/${filename}`;
-      }
-    }
-
-    if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
-      return imageSrc;
-    }
-
-    if (imageSrc.startsWith("/images/")) {
-      return `${baseURL}${imageSrc}`;
-    }
-
-    if (
-      !imageSrc.includes("/") &&
-      /\.(jpg|jpeg|png|gif|webp)$/i.test(imageSrc)
-    ) {
-      return `${baseURL}/images/${imageSrc}`;
-    }
-
-    if (imageSrc.startsWith("images/")) {
-      return `${baseURL}/${imageSrc}`;
-    }
-
-    return `${baseURL}/${imageSrc}`;
-  };
-
-  const handleImageError = (e) => {
-    e.currentTarget.onerror = null;
-    e.currentTarget.src =
-      "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image";
-  };
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -296,7 +256,7 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
     setInitialSnapshot(snap);
     setHasChanges(false);
     setErrors({});
-    console.log(formData, "form");
+    undefined;
   }, [product]);
 
   useEffect(() => {
@@ -615,9 +575,13 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
 
           <div className="relative">
             <img
-              src={getImageSrc(formData.images[previewImageIndex])}
+              src={getOptimizedImageSrc(formData.images[previewImageIndex], "detail")}
               alt="Preview"
               className="w-full h-[70vh] object-contain bg-gray-50"
+              width={1200}
+              height={1200}
+              loading="eager"
+              decoding="async"
               onError={handleImageError}
             />
 
@@ -951,9 +915,13 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
                   className="relative group border rounded-lg overflow-hidden"
                 >
                   <img
-                    src={getImageSrc(img)}
+                    src={getOptimizedImageSrc(img, "thumb")}
                     alt={`product-${idx + 1}`}
                     className="w-full h-32 object-cover"
+                    width={240}
+                    height={128}
+                    loading="lazy"
+                    decoding="async"
                     onError={handleImageError}
                   />
                   {formData.image === img && (

@@ -43,7 +43,7 @@ const ViewBlogs = ({ onEditBlog, onViewBlog, onDeleteBlog }) => {
   const getAuthHeaders = () => {
     const token =
       typeof window !== "undefined"
-        ? localStorage.getItem("staffUserToken")
+        ? ""
         : null;
 
     return token ? { Authorization: `Bearer ${token}` } : {};

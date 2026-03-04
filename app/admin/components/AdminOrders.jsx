@@ -41,13 +41,18 @@ import {
 import Pagination from "../../components/Pagination";
 import Authorized from "@/app/components/Authorized";
 import { toast } from "react-toastify";
+import {
+  getOptimizedImageSrc,
+  handleImageError,
+} from "@/app/utils/imageUtils";
+import { formatCurrency, toSafeNumber } from "@/app/utils/formatters";
 
 const AdminOrders = () => {
-  const token = localStorage.getItem("staffUserToken");
+  const token = "";
   const getAuthHeaders = () => {
     const token =
       typeof window !== "undefined"
-        ? localStorage.getItem("staffUserToken")
+        ? ""
         : null;
 
     return token ? { Authorization: `Bearer ${token}` } : {};
@@ -96,55 +101,6 @@ const AdminOrders = () => {
 
   const allOnPageSelected =
     orders.length > 0 && selectedOnPageCount === orders.length;
-
-  // Image utility functions
-  const getImageSrc = (
-    imageSrc,
-    fallback = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams",
-  ) => {
-    if (!imageSrc) return fallback;
-
-    const baseURL = API_BASE || "http://localhost:4000";
-
-    // Handle old Railway URLs
-    if (imageSrc.includes("railway.app")) {
-      const filename = imageSrc.split("/images/")[1];
-      if (filename) {
-        return `${baseURL}/images/${filename}`;
-      }
-    }
-
-    if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
-      return imageSrc;
-    }
-
-    if (imageSrc.startsWith("/images/")) {
-      return `${baseURL}${imageSrc}`;
-    }
-
-    if (
-      !imageSrc.includes("/") &&
-      /\.(jpg|jpeg|png|gif|webp)$/i.test(imageSrc)
-    ) {
-      return `${baseURL}/images/${imageSrc}`;
-    }
-
-    if (imageSrc.startsWith("images/")) {
-      return `${baseURL}/${imageSrc}`;
-    }
-
-    return `${baseURL}/${imageSrc}`;
-  };
-
-  const handleImageError = (e) => {
-    if (
-      e.target.src !==
-      "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image"
-    ) {
-      e.target.onerror = null;
-      e.target.src = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image";
-    }
-  };
 
   // Order status configuration
   const orderStatusConfig = {
@@ -361,7 +317,7 @@ const AdminOrders = () => {
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       setUpdatingStatus(true);
-      console.log(`Updating order ${orderId} to status ${newStatus}`);
+      undefined;
 
       const response = await fetch(
         `${API_BASE}/admin/orders/${orderId}/status`,
@@ -641,10 +597,8 @@ const AdminOrders = () => {
     return paymentStatusConfig[key]?.label || status || "N/A";
   };
 
-  const toNumber = (value) => {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : 0;
-  };
+  const toNumber = (value) => toSafeNumber(value, 0);
+  const money = (value) => formatCurrency(value);
 
   const formatItemOptions = (selectedOptions = {}) => {
     return Object.entries(selectedOptions || {})
@@ -677,10 +631,12 @@ const AdminOrders = () => {
 
       const rows = orders.map((order) => {
         const dt = formatDateTime(order?.createdAt);
-        const subtotal = toNumber(order?.amount?.subtotal);
-        const shipping = toNumber(order?.amount?.shipping);
-        const tax = toNumber(order?.amount?.tax);
-        const total = toNumber(order?.amount?.total ?? order?.totalAmount);
+        const subtotal = Number(toNumber(order?.amount?.subtotal).toFixed(2));
+        const shipping = Number(toNumber(order?.amount?.shipping).toFixed(2));
+        const tax = Number(toNumber(order?.amount?.tax).toFixed(2));
+        const total = Number(
+          toNumber(order?.amount?.total ?? order?.totalAmount).toFixed(2),
+        );
 
         const itemsCount = order?.items?.length || 0;
         const totalQty = (order?.items || []).reduce(
@@ -1088,7 +1044,7 @@ const AdminOrders = () => {
             <div>
               <p className="text-sm text-gray-600">Total Revenue</p>
               <p className="text-2xl font-bold text-purple-600">
-                ${orderStats.totalRevenue || 0}
+                {money(orderStats.totalRevenue)}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-purple-500" />
@@ -1316,7 +1272,7 @@ const AdminOrders = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          ${order.amount?.total || order.totalAmount || "0.00"}
+                          {money(order.amount?.total ?? order.totalAmount)}
                         </div>
                         {/* <div className="text-sm text-gray-500">
                           {order.paymentMethod || "N/A"}
@@ -1526,9 +1482,13 @@ const AdminOrders = () => {
                       <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
                         {item.image ? (
                           <img
-                            src={getImageSrc(item.image)}
+                            src={getOptimizedImageSrc(item.image, "thumb")}
                             alt={item.name}
                             className="w-full h-full object-cover"
+                            width={64}
+                            height={64}
+                            loading="lazy"
+                            decoding="async"
                             onError={handleImageError}
                           />
                         ) : (
@@ -1545,13 +1505,13 @@ const AdminOrders = () => {
                           Quantity: {item.quantity}
                         </p>
                         <p className="text-sm text-gray-600">
-                          Price: ${item.price}
+                          Price: {money(item.price)}
                         </p>
                         {renderOrderItemOptions(item.selectedOptions)}
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-gray-800">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          {money(item.price * item.quantity)}
                         </p>
                       </div>
                     </div>
@@ -1621,9 +1581,14 @@ const AdminOrders = () => {
                             className="block"
                           >
                             <img
-                              src={selectedOrder.paymentMeta.receiptImageUrl}
+                              src={getOptimizedImageSrc(selectedOrder.paymentMeta.receiptImageUrl, "detail")}
                               alt={`Receipt for order ${selectedOrder.orderId}`}
                               className="w-full max-h-[420px] object-contain rounded-lg border border-gray-200 bg-white"
+                              width={1200}
+                              height={1200}
+                              loading="lazy"
+                              decoding="async"
+                              onError={handleImageError}
                             />
                           </a>
                           <a
@@ -1725,28 +1690,25 @@ const AdminOrders = () => {
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Subtotal:</span>
                       <span className="text-sm font-medium">
-                        ${selectedOrder.amount?.subtotal || "0.00"}
+                        {money(selectedOrder.amount?.subtotal)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Shipping:</span>
                       <span className="text-sm font-medium">
-                        ${selectedOrder.amount?.shipping || "0.00"}
+                        {money(selectedOrder.amount?.shipping)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Tax:</span>
                       <span className="text-sm font-medium">
-                        ${selectedOrder.amount?.tax || "0.00"}
+                        {money(selectedOrder.amount?.tax)}
                       </span>
                     </div>
                     <div className="border-t pt-2 flex justify-between">
                       <span className="font-semibold">Total:</span>
                       <span className="font-bold text-lg">
-                        $
-                        {selectedOrder.amount?.total ||
-                          selectedOrder.totalAmount ||
-                          "0.00"}
+                        {money(selectedOrder.amount?.total ?? selectedOrder.totalAmount)}
                       </span>
                     </div>
                   </div>

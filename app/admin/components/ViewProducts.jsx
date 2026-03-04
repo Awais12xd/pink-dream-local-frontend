@@ -17,13 +17,18 @@ import Pagination from "../../components/Pagination";
 import Authorized from "@/app/components/Authorized";
 import { toast } from "react-toastify";
 import Link from "next/link";
+import {
+  getOptimizedImageSrc,
+  handleImageError,
+} from "@/app/utils/imageUtils";
+import { formatCurrency } from "@/app/utils/formatters";
 
 const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
-  const token = localStorage.getItem("staffUserToken");
+  const token = "";
   const getAuthHeaders = () => {
     const token =
       typeof window !== "undefined"
-        ? localStorage.getItem("staffUserToken")
+        ? ""
         : null;
 
     return token ? { Authorization: `Bearer ${token}` } : {};
@@ -77,55 +82,6 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
   const allOnPageSelected =
     products.length > 0 && selectedOnPageCount === products.length;
 
-  // Image utility functions
-  const getImageSrc = (
-    imageSrc,
-    fallback = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=Pink+Dreams",
-  ) => {
-    if (!imageSrc) return fallback;
-
-    const baseURL = API_BASE || "http://localhost:4000";
-
-    // Handle old Railway URLs
-    if (imageSrc.includes("railway.app")) {
-      const filename = imageSrc.split("/images/")[1];
-      if (filename) {
-        return `${baseURL}/images/${filename}`;
-      }
-    }
-
-    if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
-      return imageSrc;
-    }
-
-    if (imageSrc.startsWith("/images/")) {
-      return `${baseURL}${imageSrc}`;
-    }
-
-    if (
-      !imageSrc.includes("/") &&
-      /\.(jpg|jpeg|png|gif|webp)$/i.test(imageSrc)
-    ) {
-      return `${baseURL}/images/${imageSrc}`;
-    }
-
-    if (imageSrc.startsWith("images/")) {
-      return `${baseURL}/${imageSrc}`;
-    }
-
-    return `${baseURL}/${imageSrc}`;
-  };
-
-  const handleImageError = (e) => {
-    if (
-      e.target.src !==
-      "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image"
-    ) {
-      e.target.onerror = null;
-      e.target.src = "https://placehold.co/400x400/FFB6C1/FFFFFF?text=No+Image";
-    }
-  };
-
   // Handle multiple images display
   const handleViewImages = (product) => {
     let images = [];
@@ -138,7 +94,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
 
     images = images
       .filter((img) => img && img.trim() !== "")
-      .map((img) => getImageSrc(img));
+      .map((img) => getOptimizedImageSrc(img, "detail"));
 
     if (images.length > 0) {
       setSelectedProductImages(images);
@@ -222,6 +178,10 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
               src={selectedProductImages[currentImageIndex]}
               alt={`Product image ${currentImageIndex + 1}`}
               className="w-full h-96 object-contain bg-gray-50"
+              width={1200}
+              height={1200}
+              loading="eager"
+              decoding="async"
               onError={handleImageError}
             />
 
@@ -284,6 +244,10 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
                       src={image}
                       alt={`Thumbnail ${index + 1}`}
                       className="w-full h-full object-cover"
+                      width={96}
+                      height={96}
+                      loading="lazy"
+                      decoding="async"
                       onError={handleImageError}
                     />
                   </button>
@@ -304,9 +268,13 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
       <div className="flex items-center mr-3">
         <div className="relative">
           <img
-            src={getImageSrc(product?.image)}
+            src={getOptimizedImageSrc(product?.image, "thumb")}
             alt={product.name}
             className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
+            width={40}
+            height={40}
+            loading="lazy"
+            decoding="async"
             onError={handleImageError}
           />
         </div>
@@ -1216,12 +1184,12 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          ${product.new_price}
+                          {formatCurrency(product.new_price)}
                         </div>
                         {product.old_price &&
                           product.old_price !== product.new_price && (
                             <div className="text-sm text-gray-500 line-through">
-                              ${product.old_price}
+                              {formatCurrency(product.old_price)}
                             </div>
                           )}
                       </td>

@@ -23,7 +23,7 @@ import CKEditorInput from "./CkEditorInput";
 
 
 const EditBlogPage = ({ blog, onSave, onCancel }) => {
-  const token = localStorage.getItem("staffUserToken");
+  const token = "";
 
 
   const [formData, setFormData] = useState({
@@ -85,13 +85,11 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
      
                setBlogCategories(sortedDynamicCategories);
              } else {
-               console.warn(
-                 "No active categories found from backend, in view blogs",
-               );
+               undefined;
              }
            } catch (error) {
              console.error("Error fetching categories:", error);
-             console.log("Using static categories as fallback");
+             undefined;
            } finally {
              setLoadingCategories(false);
            }

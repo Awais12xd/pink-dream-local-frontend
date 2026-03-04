@@ -89,7 +89,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 const RolesManager = () => {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("staffUserToken")
+      ? ""
       : null;
 
   const [roles, setRoles] = useState([]);

@@ -174,7 +174,7 @@ const buildApiPayload = (uiSettings, secretsDraft) => {
 const SettingsManager = () => {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
   const token =
-    typeof window !== "undefined" ? localStorage.getItem("staffUserToken") : "";
+    typeof window !== "undefined" ? "" : "";
 
   const [activeTab, setActiveTab] = useState("general");
   const [settings, setSettings] = useState(EMPTY_UI_SETTINGS);
