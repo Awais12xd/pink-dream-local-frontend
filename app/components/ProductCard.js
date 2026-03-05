@@ -1,7 +1,7 @@
 // components/ProductCard.js
 'use client'
 import { useState, useEffect } from 'react'
-import { Heart, ShoppingBag, Loader2, Eye } from 'lucide-react'
+import { Heart, ShoppingBag, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useWishlist } from '../context/WishlistContext'
 import { useCart } from '../context/CartContext'
@@ -63,7 +63,6 @@ const ProductCard = ({ product, priority = false }) => {
     : 0
 
   // Generate product URL
-  const productUrl = `/product/${product.id}`
   const isLiked = isInWishlist(product.id)
 
   const handleWishlistClick = async (e) => {
@@ -106,12 +105,6 @@ const ProductCard = ({ product, priority = false }) => {
     }
   }
 
-  const handleQuickView = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    window.open(productUrl, '_blank')
-  }
-
   const handleImageError = () => {
     setImageError(true)
     setImageSrc(ERROR_IMAGE)
@@ -145,7 +138,8 @@ const ProductCard = ({ product, priority = false }) => {
                 height={cardImage.height}
                 sizes={cardImage.sizes}
                 priority={priority}
-                quality={70}
+                quality={65}
+                fetchPriority={priority ? "high" : "auto"}
                 onError={(e) => {
                   handleImageError();
                   fallbackImageOnError(e, ERROR_IMAGE);
@@ -161,7 +155,6 @@ const ProductCard = ({ product, priority = false }) => {
             )}
             
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
-            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
           </div>
         </Link>
 
@@ -198,14 +191,6 @@ const ProductCard = ({ product, priority = false }) => {
             ) : (
               <Heart className={`w-5 h-5 transition-all duration-200 ${isLiked ? 'fill-current scale-110' : 'hover:scale-110'}`} />
             )}
-          </button>
-
-          <button
-            onClick={handleQuickView}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 backdrop-blur-sm bg-white/90 text-gray-600 hover:bg-white hover:text-pink-600 shadow-md hover:shadow-lg hover:scale-110 active:scale-95"
-            title="Quick view"
-          >
-            <Eye className="w-5 h-5" />
           </button>
         </div>
 
@@ -305,8 +290,6 @@ const ProductCard = ({ product, priority = false }) => {
 
         <Link 
          href={`/product/${product.id}`}
-          // href={productUrl}
-          // onClick={handleDetailClick}
           className="block w-full text-center mt-2 text-sm text-pink-600 hover:text-pink-700 font-medium transition-colors duration-200"
         >
           View Details →

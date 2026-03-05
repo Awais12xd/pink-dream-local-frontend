@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
@@ -719,12 +718,7 @@ export default function Shop() {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-pink-500 to-pink-600 text-white py-16">
         <div className="container mx-auto px-4">
-          <motion.div
-            className="text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+          <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               {categoryDisplayName}
             </h1>
@@ -734,17 +728,14 @@ export default function Shop() {
                 : `Explore our ${selectedCategory.toLowerCase()} collection - ${totalProducts} products available`}
             </p>
             {selectedCategory !== "All" && (
-              <motion.button
+              <button
                 onClick={() => handleCategoryFilter("All")}
                 className="mt-4 bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg transition-colors"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
               >
                 ← View All Products
-              </motion.button>
+              </button>
             )}
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -753,11 +744,8 @@ export default function Shop() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar Filters */}
-            <motion.div
+            <div
               className={`lg:w-1/4 space-y-6 ${showFilters ? "block" : "hidden lg:block"}`}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
             >
               {/* Clear Filters Button */}
               <div className="bg-white rounded-xl p-6 shadow-lg">
@@ -877,17 +865,12 @@ export default function Shop() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Main Content */}
             <div className="lg:w-3/4">
               {/* Controls */}
-              <motion.div
-                className="bg-white rounded-xl p-6 shadow-lg mb-8"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
+              <div className="bg-white rounded-xl p-6 shadow-lg mb-8">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                   <div className="flex items-center space-x-4">
                     <button
@@ -993,7 +976,7 @@ export default function Shop() {
                       </button>
                     )}
                 </div>
-              </motion.div>
+              </div>
 
               {/* Products Grid */}
               {productsLoading && !hasLoadedProductsOnce ? (
@@ -1010,31 +993,18 @@ export default function Shop() {
                   )}
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {allProducts.map((product, index) => (
-                      <motion.div
-                        key={`${product.id}-${index}`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          duration: 0.3,
-                          delay: (index % 12) * 0.05,
-                        }}
-                      >
+                      <div key={`${product.id}-${index}`}>
                         <ProductCard
                           product={product}
-                          priority={index < 2}
+                          priority={index < 6}
                         />
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
 
                   {/* Load More Button */}
                   {hasMoreProducts && (
-                    <motion.div
-                      className="text-center mt-12"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5 }}
-                    >
+                    <div className="text-center mt-12">
                       <button
                         onClick={handleLoadMore}
                         disabled={loadingMore}
@@ -1052,16 +1022,11 @@ export default function Shop() {
                       <p className="text-gray-500 text-sm mt-2">
                         {allProducts.length} of {totalProducts} products shown
                       </p>
-                    </motion.div>
+                    </div>
                   )}
                 </>
               ) : (
-                <motion.div
-                  className="text-center py-12"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
+                <div className="text-center py-12">
                   <p className="text-gray-500 text-lg mb-4">
                     {selectedCategory !== "All"
                       ? `No products found in ${selectedCategory} category.`
@@ -1073,7 +1038,7 @@ export default function Shop() {
                   >
                     Clear All Filters
                   </button>
-                </motion.div>
+                </div>
               )}
             </div>
           </div>

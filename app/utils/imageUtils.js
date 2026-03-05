@@ -20,8 +20,8 @@ const IMAGE_CONTEXTS = {
     crop: "fill",
   },
   card: {
-    width: 640,
-    height: 800,
+    width: 576,
+    height: 720,
     sizes: "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw",
     priority: false,
     crop: "fill",

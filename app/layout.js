@@ -1,5 +1,5 @@
 // app/layout.js (simplified)
-import { Inter, Merriweather } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
@@ -13,12 +13,6 @@ const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-inter",
-  display: "swap",
-});
-const merriweather = Merriweather({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-merriweather",
   display: "swap",
 });
 
@@ -45,7 +39,7 @@ export default function RootLayout({ children }) {
           <link rel="preconnect" href={apiOrigin} crossOrigin="anonymous" />
         ) : null}
       </head>
-      <body className={`${inter.variable} ${merriweather.variable}`}>
+      <body className={`${inter.variable}`}>
         <SettingsProvider initialSettings={null}>
           <AuthProvider>
             <CartProvider>
