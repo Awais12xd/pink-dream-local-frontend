@@ -13,7 +13,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "./context/AuthContext";
 import Image from "next/image";
 
 // API Configuration
@@ -74,8 +73,6 @@ function Counter({ value, duration = 3.5, format = "number" }) {
 
 export default function Home() {
   // State for dynamic data
-      const { user } = useAuth()
-  
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [dynamicCategories, setDynamicCategories] = useState([]);
@@ -102,10 +99,13 @@ export default function Home() {
         return res.json();
       };
 
-      const [featuredData, categoriesData, statsData] = await Promise.all([
+      const [featuredData, categoriesData, productsSummaryData] =
+        await Promise.all([
         fetchJson(`${API_BASE}/featured-products?limit=4`).catch(() => null),
         fetchJson(`${API_BASE}/categories?active=true`).catch(() => null),
-        fetchJson(`${API_BASE}/dashboard/stats`).catch(() => null),
+        fetchJson(`${API_BASE}/allproducts?limit=1&storefront=true`).catch(
+          () => null,
+        ),
       ]);
 
       let productsToShow = [];
@@ -160,10 +160,29 @@ export default function Home() {
         setCategories(STATIC_CATEGORIES.slice(0, 6));
         setDynamicCategories([]);
       }
+      const totalProductsCount = Number(
+        productsSummaryData?.pagination?.totalProducts || productsToShow.length || 0,
+      );
+      const featuredCount = Number(featuredData?.products?.length || 0);
+      const categoryStats = (categoriesData?.success && categoriesData?.categories
+        ? categoriesData.categories
+            .map((cat) => {
+              if (typeof cat === "string") return { _id: cat, count: 0 };
+              if (cat && typeof cat === "object" && cat.name) {
+                return { _id: cat.name, count: 0 };
+              }
+              return null;
+            })
+            .filter(Boolean)
+        : []
+      );
 
-      if (statsData?.success) {
-        setStats(statsData.stats);
-      }
+      setStats({
+        totalProducts: totalProductsCount,
+        activeProducts: totalProductsCount,
+        featuredProducts: featuredCount,
+        categoryStats,
+      });
 
       setError(null);
     } catch (error) {

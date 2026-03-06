@@ -63,7 +63,11 @@ import Authorized from "../components/Authorized";
 import NotificationBell from "./components/NotificationBell";
 import NotificationsManager from "./components/Notifications";
 import { adminFetch } from "../utils/adminApi";
-import { clearStoredStaffAuth, setStoredStaffUser } from "../utils/staffAuth";
+import {
+  clearStoredStaffAuth,
+  getStoredStaffUser,
+  setStoredStaffUser,
+} from "../utils/staffAuth";
 import {
   getOptimizedImageSrc,
   handleImageError,
@@ -272,6 +276,13 @@ const AdminPanel = () => {
   const checkAuthStatus = useCallback(async () => {
     setAuthLoading(true);
     try {
+      const storedStaffUser = getStoredStaffUser();
+      if (!storedStaffUser) {
+        setIsAuthenticated(false);
+        setAdminData(null);
+        return;
+      }
+
       const response = await adminFetch("/admin/profile");
       const data = await response.json();
 

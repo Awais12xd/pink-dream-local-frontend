@@ -12,6 +12,8 @@ import {
   Upload,
   Download,
   FileSpreadsheet,
+  Copy,
+  ImagePlus,
 } from "lucide-react";
 import Pagination from "../../components/Pagination";
 import Authorized from "@/app/components/Authorized";
@@ -22,20 +24,11 @@ import {
   getOptimizedImageSrc,
   handleImageError,
 } from "@/app/utils/imageUtils";
+import { adminFetch } from "@/app/utils/adminApi";
 import { formatCurrency } from "@/app/utils/formatters";
 import Image from "next/image";
 
 const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
-  const token = "";
-  const getAuthHeaders = () => {
-    const token =
-      typeof window !== "undefined"
-        ? ""
-        : null;
-
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
-
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,8 +51,16 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
   const selectAllRef = useRef(null);
 
   const fileInputRef = useRef(null);
+  const imageBuilderInputRef = useRef(null);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [importingExcel, setImportingExcel] = useState(false);
+  const [showImageUrlBuilder, setShowImageUrlBuilder] = useState(false);
+  const [builderProductKey, setBuilderProductKey] = useState("");
+  const [builderFiles, setBuilderFiles] = useState([]);
+  const [builderPrimaryId, setBuilderPrimaryId] = useState("");
+  const [builderUploading, setBuilderUploading] = useState(false);
+  const [builderResult, setBuilderResult] = useState(null);
+  const builderFilesRef = useRef([]);
 
   const searchTimeoutRef = useRef(null);
   const categories = [
@@ -108,13 +109,10 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
   // Handle toggle active status
   const handleToggleActive = async (productId) => {
     try {
-      const response = await fetch(
+      const response = await adminFetch(
         `${API_BASE}/product/${productId}/toggle-active`,
         {
           method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         },
       );
 
@@ -301,11 +299,7 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
         sortOrder: sortOrder,
       });
 
-      const response = await fetch(`${API_BASE}/allproducts?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await adminFetch(`${API_BASE}/allproducts?${params}`);
       const data = await response.json();
 
       if (data.success) {
@@ -343,11 +337,10 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
   const handleDeleteProduct = async (id, name) => {
     if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
       try {
-        const response = await fetch(`${API_BASE}/products/bulk-delete`, {
+        const response = await adminFetch(`${API_BASE}/products/bulk-delete`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...getAuthHeaders(),
           },
           body: JSON.stringify({ ids: [id] }),
         });
@@ -388,11 +381,10 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
 
     setBulkDeleting(true);
     try {
-      const response = await fetch(`${API_BASE}/products/bulk-delete`, {
+      const response = await adminFetch(`${API_BASE}/products/bulk-delete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...getAuthHeaders(),
         },
         body: JSON.stringify({ ids: selectedProductIds }),
       });
@@ -832,11 +824,8 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch(`${API_BASE}/products/import-excel`, {
+      const response = await adminFetch(`${API_BASE}/products/import-excel`, {
         method: "POST",
-        headers: {
-          ...getAuthHeaders(),
-        },
         body: formData,
       });
 
@@ -870,6 +859,153 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
     }
   };
 
+  const revokeBuilderPreview = (previewUrl) => {
+    if (!previewUrl) return;
+    try {
+      URL.revokeObjectURL(previewUrl);
+    } catch {
+      // ignore
+    }
+  };
+
+  const resetImageUrlBuilderState = () => {
+    builderFiles.forEach((file) => revokeBuilderPreview(file.previewUrl));
+    setBuilderFiles([]);
+    setBuilderPrimaryId("");
+    setBuilderResult(null);
+  };
+
+  const closeImageUrlBuilder = () => {
+    resetImageUrlBuilderState();
+    setBuilderProductKey("");
+    setShowImageUrlBuilder(false);
+  };
+
+  const handleImageBuilderFiles = (incomingFileList) => {
+    const incomingFiles = Array.from(incomingFileList || []);
+    if (!incomingFiles.length) return;
+
+    const validImageFiles = incomingFiles.filter((file) =>
+      String(file.type || "").startsWith("image/"),
+    );
+
+    if (!validImageFiles.length) {
+      toast.error("Please choose image files only.");
+      return;
+    }
+
+    const mapped = validImageFiles.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+
+    setBuilderResult(null);
+    setBuilderFiles((prev) => {
+      const next = [...prev, ...mapped];
+      if (!builderPrimaryId && next.length) {
+        setBuilderPrimaryId(next[0].id);
+      }
+      return next;
+    });
+  };
+
+  const removeBuilderFile = (fileId) => {
+    setBuilderResult(null);
+    setBuilderFiles((prev) => {
+      const removed = prev.find((file) => file.id === fileId);
+      if (removed?.previewUrl) revokeBuilderPreview(removed.previewUrl);
+
+      const next = prev.filter((file) => file.id !== fileId);
+      if (!next.length) {
+        setBuilderPrimaryId("");
+      } else if (builderPrimaryId === fileId) {
+        setBuilderPrimaryId(next[0].id);
+      }
+      return next;
+    });
+  };
+
+  const copyBuilderText = async (label, value) => {
+    const text = String(value || "").trim();
+    if (!text) {
+      toast.info(`No ${label.toLowerCase()} to copy yet.`);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied.`);
+    } catch {
+      toast.error("Failed to copy. Please copy manually.");
+    }
+  };
+
+  const buildImageUrlsForExcel = async () => {
+    if (!builderFiles.length) {
+      toast.error("Please add at least one image.");
+      return;
+    }
+
+    const formData = new FormData();
+    builderFiles.forEach(({ file }) => formData.append("products", file));
+    if (builderProductKey.trim()) {
+      formData.append("productKey", builderProductKey.trim());
+    }
+
+    const primaryIndex = Math.max(
+      0,
+      builderFiles.findIndex((item) => item.id === builderPrimaryId),
+    );
+    formData.append("primaryIndex", String(primaryIndex));
+
+    setBuilderUploading(true);
+    try {
+      const response = await adminFetch(`${API_BASE}/upload/product-bulk-urls`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        toast.error(data.message || "Failed to generate URLs.");
+        return;
+      }
+
+      setBuilderResult({
+        folder: data.folder || "",
+        primaryUrl: data.primaryUrl || "",
+        additionalUrls: Array.isArray(data.additionalUrls)
+          ? data.additionalUrls
+          : [],
+        imagesPipe: data.imagesPipe || "",
+        allPipe: data.allPipe || "",
+      });
+
+      toast.success("Image URLs generated. Copy and paste into Excel.");
+    } catch (error) {
+      console.error("Error generating image URLs:", error);
+      toast.error("Failed to generate image URLs.");
+    } finally {
+      setBuilderUploading(false);
+    }
+  };
+
+  useEffect(() => {
+    builderFilesRef.current = builderFiles;
+  }, [builderFiles]);
+
+  useEffect(() => {
+    return () => {
+      builderFilesRef.current.forEach((file) =>
+        revokeBuilderPreview(file.previewUrl),
+      );
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     fetchProducts();
   }, [
@@ -887,14 +1023,6 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
     selectAllRef.current.indeterminate =
       selectedOnPageCount > 0 && !allOnPageSelected;
   }, [selectedOnPageCount, allOnPageSelected]);
-
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
 
   return (
     <div className="space-y-6">
@@ -999,6 +1127,17 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
 
             <Authorized permission="products:create">
               <button
+                onClick={() => setShowImageUrlBuilder(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                title="Upload multiple images and generate Excel-ready URLs"
+              >
+                <ImagePlus className="w-4 h-4" />
+                Generate Image URLs
+              </button>
+            </Authorized>
+
+            <Authorized permission="products:create">
+              <button
                 onClick={downloadImportTemplate}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                 title="Download import template"
@@ -1029,6 +1168,18 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
               type="file"
               accept=".xlsx,.xls,.csv"
               onChange={handleImportFile}
+              className="hidden"
+            />
+
+            <input
+              ref={imageBuilderInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                handleImageBuilderFiles(e.target.files);
+                e.target.value = "";
+              }}
               className="hidden"
             />
           </div>
@@ -1283,6 +1434,242 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
           </table>
         </div>
       </div>
+
+      {showImageUrlBuilder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
+            onClick={closeImageUrlBuilder}
+          />
+
+          <div className="relative bg-white w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-xl shadow-2xl border border-gray-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Bulk Image URL Builder
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Upload product images, choose main image, and copy Excel-ready
+                  values (`image` + `images` with `|`).
+                </p>
+              </div>
+              <button
+                onClick={closeImageUrlBuilder}
+                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)] space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Product Key / SKU (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={builderProductKey}
+                    onChange={(e) => setBuilderProductKey(e.target.value)}
+                    placeholder="e.g. DRS-1001"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Used as Cloudinary folder suffix: `Pink_Dreams/products/&lt;key&gt;`
+                  </p>
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={() => imageBuilderInputRef.current?.click()}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-pink-600 text-white hover:bg-pink-700"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Add Images
+                  </button>
+                </div>
+              </div>
+
+              {builderResult && (
+                <div className="border border-gray-200 rounded-xl p-4 space-y-4 bg-gray-50">
+                  {builderResult.folder && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-600 mb-1">
+                        Folder
+                      </p>
+                      <p className="text-sm text-gray-800 break-all">
+                        {builderResult.folder}
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-semibold text-gray-600">
+                        Excel `image` (primary)
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          copyBuilderText("Primary URL", builderResult.primaryUrl)
+                        }
+                        className="inline-flex items-center gap-1 text-xs text-blue-700 hover:text-blue-800"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Copy
+                      </button>
+                    </div>
+                    <textarea
+                      readOnly
+                      value={builderResult.primaryUrl}
+                      rows={2}
+                      className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-semibold text-gray-600">
+                        Excel `images` (pipe separated)
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          copyBuilderText(
+                            "Additional URLs",
+                            builderResult.imagesPipe,
+                          )
+                        }
+                        className="inline-flex items-center gap-1 text-xs text-blue-700 hover:text-blue-800"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Copy
+                      </button>
+                    </div>
+                    <textarea
+                      readOnly
+                      value={builderResult.imagesPipe}
+                      rows={3}
+                      className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white"
+                    />
+                  </div>
+
+                  {/* <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyBuilderText(
+                          "Excel row values",
+                          `${builderResult.primaryUrl}\t${builderResult.imagesPipe}`,
+                        )
+                      }
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white text-xs hover:bg-blue-700"
+                    >
+                      <Copy className="w-3 h-3" />
+                      Copy `image` + `images` (tab-separated)
+                    </button>
+                  </div> */}
+                </div>
+              )}
+
+              <div className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-gray-800">
+                    Selected Images ({builderFiles.length})
+                  </p>
+                  {builderFiles.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={resetImageUrlBuilderState}
+                      className="text-xs text-red-600 hover:text-red-700"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+
+                {builderFiles.length === 0 ? (
+                  <div className="text-sm text-gray-500 py-8 text-center border border-dashed rounded-lg">
+                    No images selected yet.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {builderFiles.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`relative border rounded-lg overflow-hidden ${
+                          builderPrimaryId === item.id
+                            ? "border-pink-500 ring-2 ring-pink-100"
+                            : "border-gray-200"
+                        }`}
+                      >
+                        <Image
+                          src={item.previewUrl}
+                          alt={item.file.name}
+                          width={220}
+                          height={160}
+                          className="w-full h-32 object-cover"
+                          unoptimized
+                        />
+                        <div className="p-2 bg-white">
+                          <p
+                            className="text-[11px] text-gray-600 truncate"
+                            title={item.file.name}
+                          >
+                            {item.file.name}
+                          </p>
+                          <label className="mt-1 inline-flex items-center gap-2 text-xs text-gray-700">
+                            <input
+                              type="radio"
+                              name="primary-image"
+                              checked={builderPrimaryId === item.id}
+                              onChange={() => setBuilderPrimaryId(item.id)}
+                            />
+                            Main image
+                          </label>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeBuilderFile(item.id)}
+                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={buildImageUrlsForExcel}
+                  disabled={builderUploading || builderFiles.length === 0}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {builderUploading ? (
+                    <Loader className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="w-4 h-4" />
+                  )}
+                  {builderUploading ? "Uploading..." : "Generate URLs"}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeImageUrlBuilder}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Close
+                </button>
+              </div>
+
+              
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       <Pagination
