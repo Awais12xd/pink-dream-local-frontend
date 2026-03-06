@@ -20,9 +20,11 @@ import {
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import {
   AVATAR_FALLBACK_IMAGE,
+  handleImageError,
   getOptimizedImageSrc,
 } from "../utils/imageUtils";
 import Image from "next/image";
@@ -182,26 +184,33 @@ const samplePosts = [
 // ];
 const Blog = () => {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [posts, setPosts] = useState([]);
-  const [filteredPosts, setFilteredPosts] = useState(samplePosts);
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState(
+    searchParams.get("category") || "all",
+  );
+  const [selectedTag, setSelectedTag] = useState(searchParams.get("tag") || "all");
+  const [popularTags, setPopularTags] = useState([]);
+  const [loadingTags, setLoadingTags] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const [likedPosts, setLikedPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-const [categoryCounts, setCategoryCounts] = useState({});
-const [totalPublishedCount, setTotalPublishedCount] = useState(0);
- const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(5)
-  const [totalBlogs, setTotalBlogs] = useState(0)
-  const [hasMoreBlogs, setHasMoreBlogs] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
-
-  let totalCategoriesBlogs = 0;
-  undefined
+  const [categoryCounts, setCategoryCounts] = useState({});
+  const [totalPublishedCount, setTotalPublishedCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
+  const [totalBlogs, setTotalBlogs] = useState(0);
+  const [hasMoreBlogs, setHasMoreBlogs] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [newsletterMessage, setNewsletterMessage] = useState("");
+  const [newsletterStatus, setNewsletterStatus] = useState("idle");
 
   const fetchBlogs = async (page = 1, isLoadMore = false) => {
     if (isLoadMore) {
@@ -212,13 +221,16 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
       }
     try {
       const params = new URLSearchParams({
-        search: searchTerm,
+        search: searchTerm.trim(),
         category: selectedCategory,
         status: "published",
         available: "true",
          page: page.toString(),
         limit: itemsPerPage.toString(),
       });
+      if (selectedTag && selectedTag.toLowerCase() !== "all") {
+        params.set("tag", selectedTag);
+      }
 
       const response = await fetch(`${API_BASE}/all-blogs?${params}`);
       const data = await response.json();
@@ -244,26 +256,75 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
     }
   };
 
-  // Filter posts based on category and search
+  useEffect(() => {
+    const categoryParam = searchParams.get("category") || "all";
+    const tagParam = searchParams.get("tag") || "all";
+    const searchParam = searchParams.get("search") || "";
+
+    if (categoryParam !== selectedCategory) {
+      setSelectedCategory(categoryParam);
+    }
+
+    if (tagParam !== selectedTag) {
+      setSelectedTag(tagParam);
+    }
+
+    if (searchParam !== searchTerm) {
+      setSearchTerm(searchParam);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams();
+
+    if (selectedCategory && selectedCategory.toLowerCase() !== "all") {
+      params.set("category", selectedCategory);
+    }
+
+    if (selectedTag && selectedTag.toLowerCase() !== "all") {
+      params.set("tag", selectedTag);
+    }
+
+    const trimmedSearch = searchTerm.trim();
+    if (trimmedSearch) {
+      params.set("search", trimmedSearch);
+    }
+
+    const nextQuery = params.toString();
+    const currentQuery = window.location.search.startsWith("?")
+      ? window.location.search.slice(1)
+      : window.location.search;
+
+    if (nextQuery === currentQuery) return;
+
+    const nextUrl = nextQuery ? `/blog?${nextQuery}` : "/blog";
+    router.replace(nextUrl, { scroll: false });
+  }, [selectedCategory, selectedTag, searchTerm, router]);
+
+  // Fetch blogs when active filters change
   useEffect(() => {
     setCurrentPage(1)
     setPosts([])
     setHasMoreBlogs(false)
     fetchBlogs(1, false);
-  }, [selectedCategory, searchTerm]);
+  }, [selectedCategory, searchTerm, selectedTag]);
 
   const handleLoadMore = useCallback(() => {
       const nextPage = currentPage + 1
       fetchBlogs(nextPage, true)
-    }, [currentPage])
+    }, [currentPage, selectedCategory, searchTerm, selectedTag])
 
   useEffect(() => {
   let mounted = true;
 
-  const fetchPublishedCounts = async () => {
+  const fetchPublishedCountsAndTags = async () => {
     try {
-      // Try to fetch all published blogs (adjust limit if your API supports it)
-      const resp = await fetch(`${API_BASE}/all-blogs?status=published&available=true`);
+      setLoadingTags(true);
+      const resp = await fetch(
+        `${API_BASE}/all-blogs?status=published&available=true&page=1&limit=1000&sortBy=latest&sortOrder=desc`,
+      );
       const data = await resp.json();
 
       if (!mounted) return;
@@ -271,34 +332,49 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
       if (data && data.success && Array.isArray(data.blogs)) {
         const counts = {};
         let total = 0;
+        const tagMap = new Map();
 
         data.blogs.forEach((b) => {
           total += 1;
-          // adapt to your shape: prefer b.category (string). Try alternatives if needed.
           const catName = b.category ;
           counts[catName] = (counts[catName] || 0) + 1;
+
+          (b.tags || []).forEach((rawTag) => {
+            const tag = String(rawTag || "").trim();
+            if (!tag) return;
+            const key = tag.toLowerCase();
+            const prev = tagMap.get(key);
+            if (prev) {
+              prev.count += 1;
+            } else {
+              tagMap.set(key, { name: tag, count: 1 });
+            }
+          });
         });
 
         setCategoryCounts(counts);
-        setTotalPublishedCount(total);
+        setTotalPublishedCount(data.pagination?.totalBlogs || total);
+
+        const sortedTags = Array.from(tagMap.values())
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+          .slice(0, 12);
+        setPopularTags(sortedTags);
       } else {
-        // fallback: try if API returned an object of counts directly
-        if (data && data.counts) {
-          setCategoryCounts(data.counts);
-          setTotalPublishedCount(Object.values(data.counts).reduce((s, v) => s + v, 0));
-        } else {
-          setCategoryCounts({});
-          setTotalPublishedCount(0);
-        }
+        setCategoryCounts({});
+        setTotalPublishedCount(0);
+        setPopularTags([]);
       }
     } catch (err) {
-      console.error("Error fetching published blog counts:", err);
+      console.error("Error fetching published blog taxonomy:", err);
       setCategoryCounts({});
       setTotalPublishedCount(0);
+      setPopularTags([]);
+    } finally {
+      setLoadingTags(false);
     }
   };
 
-  fetchPublishedCounts();
+  fetchPublishedCountsAndTags();
 
   return () => {
     mounted = false;
@@ -324,10 +400,6 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
 
   
             setCategories(sortedDynamicCategories);
-
-            sortedDynamicCategories.forEach(item => {
-              totalCategoriesBlogs = totalCategoriesBlogs + item.blogCount
-            });
           }
         } catch (error) {
           console.error("Error fetching categories:", error);
@@ -394,13 +466,14 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
   const BlogCard = ({ post, featured = false, priority = false }) => {
     const coverSrc = getOptimizedImageSrc(post?.image, "blogCard");
     const authorAvatarSrc = getOptimizedImageSrc(
-      post?.author?.profileImage,
-      "avatar",
+      post?.author?.profileImage || post?.author?.avatar,
+      { width: 80, height: 80, crop: "fill", quality: "auto" },
       AVATAR_FALLBACK_IMAGE,
     );
     const coverSizes = featured
       ? "(max-width: 768px) 100vw, (max-width: 1280px) 66vw, 720px"
       : "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 420px";
+    const shouldPrioritizeCover = Boolean(priority);
 
     return (
     <motion.article
@@ -419,16 +492,17 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
           }`}>
         
         <Image
-        fill
-       sizes={coverSizes}
+          fill
+          sizes={coverSizes}
           src={coverSrc}
           alt={post.title}
           className={`w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
             featured ? "h-64 md:h-80" : "h-48"
           }`}
-          priority={priority}
+          priority={shouldPrioritizeCover}
+          loading={shouldPrioritizeCover ? "eager" : "lazy"}
+          fetchPriority={shouldPrioritizeCover ? "high" : "auto"}
           quality={75}
-
         />
         </div>
         {/* Badges */}
@@ -459,13 +533,16 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
         <div className="flex  mb-4 justify-start  w-full ">
           <div className="flex items-center gap-2 ">
             <Image
-            src={authorAvatarSrc}
-            alt={post?.author?.name || "Author"}
-            className="w-10 h-10 rounded-full object-cover"
-           width={40}
-           height={40}
-           sizes="40px"
-           quality={70}
+              src={authorAvatarSrc}
+              alt={post?.author?.name || "Author"}
+              className="w-10 h-10 rounded-full object-cover"
+              width={40}
+              height={40}
+              sizes="40px"
+              quality={65}
+              loading="lazy"
+              fetchPriority="low"
+              onError={(event) => handleImageError(event, AVATAR_FALLBACK_IMAGE)}
             />
             <div className="flex flex-col gap-y-0.5 ">
               <span className="font-medium text-gray-800">
@@ -650,24 +727,48 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
                   Popular Tags
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    "pink decor",
-                    "self-care",
-                    "fashion",
-                    "DIY beauty",
-                    "wellness",
-                    "lifestyle",
-                    "home styling",
-                  ].map((tag) => (
-                    <motion.button
-                      key={tag}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="bg-pink-50 text-pink-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-pink-100 transition-colors duration-200"
-                    >
-                      #{tag}
-                    </motion.button>
-                  ))}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSelectedTag("all")}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                      selectedTag === "all"
+                        ? "bg-pink-600 text-white"
+                        : "bg-pink-50 text-pink-700 hover:bg-pink-100"
+                    }`}
+                  >
+                    All Tags
+                  </motion.button>
+
+                  {loadingTags && (
+                    <span className="text-xs text-gray-500">Loading tags...</span>
+                  )}
+
+                  {!loadingTags &&
+                    popularTags.map((tagObj) => (
+                      <motion.button
+                        key={tagObj.name}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setSelectedTag(tagObj.name)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                          selectedTag.toLowerCase() === tagObj.name.toLowerCase()
+                            ? "bg-pink-600 text-white"
+                            : "bg-pink-50 text-pink-700 hover:bg-pink-100"
+                        }`}
+                      >
+                        #{tagObj.name}{" "}
+                        <span
+                          className={`ml-1 text-xs ${
+                            selectedTag.toLowerCase() === tagObj.name.toLowerCase()
+                              ? "text-pink-100"
+                              : "text-pink-500"
+                          }`}
+                        >
+                          {tagObj.count}
+                        </span>
+                      </motion.button>
+                    ))}
                 </div>
               </div>
 
@@ -679,20 +780,96 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
                 <p className="text-sm text-gray-600 mb-4">
                   Get the latest blog posts delivered to your inbox
                 </p>
-                <div className="space-y-3">
+                <form
+                  className="space-y-3"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+
+                    const trimmedEmail = newsletterEmail.trim();
+                    if (!trimmedEmail) {
+                      setNewsletterStatus("error");
+                      setNewsletterMessage("Please enter your email address.");
+                      return;
+                    }
+
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(trimmedEmail)) {
+                      setNewsletterStatus("error");
+                      setNewsletterMessage("Please enter a valid email address.");
+                      return;
+                    }
+
+                    setNewsletterLoading(true);
+                    setNewsletterStatus("idle");
+                    setNewsletterMessage("");
+
+                    try {
+                      const response = await fetch(`${API_BASE}/newsletter/subscribe`, {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          email: trimmedEmail,
+                          name: "",
+                          source: "blog_sidebar",
+                        }),
+                      });
+
+                      const data = await response.json();
+                      if (!response.ok || !data?.success) {
+                        throw new Error(data?.message || "Subscription failed.");
+                      }
+
+                      setNewsletterStatus("success");
+                      setNewsletterMessage(
+                        data?.message || "Subscribed successfully.",
+                      );
+                      setNewsletterEmail("");
+                    } catch (err) {
+                      setNewsletterStatus("error");
+                      setNewsletterMessage(
+                        err?.message || "Failed to subscribe. Please try again.",
+                      );
+                    } finally {
+                      setNewsletterLoading(false);
+                    }
+                  }}
+                >
                   <input
                     type="email"
+                    value={newsletterEmail}
+                    onChange={(e) => {
+                      setNewsletterEmail(e.target.value);
+                      if (newsletterMessage) {
+                        setNewsletterMessage("");
+                        setNewsletterStatus("idle");
+                      }
+                    }}
                     placeholder="Enter your email"
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    disabled={newsletterLoading}
                   />
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-pink-600 transition-colors duration-200"
+                    whileHover={{ scale: newsletterLoading ? 1 : 1.02 }}
+                    whileTap={{ scale: newsletterLoading ? 1 : 0.98 }}
+                    disabled={newsletterLoading}
+                    className="w-full bg-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-pink-600 transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Subscribe
+                    {newsletterLoading ? "Subscribing..." : "Subscribe"}
                   </motion.button>
-                </div>
+                  {newsletterMessage && (
+                    <p
+                      className={`text-xs ${
+                        newsletterStatus === "success"
+                          ? "text-green-700"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {newsletterMessage}
+                    </p>
+                  )}
+                </form>
               </div>
             </div>
           </motion.div>
@@ -730,7 +907,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
                   <AnimatePresence>
                     {featuredPosts.map((post, index) => (
                       <BlogCard
-                        key={post.id}
+                        key={post._id || post.id}
                         post={post}
                         featured={true}
                         priority={index === 0}
@@ -753,8 +930,12 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
                 </motion.h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <AnimatePresence>
-                    {regularPosts.map((post) => (
-                      <BlogCard key={post.id} post={post} />
+                    {regularPosts.map((post, index) => (
+                      <BlogCard
+                        key={post._id || post.id}
+                        post={post}
+                        priority={featuredPosts.length === 0 && index === 0}
+                      />
                     ))}
                   </AnimatePresence>
                 </div>
@@ -772,7 +953,7 @@ const [totalPublishedCount, setTotalPublishedCount] = useState(0);
                             <span>Loading...</span>
                           </>
                         ) : (
-                          <span>Load More Products</span>
+                          <span>Load More Blogs</span>
                         )}
                       </button>}
 

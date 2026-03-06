@@ -394,14 +394,14 @@ function CheckoutContent() {
                     key={`${item.id}-${item.variantHash || "default"}`}
                     className="flex items-center space-x-4 pb-4 border-b border-gray-100"
                   >
-                    <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                    <div className="relative w-20 h-20 rounded-lg  bg-gray-100 flex-shrink-0">
                       <Image
                         src={getImageSrc(item.image)}
                         alt={item.name}
                         onError={handleImageError}
                         className="w-full h-full object-cover"
                        width={1200} height={1200} sizes="100vw"/>
-                      <div className="absolute -top-2 -right-2 bg-pink-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                      <div className="absolute -top-2 -right-2 bg-pink-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center ">
                         {item.quantity}
                       </div>
                     </div>

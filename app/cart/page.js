@@ -331,7 +331,7 @@ export default function CartPage() {
     if (entries.length === 0) return null;
 
     return (
-      <div className="mt-2 flex flex-wrap gap-1.5">
+      <div className="mt-2 flex flex-wrap gap-1.5 justify-center sm:justify-start">
         {entries.map(([key, value]) => (
           <span
             key={key}
@@ -370,43 +370,46 @@ export default function CartPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -100 }}
-                  className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+                  className="relative bg-white rounded-2xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition-shadow"
                 >
-                  <div className="flex items-center space-x-6">
+                  <button
+                    onClick={() =>
+                      removeFromCart(item.id, item.variantHash || null)
+                    }
+                    className="absolute top-3 right-3 sm:top-4 sm:right-4 text-red-500 hover:text-red-700 transition-colors p-1.5 sm:p-2"
+                    title="Remove item"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 pr-8 sm:pr-0">
                     {/* Product Image */}
-                    <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                    <div className="relative w-24 h-24 sm:w-32 sm:h-32 mx-auto sm:mx-0 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                       <Image
                         src={getImageSrc(item.image)}
                         alt={item.name}
                         onError={handleImageError}
                         className="w-full h-full object-cover"
-                       width={1200} height={1200} sizes="100vw"/>
+                        width={128}
+                        height={128}
+                        sizes="(max-width: 640px) 96px, 128px"
+                      />
                     </div>
 
                     {/* Product Details */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                    <div className="flex-1 min-w-0 text-center sm:text-left">
+                      <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1 line-clamp-2">
                         {item.name}
                       </h3>
                       {renderSelectedOptions(item.selectedOptions)}
 
-                      <p className="text-2xl font-bold text-pink-600">
+                      <p className="text-xl sm:text-2xl font-bold text-pink-600 mt-2 sm:mt-3">
                         ${item.price.toFixed(2)}
                       </p>
                     </div>
 
                     {/* Quantity Controls */}
-                    <div className="flex flex-col items-end space-y-4">
-                      <button
-                        onClick={() =>
-                          removeFromCart(item.id, item.variantHash || null)
-                        }
-                        className="text-red-500 hover:text-red-700 transition-colors p-2"
-                        title="Remove item"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-
+                    <div className="w-full sm:w-auto flex items-center justify-between sm:flex-col sm:items-end sm:justify-start gap-3 sm:gap-4">
                       <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
                         <button
                           onClick={() =>
@@ -438,7 +441,7 @@ export default function CartPage() {
                         </button>
                       </div>
 
-                      <p className="text-lg font-bold text-gray-900">
+                      <p className="text-lg font-bold text-gray-900 min-w-[88px] text-right">
                         ${(item.price * item.quantity).toFixed(2)}
                       </p>
                     </div>

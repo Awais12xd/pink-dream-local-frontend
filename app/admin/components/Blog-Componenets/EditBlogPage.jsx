@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Save,
   X,
@@ -21,7 +21,7 @@ import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import CKEditorInput from "./CkEditorInput";
 import Image from "next/image";
-import { getOptimizedImageSrc } from "@/app/utils/imageUtils";
+import { getImageDimensions, getOptimizedImageSrc } from "@/app/utils/imageUtils";
 
 
 const EditBlogPage = ({ blog, onSave, onCancel }) => {
@@ -51,6 +51,17 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
   const [imagePreview, setImagePreview] = useState(blog?.image);
   const [blogCategories, setBlogCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const imagePreviewRef = useRef(null);
+  const isBlobUrl = (url) => typeof url === "string" && url.startsWith("blob:");
+  const revokeObjectUrl = (url) => {
+    if (!isBlobUrl(url)) return;
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      // no-op
+    }
+  };
+  const blogHero = getImageDimensions("blogHero");
 
 
   const categories = ["Fashion", "Beauty"];
@@ -119,6 +130,16 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
       setHasChanges(false);
     }
   }, [blog]);
+
+  useEffect(() => {
+    imagePreviewRef.current = imagePreview;
+  }, [imagePreview]);
+
+  useEffect(() => {
+    return () => {
+      revokeObjectUrl(imagePreviewRef.current);
+    };
+  }, []);
 
   // Track changes
   useEffect(() => {
@@ -190,6 +211,10 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
       return;
     }
 
+    const previousRemote = formData.image;
+    const tempUrl = URL.createObjectURL(file);
+    revokeObjectUrl(imagePreview);
+    setImagePreview(tempUrl);
     setUploadingImage(true);
 
     try {
@@ -213,18 +238,23 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         }));
         setImagePreview(data.imageUrl);
       } else {
+        setImagePreview(previousRemote || null);
         alert(data.message || "Failed to upload image");
       }
     } catch (error) {
       console.error("Error uploading image:", error);
+      setImagePreview(previousRemote || null);
       alert("Failed to upload image");
     } finally {
+      revokeObjectUrl(tempUrl);
       setUploadingImage(false);
+      e.target.value = "";
     }
   };
 
   // Remove uploaded image
   const handleRemoveImage = () => {
+    revokeObjectUrl(imagePreview);
     setFormData((prev) => ({
       ...prev,
       image: "",
@@ -281,7 +311,8 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
   };
 
   const handleReset = () => {
-    if (product) {
+    if (blog) {
+      revokeObjectUrl(imagePreview);
       const productData = {
         title: blog.title || "",
         category: blog.category || "",
@@ -293,6 +324,7 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         status: blog.status,
       };
       setFormData(productData);
+      setImagePreview(blog.image || null);
       setErrors({});
       setHasChanges(false);
     }
@@ -542,14 +574,24 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
           {imagePreview && (
             <div className="mb-4 relative">
               <Image
-                src={getOptimizedImageSrc(imagePreview, "blogHero")}
+                src={
+                  isBlobUrl(imagePreview)
+                    ? imagePreview
+                    : getOptimizedImageSrc(imagePreview, "blogHero")
+                }
                 alt="Blog preview"
                 className="w-full h-80 object-cover rounded-lg border-2 border-pink-200"
-                width={1200}
-                height={800}
-                sizes="(max-width: 1024px) 100vw, 900px"
+                width={blogHero.width}
+                height={blogHero.height}
+                sizes={blogHero.sizes}
                 quality={78}
+                unoptimized={isBlobUrl(imagePreview)}
               />
+              {isBlobUrl(imagePreview) && (
+                <div className="absolute inset-0 bg-white/55 rounded-lg flex items-center justify-center">
+                  <Loader className="w-6 h-6 text-pink-600 animate-spin" />
+                </div>
+              )}
               <button
                 type="button"
                 onClick={handleRemoveImage}
@@ -611,7 +653,7 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
             </span>
             <button
               type="submit"
-              disabled={loading || !hasChanges}
+              disabled={loading || uploadingImage || !hasChanges}
               className="flex items-center gap-2 px-3 sm:px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import {
   Package,
   DollarSign,
@@ -22,6 +22,7 @@ import "./Blog.css";
 import dynamic from "next/dynamic";
 import { toast } from "react-toastify";
 import Image from "next/image";
+import { getImageDimensions, getOptimizedImageSrc } from "@/app/utils/imageUtils";
 
 const CKEditorInput = dynamic(() => import("./CkEditorInput.jsx"), {
   ssr: false,
@@ -90,6 +91,19 @@ const AddBlogPage = () => {
   });
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const blogPreviewRef = useRef(null);
+  const authorPreviewRef = useRef(null);
+  const isBlobUrl = (url) => typeof url === "string" && url.startsWith("blob:");
+  const revokeObjectUrl = (url) => {
+    if (!isBlobUrl(url)) return;
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      // no-op
+    }
+  };
+  const blogHero = getImageDimensions("blogHero");
+  const avatarImage = getImageDimensions("avatar");
 
   // Fetch active categories from backend and merge with static
   useEffect(() => {
@@ -234,6 +248,10 @@ const AddBlogPage = () => {
       return;
     }
 
+    const previousRemote = newBlog.authorProfileImage;
+    const tempUrl = URL.createObjectURL(file);
+    revokeObjectUrl(imageAuthorPreview);
+    setImageAuthorPreview(tempUrl);
     setUploadingAuthorImage(true);
 
     try {
@@ -256,20 +274,24 @@ const AddBlogPage = () => {
           authorProfileImage: data.imageUrl,
         }));
         setImageAuthorPreview(data.imageUrl);
-        undefined;
       } else {
+        setImageAuthorPreview(previousRemote || null);
         alert(data.message || "Failed to upload image");
       }
     } catch (error) {
       console.error("Error uploading image:", error);
+      setImageAuthorPreview(previousRemote || null);
       alert("Failed to upload image");
     } finally {
+      revokeObjectUrl(tempUrl);
       setUploadingAuthorImage(false);
+      e.target.value = "";
     }
   };
 
   // Remove uploaded image
   const handleRemoveAuthorImage = () => {
+    revokeObjectUrl(imageAuthorPreview);
     setNewBlog((prev) => ({
       ...prev,
       authorProfileImage: "",
@@ -300,6 +322,10 @@ const AddBlogPage = () => {
       return;
     }
 
+    const previousRemote = newBlog.image;
+    const tempUrl = URL.createObjectURL(file);
+    revokeObjectUrl(imagePreview);
+    setImagePreview(tempUrl);
     setUploadingImage(true);
 
     try {
@@ -322,20 +348,24 @@ const AddBlogPage = () => {
           image: data.imageUrl,
         }));
         setImagePreview(data.imageUrl);
-        undefined;
       } else {
+        setImagePreview(previousRemote || null);
         alert(data.message || "Failed to upload image");
       }
     } catch (error) {
       console.error("Error uploading image:", error);
+      setImagePreview(previousRemote || null);
       alert("Failed to upload image");
     } finally {
+      revokeObjectUrl(tempUrl);
       setUploadingImage(false);
+      e.target.value = "";
     }
   };
 
   // Remove uploaded image
   const handleRemoveImage = () => {
+    revokeObjectUrl(imagePreview);
     setNewBlog((prev) => ({
       ...prev,
       image: "",
@@ -461,6 +491,7 @@ const AddBlogPage = () => {
           status: "draft", // draft, published, archived
         });
         setImagePreview(null);
+        setImageAuthorPreview(null);
         setValue(null);
 
         // Optionally switch to products list
@@ -476,6 +507,21 @@ const AddBlogPage = () => {
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    blogPreviewRef.current = imagePreview;
+  }, [imagePreview]);
+
+  useEffect(() => {
+    authorPreviewRef.current = imageAuthorPreview;
+  }, [imageAuthorPreview]);
+
+  useEffect(() => {
+    return () => {
+      revokeObjectUrl(blogPreviewRef.current);
+      revokeObjectUrl(authorPreviewRef.current);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 py-8 sm:px-4">
@@ -609,10 +655,24 @@ const AddBlogPage = () => {
                 {imagePreview && (
                   <div className="mb-4 relative">
                     <Image
-                      src={imagePreview}
+                      src={
+                        isBlobUrl(imagePreview)
+                          ? imagePreview
+                          : getOptimizedImageSrc(imagePreview, "blogHero")
+                      }
                       alt="Blog preview"
                       className="w-full h-80 object-cover rounded-lg border-2 border-pink-200"
-                     width={1200} height={1200} sizes="100vw"/>
+                      width={blogHero.width}
+                      height={blogHero.height}
+                      sizes={blogHero.sizes}
+                      quality={78}
+                      unoptimized={isBlobUrl(imagePreview)}
+                    />
+                    {isBlobUrl(imagePreview) && (
+                      <div className="absolute inset-0 bg-white/55 flex items-center justify-center rounded-lg">
+                        <Loader className="w-6 h-6 text-pink-600 animate-spin" />
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={handleRemoveImage}
@@ -675,10 +735,24 @@ const AddBlogPage = () => {
                     {imageAuthorPreview && (
                       <div className="mb-4 relative">
                         <Image
-                          src={imageAuthorPreview}
+                          src={
+                            isBlobUrl(imageAuthorPreview)
+                              ? imageAuthorPreview
+                              : getOptimizedImageSrc(imageAuthorPreview, "avatar")
+                          }
                           alt="Author image preview"
                           className=" h-32 w-32 object-cover rounded-full  border-pink-200"
-                         width={1200} height={1200} sizes="100vw"/>
+                          width={avatarImage.width}
+                          height={avatarImage.height}
+                          sizes={avatarImage.sizes}
+                          quality={70}
+                          unoptimized={isBlobUrl(imageAuthorPreview)}
+                        />
+                        {isBlobUrl(imageAuthorPreview) && (
+                          <div className="absolute inset-0 bg-white/55 rounded-full flex items-center justify-center">
+                            <Loader className="w-5 h-5 text-pink-600 animate-spin" />
+                          </div>
+                        )}
                         <button
                           type="button"
                           onClick={handleRemoveAuthorImage}
@@ -1021,7 +1095,12 @@ const AddBlogPage = () => {
             <button
               type="submit"
               disabled={
-                saving || !newBlog.title || !newBlog.image || !newBlog.category
+                saving ||
+                uploadingImage ||
+                uploadingAuthorImage ||
+                !newBlog.title ||
+                !newBlog.image ||
+                !newBlog.category
               }
               className="flex items-center space-x-2 px-8 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:from-pink-600 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
             >

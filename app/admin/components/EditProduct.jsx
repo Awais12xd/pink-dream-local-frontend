@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Save,
   X,
@@ -210,6 +210,18 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
 
   const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const imageUrlsRef = useRef([]);
+  const isBlobUrl = (url) => typeof url === "string" && url.startsWith("blob:");
+  const revokeObjectUrl = (url) => {
+    if (!isBlobUrl(url)) return;
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      // no-op
+    }
+  };
+  const hasPendingImageUploads =
+    uploadingImages || formData.images.some((imageUrl) => isBlobUrl(imageUrl));
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -266,6 +278,16 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
     const current = JSON.stringify(normalizeForCompare(formData));
     setHasChanges(current !== initialSnapshot);
   }, [formData, initialSnapshot]);
+
+  useEffect(() => {
+    imageUrlsRef.current = formData.images;
+  }, [formData.images]);
+
+  useEffect(() => {
+    return () => {
+      imageUrlsRef.current.forEach(revokeObjectUrl);
+    };
+  }, []);
 
   const updateField = (field, value) => {
     setFormData((p) => ({ ...p, [field]: value }));
@@ -388,36 +410,62 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
       return;
     }
 
+    const tempEntries = files.map((file) => ({
+      file,
+      tempUrl: URL.createObjectURL(file),
+    }));
+
+    setFormData((prev) => {
+      const tempUrls = tempEntries.map((entry) => entry.tempUrl);
+      const images = [...prev.images, ...tempUrls];
+      const image = prev.image || tempUrls[0] || "";
+      return { ...prev, images, image };
+    });
+
     setUploadingImages(true);
     try {
-      const uploadPromises = files.map(async (file) => {
-        const fd = new FormData();
-        fd.append("product", file);
+      await Promise.all(
+        tempEntries.map(async ({ file, tempUrl }) => {
+          const fd = new FormData();
+          fd.append("product", file);
 
-        const res = await fetch(`${API_BASE}/upload`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: fd,
-        });
-        const data = await res.json();
-        if (!data.success || !data.image_url) {
-          throw new Error(data.message || `Failed to upload ${file.name}`);
-        }
-        return data.image_url;
-      });
+          try {
+            const res = await fetch(`${API_BASE}/upload`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: fd,
+            });
+            const data = await res.json();
+            if (!data.success || !data.image_url) {
+              throw new Error(data.message || `Failed to upload ${file.name}`);
+            }
 
-      const uploaded = await Promise.all(uploadPromises);
+            setFormData((prev) => {
+              const images = prev.images.map((img) =>
+                img === tempUrl ? data.image_url : img,
+              );
+              const image =
+                prev.image === tempUrl
+                  ? data.image_url
+                  : prev.image || images[0] || "";
+              return { ...prev, images, image };
+            });
+          } catch (error) {
+            console.error(error);
+            toast.error(error.message || `Error uploading ${file.name}`);
 
-      setFormData((p) => {
-        const images = [...p.images, ...uploaded];
-        const image = p.image || images[0] || "";
-        return { ...p, images, image };
-      });
+            setFormData((prev) => {
+              const images = prev.images.filter((img) => img !== tempUrl);
+              const image = prev.image === tempUrl ? images[0] || "" : prev.image;
+              return { ...prev, images, image };
+            });
+          } finally {
+            revokeObjectUrl(tempUrl);
+          }
+        }),
+      );
 
-      if (errors.images) setErrors((p) => ({ ...p, images: "" }));
-    } catch (err) {
-      console.error(err);
-      toast.error(err.message || "Error uploading images");
+      if (errors.images) setErrors((prev) => ({ ...prev, images: "" }));
     } finally {
       setUploadingImages(false);
       e.target.value = "";
@@ -427,6 +475,7 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
   const removeImage = (indexToRemove) => {
     setFormData((p) => {
       const imageToRemove = p.images[indexToRemove];
+      revokeObjectUrl(imageToRemove);
       const images = p.images.filter((_, i) => i !== indexToRemove);
       const image = p.image === imageToRemove ? images[0] || "" : p.image;
       return { ...p, images, image };
@@ -438,6 +487,9 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
   };
 
   const buildPayload = () => {
+    const cleanImages = formData.images
+      .map((img) => String(img || "").trim())
+      .filter((img) => Boolean(img) && !isBlobUrl(img));
     const slug =
       String(formData.slug || "").trim() ||
       String(formData.name || "")
@@ -455,10 +507,10 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
       sku: String(formData.sku || "").trim(),
       description: String(formData.description || "").trim(),
       short_description: String(formData.short_description || "").trim(),
-      image: String(formData.image || "").trim() || formData.images[0] || "",
-      images: formData.images
-        .map((img) => String(img || "").trim())
-        .filter(Boolean),
+      image: isBlobUrl(formData.image)
+        ? cleanImages[0] || ""
+        : String(formData.image || "").trim() || cleanImages[0] || "",
+      images: cleanImages,
 
       new_price: Number(formData.new_price || 0),
       old_price: Number(formData.old_price || 0),
@@ -535,6 +587,7 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
 
   const handleReset = () => {
     if (!product) return;
+    formData.images.forEach(revokeObjectUrl);
     const initial = getInitialData(product);
     setFormData(initial);
     setErrors({});
@@ -577,8 +630,16 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
           </div>
 
           <div className="relative">
+            {(() => {
+              const previewSrc = formData.images[previewImageIndex];
+              const isTempImage = typeof previewSrc === "string" && previewSrc.startsWith("blob:");
+              return (
             <Image
-              src={getOptimizedImageSrc(formData.images[previewImageIndex], "detail")}
+              src={
+                isTempImage
+                  ? previewSrc
+                  : getOptimizedImageSrc(previewSrc, "detail")
+              }
               alt="Preview"
               className="w-full h-[70vh] object-contain bg-gray-50"
               width={previewImage.width}
@@ -587,7 +648,10 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
               quality={78}
               onError={handleImageError}
               sizes={previewImage.sizes}
+              unoptimized={isTempImage}
             />
+              );
+            })()}
 
             {formData.images.length > 1 && (
               <>
@@ -906,6 +970,7 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
                 multiple
                 className="hidden"
                 onChange={handleImageUpload}
+                disabled={uploadingImages}
               />
             </label>
 
@@ -919,8 +984,11 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
                   key={`${img}-${idx}`}
                   className="relative group border rounded-lg overflow-hidden"
                 >
+                  {(() => {
+                    const isTempImage = img.startsWith("blob:");
+                    return (
                   <Image
-                    src={getOptimizedImageSrc(img, "thumb")}
+                    src={isTempImage ? img : getOptimizedImageSrc(img, "thumb")}
                     alt={`product-${idx + 1}`}
                     className="w-full h-32 object-cover"
                     width={editorThumb.width}
@@ -928,11 +996,19 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
                     quality={72}
                     onError={handleImageError}
                     sizes={editorThumb.sizes}
+                    unoptimized={isTempImage}
                   />
+                    );
+                  })()}
                   {formData.image === img && (
                     <div className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-1 rounded-full inline-flex items-center gap-1">
                       <Star className="w-3 h-3 fill-current" />
                       Main
+                    </div>
+                  )}
+                  {img.startsWith("blob:") && (
+                    <div className="absolute inset-0 bg-white/55 flex items-center justify-center">
+                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
                     </div>
                   )}
 
@@ -1378,7 +1454,7 @@ const EditProductPage = ({ product, onSave, onCancel }) => {
 
           <button
             type="submit"
-            disabled={loading || !hasChanges}
+            disabled={loading || hasPendingImageUploads || !hasChanges}
             className="px-6 py-2.5 rounded-lg bg-blue-600 text-white disabled:opacity-50 inline-flex items-center gap-2"
           >
             {loading ? (

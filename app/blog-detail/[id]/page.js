@@ -21,6 +21,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import Image from "next/image";
 import {
   AVATAR_FALLBACK_IMAGE,
+  handleImageError,
   getOptimizedImageSrc,
 } from "@/app/utils/imageUtils";
 
@@ -319,8 +320,8 @@ export default function BlogDetail() {
   } = blog;
   const heroImageSrc = getOptimizedImageSrc(image, "blogHero");
   const authorAvatarSrc = getOptimizedImageSrc(
-    author?.profileImage,
-    "avatar",
+    author?.profileImage || author?.avatar,
+    { width: 112, height: 112, crop: "fill", quality: "auto" },
     AVATAR_FALLBACK_IMAGE,
   );
 
@@ -372,11 +373,11 @@ export default function BlogDetail() {
                     src={heroImageSrc}
                     alt={title}
                     fill
-                    sizes="(max-width: 640px) 100vw,
-           (max-width: 1024px) 100vw,
-           50vw"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                     priority
+                    loading="eager"
+                    fetchPriority="high"
                     quality={78}
                   />
                 </div>
@@ -416,7 +417,12 @@ export default function BlogDetail() {
                         fill
                         sizes="36px"
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        quality={70}
+                        quality={65}
+                        loading="lazy"
+                        fetchPriority="low"
+                        onError={(event) =>
+                          handleImageError(event, AVATAR_FALLBACK_IMAGE)
+                        }
                       />
                     </div>
                     <div className="text-xs">
@@ -703,7 +709,12 @@ export default function BlogDetail() {
                         fill
                         sizes="56px"
                         className="object-cover border transition-transform duration-300 group-hover:scale-105"
-                        quality={70}
+                        quality={65}
+                        loading="lazy"
+                        fetchPriority="low"
+                        onError={(event) =>
+                          handleImageError(event, AVATAR_FALLBACK_IMAGE)
+                        }
                       />
                     </div>
                     <div>

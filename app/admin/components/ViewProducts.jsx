@@ -343,24 +343,37 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
   const handleDeleteProduct = async (id, name) => {
     if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
       try {
-        const response = await fetch(`${API_BASE}/removeproduct`, {
+        const response = await fetch(`${API_BASE}/products/bulk-delete`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...getAuthHeaders(),
           },
-          body: JSON.stringify({ id, name }),
+          body: JSON.stringify({ ids: [id] }),
         });
 
         const data = await response.json();
-        if (data.success) {
-          fetchProducts();
-          if (onDeleteProduct) {
-            onDeleteProduct({ id, name });
-          }
+
+        if (!data.success) {
+          toast.error(data.message || "Failed to delete product");
+          return;
         }
+
+        if ((data.deletedCount || 0) < 1) {
+          toast.warning("Product was not deleted. It may no longer exist.");
+          return;
+        }
+
+        toast.success(`Product "${name}" deleted successfully`);
+        setSelectedProductIds((prev) => prev.filter((pid) => pid !== id));
+        await fetchProducts();
+
+        // if (onDeleteProduct) {
+        //   onDeleteProduct({ id, name });
+        // }
       } catch (error) {
         console.error("Error deleting product:", error);
+        toast.error("Error deleting product");
       }
     }
   };
@@ -1249,7 +1262,10 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
                           <Authorized permission="products:delete">
                             <button
                               onClick={() =>
-                                handleDeleteProduct(product.id, product.name)
+                                handleDeleteProduct(
+                                  product.id ?? product._id,
+                                  product.name,
+                                )
                               }
                               className="text-red-600 hover:text-red-900 transition-colors"
                               title="Delete Product"

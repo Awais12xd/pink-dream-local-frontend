@@ -1,8 +1,9 @@
-import React, { useCallback, useState, useEffect } from 'react'
+import React, { useCallback, useState, useEffect, useRef } from 'react'
 import { Package, DollarSign, ImageIcon, Upload, Star, X, Globe, Settings, Save,
   AlertCircle, Check, Loader, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Image from "next/image";
+import { getImageDimensions, getOptimizedImageSrc } from "@/app/utils/imageUtils";
 
 
  // Add Product Page Component with Dynamic + Static Categories
@@ -21,6 +22,7 @@ import Image from "next/image";
   
   // Enhanced Add Product States
   const [uploadProgress, setUploadProgress] = useState({});
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [saving, setSaving] = useState(false);  
   const [activeTab, setActiveTab] = useState('dashboard'); 
     
@@ -78,6 +80,18 @@ import Image from "next/image";
   });
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const imageUrlsRef = useRef([]);
+  const isBlobUrl = (url) => typeof url === "string" && url.startsWith("blob:");
+  const revokeObjectUrl = (url) => {
+    if (!isBlobUrl(url)) return;
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      // no-op
+    }
+  };
+  const editorThumb = getImageDimensions("adminEditorThumb");
+  const hasPendingImageUploads = uploadingCount > 0 || newProduct.images.some(isBlobUrl);
 
   // Fetch active categories from backend and merge with static
   useEffect(() => {
@@ -215,53 +229,99 @@ import Image from "next/image";
       return;
     }
 
-    const uploadedUrls = [];
-    
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    const tempEntries = files.map((file, index) => ({
+      file,
+      progressKey: `${Date.now()}-${index}-${file.name}`,
+      tempUrl: URL.createObjectURL(file),
+    }));
+
+    setNewProduct((prev) => {
+      const tempUrls = tempEntries.map((entry) => entry.tempUrl);
+      const images = [...prev.images, ...tempUrls];
+      return {
+        ...prev,
+        images,
+        image: prev.image || tempUrls[0] || "",
+      };
+    });
+
+    setUploadingCount((prev) => prev + files.length);
+
+    const uploadJobs = tempEntries.map(async ({ file, progressKey, tempUrl }) => {
       const formData = new FormData();
-      formData.append('product', file);
+      formData.append("product", file);
 
       try {
-        setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
+        setUploadProgress((prev) => ({
+          ...prev,
+          [progressKey]: { name: file.name, progress: 15 },
+        }));
 
         const response = await fetch(`${API_BASE}/upload`, {
-          method: 'POST',
+          method: "POST",
           body: formData,
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         const data = await response.json();
-        
-        if (data.success) {
-          uploadedUrls.push(data.image_url);
-          setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
-        } else {
-          alert(`Failed to upload ${file.name}: ${data.message}`);
+
+        if (!data.success || !data.image_url) {
+          throw new Error(data.message || `Failed to upload ${file.name}`);
         }
+
+        setNewProduct((prev) => {
+          const images = prev.images.map((imageUrl) =>
+            imageUrl === tempUrl ? data.image_url : imageUrl,
+          );
+          const image = prev.image === tempUrl ? data.image_url : prev.image || images[0] || "";
+          return {
+            ...prev,
+            images,
+            image,
+          };
+        });
+
+        setUploadProgress((prev) => ({
+          ...prev,
+          [progressKey]: { name: file.name, progress: 100 },
+        }));
       } catch (error) {
-        console.error('Upload error:', error);
-        alert(`Error uploading ${file.name}`);
+        console.error("Upload error:", error);
+        toast.error(error?.message || `Error uploading ${file.name}`);
+
+        setNewProduct((prev) => {
+          const images = prev.images.filter((imageUrl) => imageUrl !== tempUrl);
+          const image = prev.image === tempUrl ? images[0] || "" : prev.image;
+          return {
+            ...prev,
+            images,
+            image,
+          };
+        });
+      } finally {
+        revokeObjectUrl(tempUrl);
+        setTimeout(() => {
+          setUploadProgress((prev) => {
+            const next = { ...prev };
+            delete next[progressKey];
+            return next;
+          });
+        }, 600);
+        setUploadingCount((prev) => Math.max(0, prev - 1));
       }
-    }
+    });
 
-    if (uploadedUrls.length > 0) {
-      setNewProduct(prev => ({
-        ...prev,
-        images: [...prev.images, ...uploadedUrls],
-        image: prev.image || uploadedUrls[0] // Set first uploaded image as main image if not set
-      }));
-    }
-
-    // Clear progress after 2 seconds
-    setTimeout(() => setUploadProgress({}), 2000);
-  }, [API_BASE]);
+    await Promise.all(uploadJobs);
+    e.target.value = "";
+  }, [API_BASE, token]);
 
   // Remove Image Handler
   const removeImage = useCallback((indexToRemove) => {
     setNewProduct(prev => {
+      const removedImage = prev.images[indexToRemove];
+      revokeObjectUrl(removedImage);
       const newImages = prev.images.filter((_, index) => index !== indexToRemove);
       return {
         ...prev,
@@ -341,6 +401,10 @@ import Image from "next/image";
       // Clean up empty arrays
       const cleanedProduct = {
         ...newProduct,
+        image: isBlobUrl(newProduct.image)
+          ? newProduct.images.find((img) => !isBlobUrl(img)) || ""
+          : newProduct.image,
+        images: newProduct.images.filter((img) => !isBlobUrl(img)),
         features: newProduct.features.filter(f => f.trim()),
         colors: newProduct.colors.filter(c => c.trim()),
         sizes: newProduct.sizes.filter(s => s.trim()),
@@ -360,6 +424,7 @@ import Image from "next/image";
       const data = await response.json();
       
       if (data.success) {
+        newProduct.images.forEach(revokeObjectUrl);
         
         // Reset form
         setNewProduct({
@@ -415,6 +480,16 @@ import Image from "next/image";
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    imageUrlsRef.current = newProduct.images;
+  }, [newProduct.images]);
+
+  useEffect(() => {
+    return () => {
+      imageUrlsRef.current.forEach(revokeObjectUrl);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 py-8 px-4">
@@ -607,21 +682,24 @@ import Image from "next/image";
                     accept="image/*"
                     onChange={handleImageChange}
                     className="hidden"
+                    disabled={hasPendingImageUploads}
                   />
                 </label>
 
                 {/* Upload Progress */}
                 {Object.keys(uploadProgress).length > 0 && (
                   <div className="mb-4 space-y-2">
-                    {Object.entries(uploadProgress).map(([filename, progress]) => (
-                      <div key={filename} className="flex items-center space-x-2">
+                    {Object.entries(uploadProgress).map(([key, payload]) => (
+                      <div key={key} className="flex items-center space-x-2">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div
                             className="bg-gradient-to-r from-pink-500 to-rose-500 h-2 rounded-full transition-all"
-                            style={{ width: `${progress}%` }}
+                            style={{ width: `${payload.progress}%` }}
                           />
                         </div>
-                        <span className="text-xs text-gray-600">{progress}%</span>
+                        <span className="text-xs text-gray-600">
+                          {payload.name} ({payload.progress}%)
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -633,13 +711,23 @@ import Image from "next/image";
                     {newProduct.images.map((img, index) => (
                       <div key={index} className="relative group">
                         <Image
-                          src={img}
+                          src={img.startsWith("blob:") ? img : getOptimizedImageSrc(img, "adminEditorThumb")}
                           alt={`Product ${index + 1}`}
                           className="w-full h-32 object-cover rounded-lg border-2 border-pink-200"
-                         width={1200} height={1200} sizes="100vw"/>
+                          width={editorThumb.width}
+                          height={editorThumb.height}
+                          sizes={editorThumb.sizes}
+                          quality={72}
+                          unoptimized={img.startsWith("blob:")}
+                        />
                         {index === 0 && (
                           <div className="absolute top-2 left-2 bg-pink-500 text-white text-xs px-2 py-1 rounded">
                             Main
+                          </div>
+                        )}
+                        {img.startsWith("blob:") && (
+                          <div className="absolute inset-0 bg-white/55 flex items-center justify-center">
+                            <Loader className="w-5 h-5 text-pink-600 animate-spin" />
                           </div>
                         )}
                         <button
@@ -1099,7 +1187,7 @@ import Image from "next/image";
             </button>
             <button
               type="submit"
-              disabled={saving || !newProduct.name || !newProduct.new_price || !newProduct.category}
+              disabled={saving || hasPendingImageUploads || !newProduct.name || !newProduct.new_price || !newProduct.category}
               className="flex items-center space-x-2 px-8 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:from-pink-600 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
             >
               {saving ? (

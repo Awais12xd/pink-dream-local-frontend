@@ -374,32 +374,9 @@ const AdminPanel = () => {
   }, []);
 
   // Handle delete product
-  const handleDeleteProduct = useCallback(
-    async (product) => {
-      if (window.confirm("Are you sure you want to delete this product?")) {
-        try {
-          const response = await adminFetch(`/products/${product._id}`, {
-            method: "DELETE",
-          });
-
-          if (response.ok) {
-            if (activeTab === "products") {
-              window.location.reload();
-            } else if (activeTab === "product-details") {
-              setActiveTab("products");
-              setSelectedProductForDetails(null);
-            }
-          } else {
-            alert("Failed to delete product");
-          }
-        } catch (error) {
-          console.error("Error deleting product:", error);
-          alert("Error deleting product");
-        }
-      }
-    },
-    [API_BASE, activeTab],
-  );
+  const handleDeleteProduct = () => {
+    console.log("product deleted")
+  }
 
   // Handle back navigation from blog details
   const handleBackFromBlogDetails = useCallback(() => {

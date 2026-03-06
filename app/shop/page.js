@@ -313,7 +313,6 @@ export default function Shop() {
 
         return null;
       })
-      .filter((c) => c && c.name && c.name.toLowerCase() !== "women")
       .sort((a, b) => a.name.localeCompare(b.name));
 
     const dynamicCategoryNames = normalized.map((c) => c.name);
