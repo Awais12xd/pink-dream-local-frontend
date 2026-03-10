@@ -261,19 +261,45 @@ export default function Home() {
     },
   ];
 
+  const pageSurfaceStyle = {
+    backgroundColor: "var(--color-bg-page)",
+  };
+
+  const sectionSurfaceStyle = {
+    backgroundColor: "var(--color-bg-section)",
+  };
+
+  const mutedSectionSurfaceStyle = {
+    backgroundColor:
+      "color-mix(in srgb, var(--color-bg-page) 70%, var(--color-bg-section) 30%)",
+  };
+
+  const heroSurfaceStyle = {
+    backgroundImage:
+      "linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-bg-section) 90%) 0%, var(--color-bg-section) 55%, color-mix(in srgb, var(--color-brand-secondary) 14%, var(--color-bg-section) 86%) 100%)",
+  };
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen theme-scope" style={pageSurfaceStyle}>
       <style jsx global>{`
         .gradient-text {
-          background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+          background: linear-gradient(
+            135deg,
+            var(--color-brand-gradient-from) 0%,
+            var(--color-brand-gradient-to) 100%
+          );
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
 
         .btn-primary {
-          background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-          color: white;
+          background: linear-gradient(
+            135deg,
+            var(--color-brand-gradient-from) 0%,
+            var(--color-brand-gradient-to) 100%
+          );
+          color: var(--color-text-on-primary);
           font-weight: 600;
           border-radius: 9999px;
           transition: all 0.3s ease;
@@ -283,27 +309,28 @@ export default function Home() {
 
         .btn-primary:hover {
           transform: translateY(-2px);
-          box-shadow: 0 10px 25px rgba(236, 72, 153, 0.3);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
         }
 
         .btn-secondary {
-          background: white;
-          color: #ec4899;
+          background: var(--color-btn-secondary-bg);
+          color: var(--color-btn-secondary-text);
           font-weight: 600;
           border-radius: 9999px;
-          border: 2px solid #ec4899;
+          border: 2px solid var(--color-btn-secondary-border);
           transition: all 0.3s ease;
           cursor: pointer;
         }
 
         .btn-secondary:hover {
-          background: #ec4899;
-          color: white;
+          background: var(--color-btn-secondary-hover);
+          color: var(--color-btn-secondary-text);
           transform: translateY(-2px);
         }
 
         .card {
-          background: white;
+          background: var(--color-bg-card);
+          border: 1px solid var(--color-border-default);
           border-radius: 16px;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
           transition: all 0.3s ease;
@@ -318,7 +345,7 @@ export default function Home() {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-white to-pink-100">
+      <section className="relative overflow-hidden" style={heroSurfaceStyle}>
         <div className="container mx-auto px-4 py-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
@@ -342,7 +369,15 @@ export default function Home() {
 
                 <h1 className="text-5xl md:text-6xl font-bold leading-tight">
                   Discover Your
-                  <span className="gradient-text block">Perfect Style</span>
+                  <span
+                    className="block bg-clip-text text-transparent"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(90deg, var(--color-brand-gradient-from), var(--color-brand-gradient-to))",
+                    }}
+                  >
+                    Perfect Style
+                  </span>
                 </h1>
 
                 <p className="text-xl text-gray-600 leading-relaxed">
@@ -431,7 +466,7 @@ export default function Home() {
       </section>
 
       {/* Featured Products */}
-      <section className="py-20 bg-white">
+      <section className="py-20" style={sectionSurfaceStyle}>
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-16"
@@ -513,7 +548,7 @@ export default function Home() {
                   />
                   {stat.value.includes("+") ? "+" : ""}
                 </div>
-                <div className="text-pink-100">{stat.label}</div>
+                <div className="text-white/90">{stat.label}</div>
               </motion.div>
             ))}
           </div>
@@ -521,7 +556,7 @@ export default function Home() {
       </section>
 
       {/* Categories Section - Modern Circular Design */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20" style={mutedSectionSurfaceStyle}>
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-12"
@@ -648,7 +683,7 @@ export default function Home() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-white">
+      <section className="py-20" style={sectionSurfaceStyle}>
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-16"

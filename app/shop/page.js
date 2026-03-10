@@ -669,10 +669,28 @@ export default function Shop() {
   const isPriceFilterDirty =
     minPrice !== appliedMinPrice || maxPrice !== appliedMaxPrice;
 
+  const pageSurfaceStyle = {
+    backgroundColor: "var(--color-bg-page)",
+  };
+
+  const sectionSurfaceStyle = {
+    backgroundColor: "var(--color-bg-section)",
+  };
+
+  const cardSurfaceStyle = {
+    backgroundColor: "var(--color-bg-card)",
+    border: "1px solid var(--color-border-default)",
+  };
+
+  const brandGradientStyle = {
+    backgroundImage:
+      "linear-gradient(90deg, var(--color-brand-gradient-from), var(--color-brand-gradient-to))",
+  };
+
   // Loading state
   if (loading && !initialDataLoaded) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen theme-scope" style={pageSurfaceStyle}>
         <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
@@ -688,7 +706,7 @@ export default function Shop() {
   // Error state
   if (error && allProducts.length === 0 && !categories.length) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen theme-scope" style={pageSurfaceStyle}>
         <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
@@ -711,11 +729,11 @@ export default function Shop() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen theme-scope" style={pageSurfaceStyle}>
       <Header />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-pink-500 to-pink-600 text-white py-16">
+      <section className="text-white py-16" style={brandGradientStyle}>
         <div className="container mx-auto px-4">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -739,7 +757,7 @@ export default function Shop() {
       </section>
 
       {/* Shop Content */}
-      <section className="py-12">
+      <section className="py-12" style={sectionSurfaceStyle}>
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar Filters */}
@@ -747,7 +765,7 @@ export default function Shop() {
               className={`lg:w-1/4 space-y-6 ${showFilters ? "block" : "hidden lg:block"}`}
             >
               {/* Clear Filters Button */}
-              <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="rounded-xl p-6 shadow-lg" style={cardSurfaceStyle}>
                 <button
                   onClick={clearAllFilters}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors"
@@ -757,7 +775,7 @@ export default function Shop() {
               </div>
 
               {/* Categories */}
-              <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="rounded-xl p-6 shadow-lg" style={cardSurfaceStyle}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Categories</h3>
                   <button
@@ -813,7 +831,7 @@ export default function Shop() {
               </div>
 
               {/* Price Range */}
-              <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="rounded-xl p-6 shadow-lg" style={cardSurfaceStyle}>
                 <h3 className="text-lg font-semibold mb-4">Price Range</h3>
                 <div className="space-y-4">
                   <div>
@@ -869,7 +887,10 @@ export default function Shop() {
             {/* Main Content */}
             <div className="lg:w-3/4">
               {/* Controls */}
-              <div className="bg-white rounded-xl p-6 shadow-lg mb-8">
+              <div
+                className="rounded-xl p-6 shadow-lg mb-8"
+                style={cardSurfaceStyle}
+              >
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                   <div className="flex items-center space-x-4">
                     <button

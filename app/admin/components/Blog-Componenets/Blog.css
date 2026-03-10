@@ -10,25 +10,52 @@
   height: auto; 
 } */
 
-:root{
-  --bg: #ffffff;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --accent: #db2777;
-  --accent-soft: rgba(219,39,119,0.08);
-  --border: rgba(0,0,0,0.08);
+.Ck-Editor{
+  --bg: var(--color-bg-card);
+  --text: var(--color-text-body);
+  --muted: var(--color-text-muted);
+  --accent: var(--color-brand-primary);
+  --accent-soft: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-bg-card));
+  --border: var(--color-border-default);
   --radius: 12px;
   --measure: 95ch; /* comfortable reading width */
   --content-gap: 1.25rem;
-  /* CkEditor styles  */
-  /* --ck-color-focus-border: hsl(263, 59%, 52%);
-	--ck-color-toolbar-background: hsl(210, 33%, 99%);
-	--ck-color-button-on-background: hsl(210, 8%, 95%); */
-	--ck-color-button-on-color: hsl(263, 59%, 52%);
-	--ck-font-size-base: 16px;
-	--ck-spacing-unit: 1em;
-	--ck-border-radius: 16px;
-	--ck-height: 640px;
+
+  /* CKEditor theme overrides */
+  --ck-color-base-background: var(--color-bg-card);
+  --ck-color-base-foreground: var(--color-text-body);
+  --ck-color-toolbar-background: color-mix(in srgb, var(--color-bg-card) 92%, var(--color-bg-section) 8%);
+  --ck-color-toolbar-border: var(--color-border-default);
+  --ck-color-button-default-hover-background: color-mix(in srgb, var(--color-bg-card) 86%, var(--color-bg-section) 14%);
+  --ck-color-button-default-active-background: color-mix(in srgb, var(--color-bg-card) 78%, var(--color-bg-section) 22%);
+  --ck-color-button-on-background: var(--color-brand-primary);
+  --ck-color-button-on-color: var(--color-text-on-primary);
+  --ck-color-focus-border: var(--color-brand-primary);
+  --ck-color-dropdown-panel-background: var(--color-bg-card);
+  --ck-color-dropdown-panel-border: var(--color-border-default);
+  --ck-color-text: var(--color-text-body);
+  --ck-color-link-default: var(--color-brand-primary);
+  --ck-font-size-base: 15px;
+  --ck-spacing-unit: 0.9em;
+  --ck-border-radius: 14px;
+  --ck-height: 640px;
+}
+
+.Ck-Editor .ck-editor__editable,
+.Ck-Editor .ck.ck-editor__main > .ck-editor__editable {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.Ck-Editor .ck.ck-toolbar {
+  background: var(--ck-color-toolbar-background);
+  border-color: var(--border);
+}
+
+.Ck-Editor .ck.ck-toolbar .ck-button,
+.Ck-Editor .ck.ck-toolbar .ck-button .ck-button__label {
+  color: var(--text);
 }
 
 /* ================================

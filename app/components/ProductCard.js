@@ -20,7 +20,6 @@ const ProductCard = ({ product, priority = false }) => {
   const [loading, setLoading] = useState(false)
   const router = useRouter();
   const [addingToCart, setAddingToCart] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [imageSrc, setImageSrc] = useState(FALLBACK_IMAGE)
   
@@ -113,6 +112,10 @@ const ProductCard = ({ product, priority = false }) => {
   const itemQuantity = getItemQuantity ? getItemQuantity(product.id) : 0
   const inCart = isInCart ? isInCart(product.id) : false
   const cardImage = getImageDimensions("card")
+  const cardSurfaceStyle = {
+    backgroundColor: "var(--color-bg-card)",
+    borderColor: "var(--color-border-default)",
+  }
 
   const handleDetailClick = () => {
     router.push(`/product/${product.id}`);
@@ -120,9 +123,8 @@ const ProductCard = ({ product, priority = false }) => {
 
   return (
     <div 
-      className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-pink-200 hover:-translate-y-2"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className="group relative rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border hover:border-pink-200 hover:-translate-y-2"
+      style={cardSurfaceStyle}
     >
       {/* Image Container */}
       <div className="relative overflow-hidden rounded-t-3xl">
@@ -173,9 +175,7 @@ const ProductCard = ({ product, priority = false }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className={`absolute top-4 right-4 z-10 space-y-2 transition-all duration-300 ${
-          isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
-        }`}>
+        <div className="absolute top-4 right-4 z-10 space-y-2 transition-all duration-300 opacity-100 translate-x-0 sm:opacity-0 sm:translate-x-4 sm:group-hover:opacity-100 sm:group-hover:translate-x-0">
           <button
             onClick={handleWishlistClick}
             disabled={loading}
@@ -292,7 +292,7 @@ const ProductCard = ({ product, priority = false }) => {
          href={`/product/${product.id}`}
           className="block w-full text-center mt-2 text-sm text-pink-600 hover:text-pink-700 font-medium transition-colors duration-200"
         >
-          View Details →
+          View Details &rarr;
         </Link>
       </div>
     </div>

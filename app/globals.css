@@ -2,31 +2,129 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-brand-primary: #ec4899;
+  --color-brand-primary-hover: #db2777;
+  --color-brand-secondary: #f43f5e;
+  --color-brand-accent: #be185d;
+  --color-brand-gradient-from: #ec4899;
+  --color-brand-gradient-to: #f43f5e;
+
+  --color-text-heading: #111827;
+  --color-text-body: #374151;
+  --color-text-muted: #6b7280;
+  --color-text-on-primary: #ffffff;
+
+  --color-bg-page: #fff7fb;
+  --color-bg-section: #ffffff;
+  --color-bg-card: #ffffff;
+
+  --color-border-default: #e5e7eb;
+
+  --color-btn-primary-bg: #ec4899;
+  --color-btn-primary-hover: #db2777;
+  --color-btn-primary-text: #ffffff;
+
+  --color-btn-secondary-bg: #ffffff;
+  --color-btn-secondary-hover: #fdf2f8;
+  --color-btn-secondary-text: #be185d;
+  --color-btn-secondary-border: #f9a8d4;
+
+  --color-state-success: #10b981;
+  --color-state-warning: #f59e0b;
+  --color-state-error: #ef4444;
+  --color-state-info: #3b82f6;
+
+  /* Derived utility colors for badges/chips and subtle surfaces */
+  --color-brand-primary-soft-50: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-bg-section));
+  --color-brand-primary-soft-100: color-mix(in srgb, var(--color-brand-primary) 16%, var(--color-bg-section));
+  --color-brand-primary-soft-200: color-mix(in srgb, var(--color-brand-primary) 24%, var(--color-bg-section));
+
+  --color-brand-secondary-soft-50: color-mix(in srgb, var(--color-brand-secondary) 8%, var(--color-bg-section));
+  --color-brand-secondary-soft-100: color-mix(in srgb, var(--color-brand-secondary) 16%, var(--color-bg-section));
+  --color-brand-secondary-soft-200: color-mix(in srgb, var(--color-brand-secondary) 24%, var(--color-bg-section));
+
+  --color-brand-accent-soft-50: color-mix(in srgb, var(--color-brand-accent) 8%, var(--color-bg-section));
+  --color-brand-accent-soft-100: color-mix(in srgb, var(--color-brand-accent) 16%, var(--color-bg-section));
+  --color-brand-accent-soft-200: color-mix(in srgb, var(--color-brand-accent) 24%, var(--color-bg-section));
+
+  --color-state-success-soft: color-mix(in srgb, var(--color-state-success) 14%, var(--color-bg-section));
+  --color-state-warning-soft: color-mix(in srgb, var(--color-state-warning) 14%, var(--color-bg-section));
+  --color-state-error-soft: color-mix(in srgb, var(--color-state-error) 14%, var(--color-bg-section));
+  --color-state-info-soft: color-mix(in srgb, var(--color-state-info) 14%, var(--color-bg-section));
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
   }
   
   body {
-    @apply bg-gradient-to-br from-pink-50 to-white text-gray-900;
+    background: linear-gradient(
+      135deg,
+      var(--color-bg-page),
+      var(--color-bg-section)
+    );
+    color: var(--color-text-body);
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-pink-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl;
+    background: linear-gradient(
+      90deg,
+      var(--color-brand-gradient-from),
+      var(--color-brand-gradient-to)
+    );
+    color: var(--color-btn-primary-text);
+    border: 1px solid transparent;
+    @apply px-6 py-3 rounded-full font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(
+      90deg,
+      var(--color-btn-primary-hover),
+      var(--color-brand-gradient-to)
+    );
   }
   
   .btn-secondary {
-    @apply bg-white text-pink-600 border-2 border-pink-200 px-6 py-3 rounded-full font-semibold hover:bg-pink-50 hover:border-pink-300 transform hover:scale-105 transition-all duration-300;
+    background: var(--color-btn-secondary-bg);
+    color: var(--color-btn-secondary-text);
+    border-color: var(--color-btn-secondary-border);
+    @apply border-2 px-6 py-3 rounded-full font-semibold transform hover:scale-105 transition-all duration-300;
+  }
+
+  .btn-secondary:hover {
+    background: var(--color-btn-secondary-hover);
   }
   
   .card {
-    @apply bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-default);
+    @apply rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2;
   }
   
   .gradient-text {
-    @apply bg-gradient-to-r from-pink-500 to-pink-700 bg-clip-text text-transparent;
+    background: linear-gradient(
+      90deg,
+      var(--color-brand-gradient-from),
+      var(--color-brand-gradient-to)
+    );
+    @apply bg-clip-text text-transparent;
+  }
+
+  .theme-bg-page {
+    background-color: var(--color-bg-page);
+  }
+
+  .theme-bg-section {
+    background-color: var(--color-bg-section);
+  }
+
+  .theme-bg-card {
+    background-color: var(--color-bg-card);
   }
 }
 
@@ -89,4 +187,737 @@
   background: transparent;
   box-shadow: none;
   padding: 0;
+}
+
+/* Scoped theme adaptation (storefront/admin) */
+:is(.theme-scope, .theme-admin-scope) .text-gray-900,
+:is(.theme-scope, .theme-admin-scope) .text-gray-800 {
+  color: var(--color-text-heading) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .text-gray-700,
+:is(.theme-scope, .theme-admin-scope) .text-gray-600 {
+  color: var(--color-text-body) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .text-gray-500,
+:is(.theme-scope, .theme-admin-scope) .text-gray-400 {
+  color: var(--color-text-muted) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .text-gray-300 {
+  color: color-mix(in srgb, var(--color-text-muted) 80%, #ffffff) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .bg-white,
+:is(.theme-scope, .theme-admin-scope).bg-white {
+  background-color: var(--color-bg-card) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .bg-white\/90,
+:is(.theme-scope, .theme-admin-scope).bg-white\/90 {
+  background-color: color-mix(in srgb, var(--color-bg-card) 90%, transparent) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .bg-white\/80,
+:is(.theme-scope, .theme-admin-scope).bg-white\/80 {
+  background-color: color-mix(in srgb, var(--color-bg-card) 82%, transparent) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .bg-white\/70,
+:is(.theme-scope, .theme-admin-scope).bg-white\/70 {
+  background-color: color-mix(in srgb, var(--color-bg-card) 70%, transparent) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .bg-white\/55,
+:is(.theme-scope, .theme-admin-scope).bg-white\/55 {
+  background-color: color-mix(in srgb, var(--color-bg-card) 55%, transparent) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .bg-white\/50,
+:is(.theme-scope, .theme-admin-scope).bg-white\/50 {
+  background-color: color-mix(in srgb, var(--color-bg-card) 55%, transparent) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .bg-white\/20,
+:is(.theme-scope, .theme-admin-scope).bg-white\/20 {
+  background-color: color-mix(in srgb, var(--color-bg-card) 20%, transparent) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .bg-gray-50,
+:is(.theme-scope, .theme-admin-scope).bg-gray-50 {
+  background-color: color-mix(in srgb, var(--color-bg-page) 65%, var(--color-bg-section) 35%) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .bg-gray-50\/50,
+:is(.theme-scope, .theme-admin-scope).bg-gray-50\/50 {
+  background-color: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-bg-page) 65%, var(--color-bg-section) 35%) 50%,
+    transparent
+  ) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .bg-gray-100,
+:is(.theme-scope, .theme-admin-scope).bg-gray-100 {
+  background-color: color-mix(in srgb, var(--color-bg-section) 80%, var(--color-border-default) 20%) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .bg-gray-200,
+:is(.theme-scope, .theme-admin-scope).bg-gray-200 {
+  background-color: color-mix(in srgb, var(--color-bg-section) 70%, var(--color-border-default) 30%) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .border-gray-100,
+:is(.theme-scope, .theme-admin-scope) .border-gray-200,
+:is(.theme-scope, .theme-admin-scope) .border-gray-300 {
+  border-color: var(--color-border-default) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+:is(.theme-scope, .theme-admin-scope) .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+:is(.theme-scope, .theme-admin-scope) .divide-gray-300 > :not([hidden]) ~ :not([hidden]) {
+  --tw-divide-color: var(--color-border-default) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .border-gray-400 {
+  border-color: color-mix(in srgb, var(--color-border-default) 65%, #000000) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .hover\:bg-gray-50:hover {
+  background-color: color-mix(in srgb, var(--color-bg-section) 80%, var(--color-border-default) 20%) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .hover\:bg-gray-100:hover {
+  background-color: color-mix(in srgb, var(--color-bg-section) 72%, var(--color-border-default) 28%) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .hover\:bg-white\/20:hover {
+  background-color: color-mix(in srgb, var(--color-bg-card) 20%, transparent) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) input:not([type="color"]):not([type="checkbox"]):not([type="radio"]),
+:is(.theme-scope, .theme-admin-scope) textarea,
+:is(.theme-scope, .theme-admin-scope) select {
+  background-color: color-mix(in srgb, var(--color-bg-card) 90%, var(--color-bg-section) 10%) !important;
+  color: var(--color-text-body) !important;
+  border-color: var(--color-border-default) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) input::placeholder,
+:is(.theme-scope, .theme-admin-scope) textarea::placeholder {
+  color: var(--color-text-muted) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .from-gray-50 {
+  --tw-gradient-from: color-mix(in srgb, var(--color-bg-page) 70%, var(--color-bg-section) 30%) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .from-gray-100 {
+  --tw-gradient-from: color-mix(in srgb, var(--color-bg-section) 85%, var(--color-border-default) 15%) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .to-gray-100 {
+  --tw-gradient-to: color-mix(in srgb, var(--color-bg-section) 85%, var(--color-border-default) 15%) var(--tw-gradient-to-position) !important;
+}
+
+:is(.theme-scope, .theme-admin-scope) .to-gray-200 {
+  --tw-gradient-to: color-mix(in srgb, var(--color-bg-section) 70%, var(--color-border-default) 30%) var(--tw-gradient-to-position) !important;
+}
+
+/* Theme bridge: keep original gradient/solid usage while binding colors to theme tokens */
+.text-pink-400,
+.text-pink-500,
+.text-pink-600 {
+  color: var(--color-brand-primary) !important;
+}
+
+.text-pink-700,
+.text-pink-800 {
+  color: var(--color-brand-primary-hover) !important;
+}
+
+.text-rose-400,
+.text-rose-500,
+.text-rose-600 {
+  color: var(--color-brand-secondary) !important;
+}
+
+.text-rose-700,
+.text-rose-800,
+.text-purple-400,
+.text-purple-500,
+.text-purple-600,
+.text-purple-700 {
+  color: var(--color-brand-accent) !important;
+}
+
+.bg-pink-50 {
+  background-color: var(--color-brand-primary-soft-50) !important;
+}
+
+.bg-pink-50\/30 {
+  background-color: color-mix(in srgb, var(--color-brand-primary-soft-50) 30%, transparent) !important;
+}
+
+.bg-pink-50\/50 {
+  background-color: color-mix(in srgb, var(--color-brand-primary-soft-50) 50%, transparent) !important;
+}
+
+.bg-pink-50\/60 {
+  background-color: color-mix(in srgb, var(--color-brand-primary-soft-50) 60%, transparent) !important;
+}
+
+.bg-pink-100 {
+  background-color: var(--color-brand-primary-soft-100) !important;
+}
+
+.bg-pink-200 {
+  background-color: var(--color-brand-primary-soft-200) !important;
+}
+
+.bg-pink-300 {
+  background-color: color-mix(in srgb, var(--color-brand-primary) 34%, #ffffff) !important;
+}
+
+.bg-pink-400 {
+  background-color: color-mix(in srgb, var(--color-brand-primary) 52%, #ffffff) !important;
+}
+
+.bg-rose-50 {
+  background-color: var(--color-brand-secondary-soft-50) !important;
+}
+
+.bg-rose-100 {
+  background-color: var(--color-brand-secondary-soft-100) !important;
+}
+
+.bg-rose-200 {
+  background-color: var(--color-brand-secondary-soft-200) !important;
+}
+
+.bg-rose-300 {
+  background-color: color-mix(in srgb, var(--color-brand-secondary) 34%, #ffffff) !important;
+}
+
+.bg-rose-400 {
+  background-color: color-mix(in srgb, var(--color-brand-secondary) 52%, #ffffff) !important;
+}
+
+.bg-purple-50 {
+  background-color: var(--color-brand-accent-soft-50) !important;
+}
+
+.bg-purple-100 {
+  background-color: var(--color-brand-accent-soft-100) !important;
+}
+
+.bg-purple-200 {
+  background-color: var(--color-brand-accent-soft-200) !important;
+}
+
+.bg-purple-300 {
+  background-color: color-mix(in srgb, var(--color-brand-accent) 34%, #ffffff) !important;
+}
+
+.bg-purple-400 {
+  background-color: color-mix(in srgb, var(--color-brand-accent) 52%, #ffffff) !important;
+}
+
+.bg-pink-500,
+.bg-pink-600 {
+  background-color: var(--color-brand-primary) !important;
+}
+
+.bg-pink-700 {
+  background-color: var(--color-brand-primary-hover) !important;
+}
+
+.bg-rose-500,
+.bg-rose-600 {
+  background-color: var(--color-brand-secondary) !important;
+}
+
+.bg-rose-700,
+.bg-purple-500,
+.bg-purple-600 {
+  background-color: var(--color-brand-accent) !important;
+}
+
+.border-pink-100 {
+  border-color: var(--color-brand-primary-soft-100) !important;
+}
+
+.border-pink-200 {
+  border-color: var(--color-brand-primary-soft-200) !important;
+}
+
+.border-pink-300 {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 40%, var(--color-bg-section)) !important;
+}
+
+.border-pink-400 {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 55%, var(--color-bg-section)) !important;
+}
+
+.border-rose-100 {
+  border-color: var(--color-brand-secondary-soft-100) !important;
+}
+
+.border-rose-200 {
+  border-color: var(--color-brand-secondary-soft-200) !important;
+}
+
+.border-rose-300 {
+  border-color: color-mix(in srgb, var(--color-brand-secondary) 40%, var(--color-bg-section)) !important;
+}
+
+.border-rose-400 {
+  border-color: color-mix(in srgb, var(--color-brand-secondary) 55%, var(--color-bg-section)) !important;
+}
+
+.border-purple-100 {
+  border-color: var(--color-brand-accent-soft-100) !important;
+}
+
+.border-purple-200 {
+  border-color: var(--color-brand-accent-soft-200) !important;
+}
+
+.border-purple-300 {
+  border-color: color-mix(in srgb, var(--color-brand-accent) 40%, var(--color-bg-section)) !important;
+}
+
+.border-purple-400 {
+  border-color: color-mix(in srgb, var(--color-brand-accent) 55%, var(--color-bg-section)) !important;
+}
+
+.border-green-100 {
+  border-color: var(--color-state-success-soft) !important;
+}
+
+.border-red-100 {
+  border-color: var(--color-state-error-soft) !important;
+}
+
+.border-pink-500,
+.border-pink-600 {
+  border-color: var(--color-brand-primary) !important;
+}
+
+.border-l-pink-500,
+.border-l-pink-600 {
+  border-left-color: var(--color-brand-primary) !important;
+}
+
+.border-rose-500,
+.border-rose-600 {
+  border-color: var(--color-brand-secondary) !important;
+}
+
+.border-purple-500,
+.border-purple-600 {
+  border-color: var(--color-brand-accent) !important;
+}
+
+.focus\:ring-pink-500:focus,
+.focus\:ring-pink-600:focus {
+  --tw-ring-color: var(--color-brand-primary) !important;
+}
+
+.focus\:ring-rose-500:focus,
+.focus\:ring-rose-600:focus {
+  --tw-ring-color: var(--color-brand-secondary) !important;
+}
+
+.focus\:ring-purple-500:focus,
+.focus\:ring-purple-600:focus {
+  --tw-ring-color: var(--color-brand-accent) !important;
+}
+
+.focus\:border-pink-500:focus,
+.focus\:border-pink-600:focus {
+  border-color: var(--color-brand-primary) !important;
+}
+
+.focus\:border-rose-500:focus,
+.focus\:border-rose-600:focus {
+  border-color: var(--color-brand-secondary) !important;
+}
+
+.focus\:border-purple-500:focus,
+.focus\:border-purple-600:focus {
+  border-color: var(--color-brand-accent) !important;
+}
+
+.hover\:text-pink-600:hover,
+.hover\:text-pink-700:hover {
+  color: var(--color-brand-primary-hover) !important;
+}
+
+.hover\:text-rose-600:hover,
+.hover\:text-rose-700:hover {
+  color: var(--color-brand-secondary) !important;
+}
+
+.hover\:text-purple-600:hover,
+.hover\:text-purple-700:hover {
+  color: var(--color-brand-accent) !important;
+}
+
+.hover\:bg-pink-50:hover {
+  background-color: var(--color-brand-primary-soft-50) !important;
+}
+
+.hover\:bg-pink-50\/50:hover {
+  background-color: color-mix(in srgb, var(--color-brand-primary-soft-50) 50%, transparent) !important;
+}
+
+.hover\:bg-pink-100:hover,
+.hover\:bg-pink-200:hover {
+  background-color: var(--color-brand-primary-soft-200) !important;
+}
+
+.hover\:bg-rose-100:hover,
+.hover\:bg-rose-200:hover {
+  background-color: var(--color-brand-secondary-soft-200) !important;
+}
+
+.hover\:bg-purple-100:hover,
+.hover\:bg-purple-200:hover {
+  background-color: var(--color-brand-accent-soft-200) !important;
+}
+
+.hover\:bg-pink-600:hover,
+.hover\:bg-pink-700:hover {
+  background-color: var(--color-brand-primary-hover) !important;
+}
+
+.hover\:bg-rose-600:hover,
+.hover\:bg-rose-700:hover {
+  background-color: var(--color-brand-secondary) !important;
+}
+
+.hover\:bg-purple-600:hover,
+.hover\:bg-purple-700:hover {
+  background-color: var(--color-brand-accent) !important;
+}
+
+.bg-green-50 {
+  background-color: var(--color-state-success-soft) !important;
+}
+
+.bg-green-100 {
+  background-color: color-mix(in srgb, var(--color-state-success) 18%, var(--color-bg-section)) !important;
+}
+
+.bg-blue-100 {
+  background-color: color-mix(in srgb, var(--color-state-info) 18%, var(--color-bg-section)) !important;
+}
+
+.bg-yellow-100 {
+  background-color: color-mix(in srgb, var(--color-state-warning) 18%, var(--color-bg-section)) !important;
+}
+
+.bg-red-100 {
+  background-color: color-mix(in srgb, var(--color-state-error) 18%, var(--color-bg-section)) !important;
+}
+
+.text-green-600,
+.text-green-700 {
+  color: var(--color-state-success) !important;
+}
+
+.text-blue-600,
+.text-blue-700,
+.text-blue-800 {
+  color: var(--color-state-info) !important;
+}
+
+.text-yellow-600,
+.text-yellow-700,
+.text-yellow-800 {
+  color: var(--color-state-warning) !important;
+}
+
+.text-red-600,
+.text-red-700,
+.text-red-800 {
+  color: var(--color-state-error) !important;
+}
+
+.hover\:bg-green-50:hover {
+  background-color: var(--color-state-success-soft) !important;
+}
+
+.hover\:bg-red-50:hover {
+  background-color: var(--color-state-error-soft) !important;
+}
+
+.hover\:bg-blue-50:hover {
+  background-color: var(--color-state-info-soft) !important;
+}
+
+.hover\:bg-yellow-50:hover {
+  background-color: var(--color-state-warning-soft) !important;
+}
+
+.shadow-pink-200,
+.shadow-pink-300 {
+  --tw-shadow-color: color-mix(in srgb, var(--color-brand-primary) 40%, transparent) !important;
+}
+
+.shadow-rose-200,
+.shadow-rose-300 {
+  --tw-shadow-color: color-mix(in srgb, var(--color-brand-secondary) 40%, transparent) !important;
+}
+
+.shadow-purple-200,
+.shadow-purple-300 {
+  --tw-shadow-color: color-mix(in srgb, var(--color-brand-accent) 40%, transparent) !important;
+}
+
+.theme-admin-scope {
+  --admin-shadow-color: color-mix(in srgb, #000000 65%, var(--color-bg-section));
+}
+
+.theme-admin-scope .shadow {
+  box-shadow: 0 1px 2px 0 color-mix(in srgb, var(--admin-shadow-color) 45%, transparent) !important;
+}
+
+.theme-admin-scope .shadow-sm {
+  box-shadow: 0 1px 2px 0 color-mix(in srgb, var(--admin-shadow-color) 35%, transparent) !important;
+}
+
+.theme-admin-scope .shadow-md {
+  box-shadow:
+    0 4px 6px -1px color-mix(in srgb, var(--admin-shadow-color) 35%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--admin-shadow-color) 25%, transparent) !important;
+}
+
+.theme-admin-scope .shadow-lg {
+  box-shadow:
+    0 10px 15px -3px color-mix(in srgb, var(--admin-shadow-color) 35%, transparent),
+    0 4px 6px -4px color-mix(in srgb, var(--admin-shadow-color) 25%, transparent) !important;
+}
+
+.theme-admin-scope .shadow-xl {
+  box-shadow:
+    0 20px 25px -5px color-mix(in srgb, var(--admin-shadow-color) 35%, transparent),
+    0 8px 10px -6px color-mix(in srgb, var(--admin-shadow-color) 25%, transparent) !important;
+}
+
+.theme-admin-scope .shadow-2xl {
+  box-shadow: 0 25px 50px -12px color-mix(in srgb, var(--admin-shadow-color) 35%, transparent) !important;
+}
+
+/* Improve chip/badge contrast for common utility combinations */
+.bg-pink-100.text-pink-600 {
+  color: var(--color-brand-primary-hover) !important;
+}
+
+.bg-rose-100.text-rose-600 {
+  color: var(--color-brand-accent) !important;
+}
+
+.bg-purple-100.text-purple-600 {
+  color: var(--color-brand-accent) !important;
+}
+
+.from-pink-50 {
+  --tw-gradient-from: var(--color-brand-primary-soft-50) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.from-white {
+  --tw-gradient-from: var(--color-bg-section) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.from-pink-100 {
+  --tw-gradient-from: var(--color-brand-primary-soft-100) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.from-pink-200 {
+  --tw-gradient-from: var(--color-brand-primary-soft-200) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.from-pink-300,
+.from-pink-400 {
+  --tw-gradient-from: color-mix(in srgb, var(--color-brand-primary) 42%, #ffffff) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.from-pink-500,
+.from-pink-600 {
+  --tw-gradient-from: var(--color-brand-primary) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.from-rose-50 {
+  --tw-gradient-from: var(--color-brand-secondary-soft-50) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.from-rose-100 {
+  --tw-gradient-from: var(--color-brand-secondary-soft-100) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.from-rose-200 {
+  --tw-gradient-from: var(--color-brand-secondary-soft-200) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.from-rose-500,
+.from-rose-600 {
+  --tw-gradient-from: var(--color-brand-secondary) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.from-purple-50,
+.from-fuchsia-50 {
+  --tw-gradient-from: var(--color-brand-accent-soft-50) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.from-purple-500,
+.from-purple-600,
+.from-fuchsia-500 {
+  --tw-gradient-from: var(--color-brand-accent) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.via-pink-50 {
+  --tw-gradient-stops: var(--tw-gradient-from), var(--color-brand-primary-soft-50) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.via-white {
+  --tw-gradient-stops: var(--tw-gradient-from), var(--color-bg-section) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.via-rose-50 {
+  --tw-gradient-stops: var(--tw-gradient-from), var(--color-brand-secondary-soft-50) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.via-purple-50,
+.via-fuchsia-50 {
+  --tw-gradient-stops: var(--tw-gradient-from), var(--color-brand-accent-soft-50) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.via-pink-50\/20 {
+  --tw-gradient-stops: var(--tw-gradient-from), color-mix(in srgb, var(--color-brand-primary-soft-50) 20%, transparent) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.via-rose-50\/20 {
+  --tw-gradient-stops: var(--tw-gradient-from), color-mix(in srgb, var(--color-brand-secondary-soft-50) 20%, transparent) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.via-purple-50\/20,
+.via-fuchsia-50\/20 {
+  --tw-gradient-stops: var(--tw-gradient-from), color-mix(in srgb, var(--color-brand-accent-soft-50) 20%, transparent) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.via-pink-500,
+.via-pink-600 {
+  --tw-gradient-stops: var(--tw-gradient-from), var(--color-brand-primary) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.via-rose-500,
+.via-rose-600 {
+  --tw-gradient-stops: var(--tw-gradient-from), var(--color-brand-secondary) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.via-purple-500,
+.via-purple-600,
+.via-fuchsia-500 {
+  --tw-gradient-stops: var(--tw-gradient-from), var(--color-brand-accent) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.to-pink-500 {
+  --tw-gradient-to: var(--color-brand-primary) var(--tw-gradient-to-position) !important;
+}
+
+.to-pink-50 {
+  --tw-gradient-to: var(--color-brand-primary-soft-50) var(--tw-gradient-to-position) !important;
+}
+
+.to-white {
+  --tw-gradient-to: var(--color-bg-section) var(--tw-gradient-to-position) !important;
+}
+
+.to-pink-100 {
+  --tw-gradient-to: var(--color-brand-primary-soft-100) var(--tw-gradient-to-position) !important;
+}
+
+.to-pink-200 {
+  --tw-gradient-to: var(--color-brand-primary-soft-200) var(--tw-gradient-to-position) !important;
+}
+
+.to-pink-300,
+.to-pink-400 {
+  --tw-gradient-to: color-mix(in srgb, var(--color-brand-primary) 42%, #ffffff) var(--tw-gradient-to-position) !important;
+}
+
+.to-pink-600,
+.to-pink-700 {
+  --tw-gradient-to: var(--color-brand-primary-hover) var(--tw-gradient-to-position) !important;
+}
+
+.to-rose-50 {
+  --tw-gradient-to: var(--color-brand-secondary-soft-50) var(--tw-gradient-to-position) !important;
+}
+
+.to-rose-50\/30 {
+  --tw-gradient-to: color-mix(in srgb, var(--color-brand-secondary-soft-50) 30%, transparent) var(--tw-gradient-to-position) !important;
+}
+
+.to-rose-100 {
+  --tw-gradient-to: var(--color-brand-secondary-soft-100) var(--tw-gradient-to-position) !important;
+}
+
+.to-rose-200 {
+  --tw-gradient-to: var(--color-brand-secondary-soft-200) var(--tw-gradient-to-position) !important;
+}
+
+.to-rose-400 {
+  --tw-gradient-to: color-mix(in srgb, var(--color-brand-secondary) 42%, #ffffff) var(--tw-gradient-to-position) !important;
+}
+
+.to-rose-500,
+.to-rose-600 {
+  --tw-gradient-to: var(--color-brand-secondary) var(--tw-gradient-to-position) !important;
+}
+
+.to-purple-50,
+.to-fuchsia-50 {
+  --tw-gradient-to: var(--color-brand-accent-soft-50) var(--tw-gradient-to-position) !important;
+}
+
+.to-purple-500,
+.to-purple-600,
+.to-fuchsia-500 {
+  --tw-gradient-to: var(--color-brand-accent) var(--tw-gradient-to-position) !important;
+}
+
+.to-purple-700 {
+  --tw-gradient-to: color-mix(in srgb, var(--color-brand-accent) 80%, #000000) var(--tw-gradient-to-position) !important;
 }

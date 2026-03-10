@@ -27,6 +27,8 @@ export const StripeProvider = ({ children }) => {
     settings?.paymentSettings?.credentialsPublic?.stripe?.publishableKey ||
     process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
     "";
+  const stripePrimaryColor =
+    settings?.themeSettings?.brand?.primary || "#ec4899";
 
   const stripePromise = useMemo(
     () => (publishableKey ? loadStripe(publishableKey) : null),
@@ -41,7 +43,7 @@ export const StripeProvider = ({ children }) => {
           appearance: {
             theme: "stripe",
             variables: {
-              colorPrimary: "#ec4899",
+              colorPrimary: stripePrimaryColor,
             },
           },
         }}

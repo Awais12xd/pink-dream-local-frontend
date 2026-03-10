@@ -2,6 +2,7 @@
 "use client";
 
 import React, { createContext, useEffect, useState } from "react";
+import { applyThemeCssVariables, DEFAULT_THEME_SETTINGS } from "../utils/themeTokens";
 
 export const SettingContext = createContext({
   settings: null,
@@ -12,6 +13,8 @@ const SETTINGS_CACHE_KEY = "public_settings_cache_v1";
 const SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 function setHeadFromSettings(settings) {
+  applyThemeCssVariables(settings?.themeSettings || DEFAULT_THEME_SETTINGS);
+
   if (!settings) return;
 
   const siteTitle = settings?.siteTitle || document.title;
@@ -104,6 +107,8 @@ export default function SettingsProvider({ initialSettings = null, children }) {
   const [settings, setSettings] = useState(initialSettings);
 
   useEffect(() => {
+    applyThemeCssVariables(initialSettings?.themeSettings || DEFAULT_THEME_SETTINGS);
+
     if (initialSettings) {
       setHeadFromSettings(initialSettings);
       setSettings(initialSettings);

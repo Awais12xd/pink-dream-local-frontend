@@ -331,6 +331,17 @@ export default function ModernFooter() {
     "🏦 Bank Transfer",
     "💳 Visa/Master",
   ];
+
+  const footerShellStyle = {
+    backgroundImage:
+      "linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-bg-section) 92%), var(--color-bg-section), color-mix(in srgb, var(--color-brand-accent) 10%, var(--color-bg-section) 90%))",
+    borderTopColor: "var(--color-border-default)",
+  };
+
+  const brandGradientStyle = {
+    backgroundImage:
+      "linear-gradient(90deg, var(--color-brand-gradient-from), var(--color-brand-gradient-to))",
+  };
   // Auto-advance slider
   useEffect(() => {
     const timer = setInterval(() => {
@@ -463,10 +474,13 @@ export default function ModernFooter() {
   };
 
   return (
-    <footer className="bg-gradient-to-br from-pink-50 via-white to-purple-50 border-t border-pink-100">
+    <footer className="border-t" style={footerShellStyle}>
       {/* Featured Slider Section */}
       <div className="container mx-auto px-4 py-8">
-        <div className="relative bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl overflow-hidden">
+        <div
+          className="relative rounded-2xl overflow-hidden"
+          style={brandGradientStyle}
+        >
           <div className="absolute inset-0 bg-black/10"></div>
           <div className="relative px-8 py-12">
             <div className="flex items-center justify-between">
@@ -540,7 +554,10 @@ export default function ModernFooter() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className="text-center group"
             >
-              <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform"
+                style={brandGradientStyle}
+              >
                 {React.createElement(feature.icon, {
                   className: "w-6 h-6 text-white",
                 })}
@@ -576,15 +593,21 @@ export default function ModernFooter() {
                     sizes="(max-width: 640px) 100vw,
                                    (max-width: 1024px) 100vw,
                                    100vw"
-                                   priority="high"
+                    priority
                   />
                 </Link>
               ) : (
                 <>
-                  <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={brandGradientStyle}
+                  >
                     <span className="text-white font-bold text-lg">P</span>
                   </div>
-                  <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                  <span
+                    className="text-2xl font-bold bg-clip-text text-transparent"
+                    style={brandGradientStyle}
+                  >
                     Pink Dreams
                   </span>
                 </>
@@ -608,7 +631,8 @@ export default function ModernFooter() {
                   >
                     <a
                       href={social.href}
-                      className={`w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center text-white ${social.color} transition-all duration-300 hover:shadow-lg`}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${social.color} transition-all duration-300 hover:shadow-lg`}
+                      style={brandGradientStyle}
                     >
                       {React.createElement(social.icon, {
                         className: "w-5 h-5",
@@ -646,7 +670,8 @@ export default function ModernFooter() {
                   />
                   <button
                     type="submit"
-                    className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-2 rounded-r-full hover:from-pink-600 hover:to-purple-700 transition-all duration-300 flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="text-white px-6 py-2 rounded-r-full transition-all duration-300 flex items-center hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                    style={brandGradientStyle}
                     disabled={newsletterLoading}
                   >
                     {newsletterLoading ? "..." : <Mail className="w-4 h-4" />}

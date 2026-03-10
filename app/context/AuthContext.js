@@ -1,5 +1,6 @@
 'use client'
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { openLoginModal } from '../utils/openLoginModal'
 
 
 const AuthContext = createContext()
@@ -1005,9 +1006,11 @@ export const withAuth = (Component) => {
     }
 
     if (!isAuthenticated) {
-      // You can customize this redirect behavior
       if (typeof window !== 'undefined') {
-        window.location.href = '/login'
+        openLoginModal({
+          source: 'withAuth',
+          redirect: `${window.location.pathname}${window.location.search}`
+        })
       }
       return null
     }

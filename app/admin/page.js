@@ -844,7 +844,7 @@ const AdminPanel = () => {
   // MAIN JSX RETURN
   return (
     <NotificationProvider>
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-pink-50/20 to-rose-50/30">
+      <div className="theme-admin-scope min-h-screen bg-gradient-to-br from-gray-50 via-pink-50/20 to-rose-50/30">
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <button

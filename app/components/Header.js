@@ -42,6 +42,26 @@ const Header = () => {
     { name: "Contact", href: "/contact" },
   ];
 
+  const headerShellStyle = {
+    backgroundColor: "var(--color-bg-section)",
+    borderBottomColor: "var(--color-border-default)",
+  };
+
+  const topBarGradientStyle = {
+    backgroundImage:
+      "linear-gradient(90deg, var(--color-brand-gradient-from), color-mix(in srgb, var(--color-brand-primary) 52%, var(--color-brand-secondary) 48%), var(--color-brand-gradient-to))",
+  };
+
+  const logoBubbleGradientStyle = {
+    backgroundImage:
+      "linear-gradient(135deg, var(--color-brand-gradient-from), var(--color-brand-gradient-to))",
+  };
+
+  const logoTextGradientStyle = {
+    backgroundImage:
+      "linear-gradient(90deg, var(--color-brand-gradient-from), var(--color-brand-gradient-to))",
+  };
+
   // Get cart count from CartContext (handles both session and backend automatically)
   const cartCount = getTotalItems();
 
@@ -171,9 +191,15 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-xl sticky top-0 z-50 border-b border-pink-100">
+    <header
+      className="shadow-xl sticky top-0 z-50 border-b"
+      style={headerShellStyle}
+    >
       {/* Top bar - hide on very small screens */}
-      <div className="bg-gradient-to-r from-pink-500 via-pink-600 to-rose-500 text-white text-xs sm:text-sm py-2 sm:py-3">
+      <div
+        className="text-white text-xs sm:text-sm py-2 sm:py-3"
+        style={topBarGradientStyle}
+      >
         <div className="container mx-auto px-2 sm:px-4 text-center">
           <p className="font-medium">
             <span className="hidden sm:inline">
@@ -201,7 +227,7 @@ const Header = () => {
               sizes="(max-width: 640px) 100vw,
            (max-width: 1024px) 100vw,
            100vw"
-           priority="high"
+           priority
             />
             </Link>
           ) : (
@@ -209,8 +235,11 @@ const Header = () => {
               href="/"
               className="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0"
             >
-              <div className="relative">
-                <div className="w-full h-full bg-gradient-to-br from-pink-400 via-pink-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                <div className="relative">
+                <div
+                  className="w-full h-full rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110"
+                  style={logoBubbleGradientStyle}
+                >
                   <span className="text-white font-bold text-lg sm:text-xl">
                     P
                   </span>
@@ -218,7 +247,10 @@ const Header = () => {
                 <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-br from-yellow-300 to-yellow-400 rounded-full animate-pulse"></div>
               </div>
               <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-pink-600 via-pink-500 to-rose-500 bg-clip-text text-transparent truncate">
+                <h1
+                  className="text-xl sm:text-2xl md:text-3xl font-bold bg-clip-text text-transparent truncate"
+                  style={logoTextGradientStyle}
+                >
                   Pink Dreams
                 </h1>
                 <p className="text-xs text-gray-500 -mt-1 hidden sm:block">
@@ -285,7 +317,6 @@ const Header = () => {
                 <div
                   className={`p-2 sm:p-3 rounded-full transition-all duration-300 shadow-md hover:shadow-lg ${
                     isActive("/auth") ||
-                    isActive("/login") ||
                     isActive("/profile")
                       ? "bg-gradient-to-br from-pink-100 to-rose-100 text-pink-600"
                       : "bg-gradient-to-br from-pink-50 to-rose-50 text-gray-700 hover:from-pink-100 hover:to-rose-100 hover:text-pink-600"

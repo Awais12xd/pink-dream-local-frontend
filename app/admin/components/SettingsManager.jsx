@@ -7,6 +7,7 @@ import {
   Search as SearchIcon,
   Phone,
   MapPin,
+  Palette,
   Save,
   Upload,
   Eye,
@@ -15,6 +16,9 @@ import {
   Check,
   Info,
   Loader,
+  Heart,
+  User2,
+  ShoppingCart,
   Instagram,
   Facebook,
   Twitter,
@@ -23,6 +27,12 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import Image from "next/image";
+import { adminFetch } from "../../utils/adminApi";
+import { HexColorPicker, HexColorInput } from "react-colorful";
+import {
+  DEFAULT_THEME_SETTINGS,
+  mergeThemeSettings,
+} from "../../utils/themeTokens";
 
 const EMPTY_UI_SETTINGS = {
   general: {
@@ -55,6 +65,7 @@ const EMPTY_UI_SETTINGS = {
       sunday: { open: "", close: "", closed: true },
     },
   },
+  appearance: mergeThemeSettings(DEFAULT_THEME_SETTINGS, {}),
 };
 
 const EMPTY_META = {
@@ -72,10 +83,268 @@ const EMPTY_META = {
 
 const TABS = [
   { id: "general", label: "General", icon: Settings },
+  { id: "appearance", label: "Appearance", icon: Palette },
   { id: "payment", label: "Payment", icon: CreditCard },
   { id: "seo", label: "SEO", icon: SearchIcon },
   { id: "contact", label: "Contact", icon: Phone },
 ];
+
+const APPEARANCE_GROUPS = [
+  {
+    key: "brand",
+    title: "Brand Colors",
+    description: "Primary and gradient colors used across buttons, badges, and highlights.",
+    fields: [
+      { key: "primary", label: "Primary" },
+      { key: "primaryHover", label: "Primary Hover" },
+      { key: "secondary", label: "Secondary" },
+      { key: "accent", label: "Accent" },
+      { key: "gradientFrom", label: "Gradient From" },
+      { key: "gradientTo", label: "Gradient To" },
+    ],
+  },
+  {
+    key: "text",
+    title: "Text Colors",
+    description: "Controls headings, body copy, and muted labels.",
+    fields: [
+      { key: "heading", label: "Heading" },
+      { key: "body", label: "Body" },
+      { key: "muted", label: "Muted" },
+      { key: "onPrimary", label: "On Primary" },
+    ],
+  },
+  {
+    key: "background",
+    title: "Background Colors",
+    description: "Base surfaces for pages, sections, and cards.",
+    fields: [
+      { key: "page", label: "Page" },
+      { key: "section", label: "Section" },
+      { key: "card", label: "Card" },
+    ],
+  },
+  {
+    key: "buttonPrimary",
+    title: "Primary Button",
+    description: "Main CTA styling for key actions.",
+    fields: [
+      { key: "bg", label: "Background" },
+      { key: "hover", label: "Hover" },
+      { key: "text", label: "Text" },
+    ],
+  },
+  {
+    key: "buttonSecondary",
+    title: "Secondary Button",
+    description: "Secondary actions and neutral buttons.",
+    fields: [
+      { key: "bg", label: "Background" },
+      { key: "hover", label: "Hover" },
+      { key: "text", label: "Text" },
+      { key: "border", label: "Border" },
+    ],
+  },
+  {
+    key: "state",
+    title: "Status Colors",
+    description: "System states for success, warning, error, and info.",
+    fields: [
+      { key: "success", label: "Success" },
+      { key: "warning", label: "Warning" },
+      { key: "error", label: "Error" },
+      { key: "info", label: "Info" },
+    ],
+  },
+];
+
+const APPEARANCE_PRESETS = [
+  {
+    id: "default",
+    label: "Default",
+    hint: "Pink Dreams",
+    theme: DEFAULT_THEME_SETTINGS,
+  },
+  {
+    id: "light",
+    label: "Light",
+    hint: "Soft Ocean",
+    theme: {
+      brand: {
+        primary: "#0ea5a6",
+        primaryHover: "#0b8a8b",
+        secondary: "#2563eb",
+        accent: "#0f766e",
+        gradientFrom: "#2563eb",
+        gradientTo: "#0ea5a6",
+      },
+      text: {
+        heading: "#0f172a",
+        body: "#1e293b",
+        muted: "#475569",
+        onPrimary: "#ffffff",
+      },
+      background: {
+        page: "#f4f8ff",
+        section: "#ffffff",
+        card: "#fdfefe",
+      },
+      border: {
+        default: "#cbd5e1",
+      },
+      buttonPrimary: {
+        bg: "#2563eb",
+        hover: "#1d4ed8",
+        text: "#ffffff",
+      },
+      buttonSecondary: {
+        bg: "#ffffff",
+        hover: "#eff6ff",
+        text: "#0f172a",
+        border: "#93c5fd",
+      },
+      state: {
+        success: "#16a34a",
+        warning: "#d97706",
+        error: "#dc2626",
+        info: "#0284c7",
+      },
+    },
+  },
+  {
+    id: "dark",
+    label: "Dark",
+    hint: "Midnight",
+    theme: {
+      brand: {
+        primary: "#7c3aed",
+        primaryHover: "#6d28d9",
+        secondary: "#0ea5e9",
+        accent: "#c084fc",
+        gradientFrom: "#7c3aed",
+        gradientTo: "#0ea5e9",
+      },
+      text: {
+        heading: "#f8fafc",
+        body: "#e2e8f0",
+        muted: "#94a3b8",
+        onPrimary: "#ffffff",
+      },
+      background: {
+        page: "#0b1020",
+        section: "#111827",
+        card: "#172033",
+      },
+      border: {
+        default: "#334155",
+      },
+      buttonPrimary: {
+        bg: "#7c3aed",
+        hover: "#6d28d9",
+        text: "#ffffff",
+      },
+      buttonSecondary: {
+        bg: "#1e293b",
+        hover: "#334155",
+        text: "#e2e8f0",
+        border: "#475569",
+      },
+      state: {
+        success: "#22c55e",
+        warning: "#f59e0b",
+        error: "#ef4444",
+        info: "#38bdf8",
+      },
+    },
+  },
+];
+
+const AppearanceColorField = ({ label, value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const popoverRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (event) => {
+      const target = event.target;
+      if (popoverRef.current?.contains(target)) return;
+      if (buttonRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  const handleChange = (nextValue) => {
+    onChange(nextValue);
+  };
+
+  return (
+    <div className="relative flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white/80 p-3">
+      <div>
+        <p className="text-sm font-medium text-gray-800">{label}</p>
+        <p className="text-xs text-gray-500 mt-0.5">
+          {String(value).toUpperCase()}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="h-11 w-11 rounded-lg border border-gray-300 shadow-sm"
+          style={{ background: value }}
+          aria-label={`Pick ${label} color`}
+        />
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="hidden sm:inline-flex px-3 py-2 text-xs font-semibold border border-gray-300 rounded-lg hover:bg-gray-50"
+        >
+          Edit
+        </button>
+      </div>
+
+      {open && (
+        <div
+          ref={popoverRef}
+          className="absolute right-0 top-full mt-3 z-50 w-[260px] rounded-2xl border border-gray-200 bg-white p-3 shadow-xl"
+        >
+          <HexColorPicker
+            color={value}
+            onChange={handleChange}
+            className="w-full h-40"
+          />
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div
+                className="h-9 w-9 rounded-lg border border-gray-200"
+                style={{ background: value }}
+              />
+              <HexColorInput
+                color={value}
+                onChange={handleChange}
+                prefixed
+                className="w-24 rounded-lg border border-gray-300 px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              Close
+            </button>
+          </div>
+          <p className="mt-2 text-[10px] text-gray-400">
+            Drag inside the picker to fine-tune. Input accepts hex codes.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const toUiSettings = (apiSettings) => {
   const s = apiSettings || {};
@@ -121,6 +390,10 @@ const toUiSettings = (apiSettings) => {
       social: s?.contact?.social || EMPTY_UI_SETTINGS.contact.social,
       hours: s?.contact?.hours || EMPTY_UI_SETTINGS.contact.hours,
     },
+    appearance: mergeThemeSettings(
+      DEFAULT_THEME_SETTINGS,
+      s?.themeSettings || {},
+    ),
   };
 };
 
@@ -145,6 +418,7 @@ const buildApiPayload = (uiSettings, secretsDraft) => {
       social: uiSettings.contact.social,
       hours: uiSettings.contact.hours,
     },
+    themeSettings: uiSettings.appearance,
     paymentSettings: {
       methods: {
         stripe: { enabled: uiSettings.payment.stripe.enabled },
@@ -174,8 +448,6 @@ const buildApiPayload = (uiSettings, secretsDraft) => {
 
 const SettingsManager = () => {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
-  const token =
-    typeof window !== "undefined" ? "" : "";
 
   const [activeTab, setActiveTab] = useState("general");
   const [settings, setSettings] = useState(EMPTY_UI_SETTINGS);
@@ -206,13 +478,12 @@ const SettingsManager = () => {
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   });
 
   const loadAdminSettings = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/settings`, {
+      const res = await adminFetch(`${API_BASE}/admin/settings`, {
         headers: authHeaders(),
       });
       const data = await res.json();
@@ -247,7 +518,7 @@ const SettingsManager = () => {
     try {
       const payload = buildApiPayload(settings, secretsDraft);
 
-      const res = await fetch(`${API_BASE}/admin/settings`, {
+      const res = await adminFetch(`${API_BASE}/admin/settings`, {
         method: "PUT",
         headers: authHeaders(),
         body: JSON.stringify(payload),
@@ -283,7 +554,7 @@ const SettingsManager = () => {
       const saved = await saveSettings({ silent: true });
       if (!saved) throw new Error("Save failed before test");
 
-      const res = await fetch(
+      const res = await adminFetch(
         `${API_BASE}/admin/settings/test-payment/${provider}`,
         {
           method: "POST",
@@ -315,9 +586,8 @@ const SettingsManager = () => {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch(`${API_BASE}/admin/settings/upload?type=${type}`, {
+    const res = await adminFetch(`${API_BASE}/admin/settings/upload?type=${type}`, {
       method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
 
@@ -495,6 +765,258 @@ const SettingsManager = () => {
     </div>
   );
 
+  const updateAppearanceColor = (group, key, value) => {
+    setSettings((prev) => ({
+      ...prev,
+      appearance: {
+        ...prev.appearance,
+        [group]: {
+          ...prev.appearance[group],
+          [key]: value,
+        },
+      },
+    }));
+  };
+
+  const applyAppearancePreset = (presetTheme) => {
+    setSettings((prev) => ({
+      ...prev,
+      appearance: mergeThemeSettings(DEFAULT_THEME_SETTINGS, presetTheme),
+    }));
+  };
+
+  const AppearancePreview = () => {
+    const theme = settings.appearance;
+    const pageStyle = {
+      background: `linear-gradient(135deg, ${theme.background.page}, ${theme.background.section})`,
+      color: theme.text.body,
+      borderColor: theme.border.default,
+    };
+    const sectionStyle = {
+      background: theme.background.section,
+      borderColor: theme.border.default,
+    };
+    const cardStyle = {
+      background: theme.background.card,
+      borderColor: theme.border.default,
+      color: theme.text.body,
+    };
+    const gradientStyle = {
+      background: `linear-gradient(90deg, ${theme.brand.gradientFrom}, ${theme.brand.gradientTo})`,
+    };
+    const gradientTextStyle = {
+      background: `linear-gradient(90deg, ${theme.brand.gradientFrom}, ${theme.brand.gradientTo})`,
+      WebkitBackgroundClip: "text",
+      backgroundClip: "text",
+      color: "transparent",
+    };
+    const primaryButtonStyle = {
+      background: theme.buttonPrimary.bg,
+      color: theme.buttonPrimary.text,
+    };
+    const secondaryButtonStyle = {
+      background: theme.buttonSecondary.bg,
+      color: theme.buttonSecondary.text,
+      borderColor: theme.buttonSecondary.border,
+    };
+    const inputStyle = {
+      background: `color-mix(in srgb, ${theme.background.card} 88%, #ffffff 12%)`,
+      color: theme.text.body,
+      borderColor: theme.border.default,
+    };
+    const subtleTagStyle = {
+      background: `color-mix(in srgb, ${theme.brand.primary} 15%, ${theme.background.section})`,
+      color: theme.brand.primaryHover,
+      borderColor: `color-mix(in srgb, ${theme.brand.primary} 25%, ${theme.background.section})`,
+    };
+    const statePill = (stateColor) => ({
+      background: `color-mix(in srgb, ${stateColor} 18%, ${theme.background.section})`,
+      color: stateColor,
+      borderColor: `color-mix(in srgb, ${stateColor} 40%, ${theme.background.section})`,
+    });
+
+    return (
+      <div className="rounded-2xl border overflow-hidden" style={pageStyle}>
+        <div className="border-b px-4 py-3" style={sectionStyle}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                style={gradientStyle}
+              >
+                P
+              </div>
+              <div>
+                <p className="text-sm font-bold" style={{ color: theme.text.heading }}>
+                  Pink Dreams
+                </p>
+                <p className="text-[11px]" style={{ color: theme.text.muted }}>
+                  Theme Preview
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs" style={{ color: theme.text.muted }}>
+              <span style={{ color: theme.brand.primary }}>Home</span>
+              <span>Shop</span>
+              <span>Blog</span>
+              <span>Contact</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {[Heart, User2, ShoppingCart].map((Icon, i) => (
+                <div
+                  key={i}
+                  className="w-8 h-8 rounded-full border flex items-center justify-center"
+                  style={inputStyle}
+                >
+                  <Icon className="w-4 h-4" style={{ color: theme.text.body }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div className="rounded-xl border p-4 space-y-3" style={sectionStyle}>
+            <span
+              className="inline-flex items-center text-xs px-2 py-1 rounded-full border"
+              style={subtleTagStyle}
+            >
+              New Collection
+            </span>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h5 className="text-lg font-bold" style={{ color: theme.text.heading }}>
+                  Discover Your <span style={gradientTextStyle}>Perfect Style</span>
+                </h5>
+                <p className="text-xs mt-1" style={{ color: theme.text.muted }}>
+                  Headings, body text and gradients preview.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                  style={primaryButtonStyle}
+                >
+                  Primary CTA
+                </button>
+                <button
+                  type="button"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border"
+                  style={secondaryButtonStyle}
+                >
+                  Secondary CTA
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {["Featured Product", "Order #1029"].map((title) => (
+              <div key={title} className="rounded-xl border p-4 space-y-2" style={cardStyle}>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold" style={{ color: theme.text.heading }}>
+                    {title}
+                  </p>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full border" style={subtleTagStyle}>
+                    Badge
+                  </span>
+                </div>
+                <p className="text-xs" style={{ color: theme.text.body }}>
+                  Minimal card preview for products, orders or blog posts.
+                </p>
+                <div className="flex gap-1.5 flex-wrap">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full border" style={statePill(theme.state.success)}>
+                    Success
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full border" style={statePill(theme.state.warning)}>
+                    Warning
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full border" style={statePill(theme.state.error)}>
+                    Error
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-xl border p-4 space-y-3" style={cardStyle}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs mb-1" style={{ color: theme.text.muted }}>
+                  Search
+                </label>
+                <div className="relative">
+                  <SearchIcon
+                    className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2"
+                    style={{ color: theme.text.muted }}
+                  />
+                  <input
+                    value="Sample query"
+                    readOnly
+                    className="w-full pl-8 pr-3 py-2 rounded-lg border text-xs"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: theme.text.muted }}>
+                  Email Input
+                </label>
+                <input
+                  value="admin@pinkdreams.com"
+                  readOnly
+                  className="w-full px-3 py-2 rounded-lg border text-xs"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+            <textarea
+              readOnly
+              value="Textarea preview to test contrast in light and dark modes."
+              className="w-full px-3 py-2 rounded-lg border text-xs min-h-[64px]"
+              style={inputStyle}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded border" style={statePill(theme.state.success)}>
+              <Check className="w-3.5 h-3.5" />
+              Saved
+            </div>
+            <div className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded border" style={statePill(theme.state.info)}>
+              <Info className="w-3.5 h-3.5" />
+              Info
+            </div>
+            <div className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded border" style={statePill(theme.state.error)}>
+              <X className="w-3.5 h-3.5" />
+              Error
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              {[Instagram, Facebook, Twitter].map((Icon, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className="w-8 h-8 rounded-lg text-white flex items-center justify-center"
+                  style={gradientStyle}
+                >
+                  <Icon className="w-4 h-4" />
+                </button>
+              ))}
+              <button
+                type="button"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                style={primaryButtonStyle}
+              >
+                Action
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ═══════════════════════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════════════════════
@@ -624,6 +1146,110 @@ const SettingsManager = () => {
           )}
 
           {/* ═══ PAYMENT TAB ══════════════════════════════════════ */}
+          {activeTab === "appearance" && (
+            <div className="space-y-6">
+              <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Appearance & Color System
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Edit brand tokens that power the storefront. Changes apply
+                      instantly to the theme preview and live site.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {APPEARANCE_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => applyAppearancePreset(preset.theme)}
+                        className="px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                        title={`Apply ${preset.label}`}
+                      >
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-gray-300"
+                          style={{
+                            background: `linear-gradient(90deg, ${preset.theme.brand.gradientFrom}, ${preset.theme.brand.gradientTo})`,
+                          }}
+                        />
+                        <span className="font-medium">{preset.label}</span>
+                        <span className="text-[10px] text-gray-500">
+                          {preset.hint}
+                        </span>
+                      </button>
+                    ))}
+                    {/* <button
+                      type="button"
+                      onClick={() =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          appearance: mergeThemeSettings(DEFAULT_THEME_SETTINGS, {}),
+                        }))
+                      }
+                      className="px-4 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                    >
+                      Reset Default Palette
+                    </button> */}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-6">
+                <div className="space-y-4">
+                  {APPEARANCE_GROUPS.map((group) => (
+                    <section
+                      key={group.key}
+                      className="bg-white border border-gray-200 rounded-xl p-4"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-semibold text-gray-800">
+                          {group.title}
+                        </h4>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wide">
+                          {group.fields.length} tokens
+                        </span>
+                      </div>
+                      {group.description && (
+                        <p className="text-xs text-gray-500 mb-3">
+                          {group.description}
+                        </p>
+                      )}
+                      <div className="space-y-2.5">
+                        {group.fields.map((field) => (
+                        <AppearanceColorField
+                          key={`${group.key}.${field.key}`}
+                          label={field.label}
+                          value={
+                            settings?.appearance?.[group.key]?.[field.key] ||
+                            "#000000"
+                          }
+                          onChange={(nextValue) =>
+                            updateAppearanceColor(group.key, field.key, nextValue)
+                          }
+                        />
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+
+                <div className="space-y-4 xl:sticky xl:top-24 h-fit">
+                  <section className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-2">
+                      Live Preview
+                    </h4>
+                    <p className="text-xs text-gray-500 mb-3">
+                      Clean snapshot of headers, cards, buttons and inputs.
+                    </p>
+                    <AppearancePreview />
+                  </section>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === "payment" && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-800">

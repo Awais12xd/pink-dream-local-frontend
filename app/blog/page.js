@@ -211,6 +211,23 @@ const Blog = () => {
   const [newsletterLoading, setNewsletterLoading] = useState(false);
   const [newsletterMessage, setNewsletterMessage] = useState("");
   const [newsletterStatus, setNewsletterStatus] = useState("idle");
+  const pageSurfaceStyle = {
+    backgroundImage:
+      "linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-bg-section) 92%), var(--color-bg-section))",
+  };
+  const cardSurfaceStyle = {
+    backgroundColor: "var(--color-bg-card)",
+    border: "1px solid var(--color-border-default)",
+  };
+  const softPanelStyle = {
+    backgroundImage:
+      "linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-bg-section) 90%), color-mix(in srgb, var(--color-brand-secondary) 12%, var(--color-bg-section) 88%))",
+    border: "1px solid var(--color-border-default)",
+  };
+  const brandGradientStyle = {
+    backgroundImage:
+      "linear-gradient(90deg, var(--color-brand-gradient-from), var(--color-brand-gradient-to))",
+  };
 
   const fetchBlogs = async (page = 1, isLoadMore = false) => {
     if (isLoadMore) {
@@ -482,9 +499,10 @@ const Blog = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className={`bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 ${
+      className={`rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 ${
         featured ? "col-span-1 md:col-span-2 lg:col-span-2" : ""
       }`}
+      style={cardSurfaceStyle}
     >
       <div className="relative overflow-hidden">
       <div className={`relative overflow-hidden ${
@@ -635,10 +653,10 @@ const Blog = () => {
   const regularPosts = posts && posts.filter((post) => !post.featured);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white">
+    <div className="min-h-screen theme-scope" style={pageSurfaceStyle}>
       {/* Header */}
       <Header />
-      <div className=" shadow-sm  bg-pink-500 ">
+      <div className="shadow-sm" style={brandGradientStyle}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -663,7 +681,10 @@ const Blog = () => {
             animate={{ opacity: 1, x: 0 }}
             className="lg:w-80 flex-shrink-0"
           >
-            <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-4 space-y-6">
+            <div
+              className="rounded-2xl shadow-sm p-6 sticky top-4 space-y-6"
+              style={cardSurfaceStyle}
+            >
               {/* Search */}
               <div>
                 <div className="relative">
@@ -773,7 +794,7 @@ const Blog = () => {
               </div>
 
               {/* Newsletter Signup */}
-              <div className="bg-gradient-to-br from-pink-100 to-rose-100 p-6 rounded-xl">
+              <div className="p-6 rounded-xl" style={softPanelStyle}>
                 <h3 className="font-semibold text-gray-800 mb-2">
                   Stay Updated
                 </h3>
@@ -854,7 +875,8 @@ const Blog = () => {
                     whileHover={{ scale: newsletterLoading ? 1 : 1.02 }}
                     whileTap={{ scale: newsletterLoading ? 1 : 0.98 }}
                     disabled={newsletterLoading}
-                    className="w-full bg-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-pink-600 transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full text-white py-2 px-4 rounded-lg font-medium transition-opacity duration-200 hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                    style={brandGradientStyle}
                   >
                     {newsletterLoading ? "Subscribing..." : "Subscribe"}
                   </motion.button>
@@ -945,7 +967,8 @@ const Blog = () => {
            { hasMoreBlogs && <button
                         onClick={handleLoadMore}
                         disabled={loadingMore}
-                        className="bg-pink-500 mt-4  hover:bg-pink-600 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto"
+                        className="mt-4 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto"
+                        style={brandGradientStyle}
                       >
                         {loadingMore ? (
                           <>
@@ -980,7 +1003,8 @@ const Blog = () => {
                     setSearchTerm("");
                     setSelectedCategory("all");
                   }}
-                  className="bg-pink-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-600 transition-colors duration-200"
+                  className="text-white px-6 py-3 rounded-lg font-medium transition-opacity duration-200 hover:opacity-95"
+                  style={brandGradientStyle}
                 >
                   View All Posts
                 </motion.button>

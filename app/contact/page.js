@@ -38,6 +38,23 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [errors, setErrors] = useState({});
+  const pageSurfaceStyle = {
+    backgroundImage:
+      'linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-bg-section) 92%), var(--color-bg-section))'
+  };
+  const cardSurfaceStyle = {
+    backgroundColor: 'var(--color-bg-card)',
+    border: '1px solid var(--color-border-default)'
+  };
+  const softPanelStyle = {
+    backgroundImage:
+      'linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-bg-section) 90%), color-mix(in srgb, var(--color-brand-secondary) 12%, var(--color-bg-section) 88%))',
+    border: '1px solid var(--color-border-default)'
+  };
+  const brandGradientStyle = {
+    backgroundImage:
+      'linear-gradient(90deg, var(--color-brand-gradient-from), var(--color-brand-gradient-to))'
+  };
 
   const inquiryTypes = [
     { id: 'general', name: 'General Inquiry', icon: MessageSquare },
@@ -244,11 +261,11 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white">
+    <div className="min-h-screen theme-scope" style={pageSurfaceStyle}>
       {/* Header */}
       <Header />
 
-      <div className="bg-[#ec4899] shadow-sm">
+      <div className="shadow-sm" style={brandGradientStyle}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">{contactBannerTitle}</h1>
@@ -272,7 +289,8 @@ const Contact = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + index * 0.1 }}
               whileHover={{ y: -5 }}
-              className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+              className="p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+              style={cardSurfaceStyle}
             >
               <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl mb-4">
                 <info.icon className="w-6 h-6 text-white" />
@@ -288,7 +306,7 @@ const Contact = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Contact Form */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="rounded-2xl shadow-lg p-8" style={cardSurfaceStyle}>
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Send us a Message</h2>
                 <p className="text-gray-600">Fill out the form below and we'll get back to you as soon as possible.</p>
@@ -392,12 +410,12 @@ const Contact = () => {
           {/* Sidebar */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="space-y-8">
             {/* Social Media */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="rounded-2xl shadow-lg p-6" style={cardSurfaceStyle}>
               <h3 className="text-xl font-bold text-gray-900 mb-4">Follow Us</h3>
               <p className="text-gray-600 mb-4">Stay connected with us on social media for the latest updates and behind-the-scenes content.</p>
               <div className="flex gap-4">
                 {effectiveSocialLinks.map((socialItem, index) => (
-                  <motion.a key={index} href={socialItem.url} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className={`w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600 transition-colors duration-200 ${socialItem.color}`}>
+                  <motion.a key={index} href={socialItem.url} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className={`w-12 h-12 rounded-xl flex items-center justify-center text-white transition-all duration-200 hover:opacity-90`} style={brandGradientStyle}>
                     <socialItem.icon className="w-6 h-6" />
                   </motion.a>
                 ))}
@@ -405,7 +423,7 @@ const Contact = () => {
             </div>
 
             {/* FAQ */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="rounded-2xl shadow-lg p-6" style={cardSurfaceStyle}>
               <h3 className="text-xl font-bold text-gray-900 mb-4">Quick Answers</h3>
               <div className="space-y-4">
                 <div className="border-b border-gray-100 pb-4">
@@ -428,7 +446,7 @@ const Contact = () => {
             </div>
 
             {/* Business Hours */}
-            <div className="bg-gradient-to-br from-pink-100 to-rose-100 rounded-2xl p-6">
+            <div className="rounded-2xl p-6" style={softPanelStyle}>
               <h3 className="text-xl font-bold text-gray-900 mb-4">Business Hours</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">

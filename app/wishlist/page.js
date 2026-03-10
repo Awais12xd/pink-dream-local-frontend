@@ -202,7 +202,7 @@ const addAllToCart = async () => {
   // Loading state
   if (wishlistLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="theme-scope min-h-screen bg-gray-50">
         <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
@@ -218,7 +218,7 @@ const addAllToCart = async () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="theme-scope min-h-screen bg-gray-50">
         <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
@@ -239,7 +239,7 @@ const addAllToCart = async () => {
   // Empty wishlist state
   if (wishlist.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="theme-scope min-h-screen bg-gray-50">
         <Header />
         <div className="py-8">
           <div className="container mx-auto px-4">
@@ -272,7 +272,7 @@ const addAllToCart = async () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="theme-scope min-h-screen bg-gray-50">
       <Header />
       <div className="py-8">
         <div className="container mx-auto px-4">

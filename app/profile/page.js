@@ -998,7 +998,7 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
+      <div className="theme-scope min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <Loader className="w-12 h-12 animate-spin text-pink-500 mx-auto mb-4" />
           <p className="text-gray-600">Loading your profile...</p>
@@ -1014,7 +1014,7 @@ const ProfilePage = () => {
         <meta name="description" content="Manage your Pink Dreams profile and account settings" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+      <div className="theme-scope min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
         <Notification 
           message={notification.message} 
           type={notification.type} 

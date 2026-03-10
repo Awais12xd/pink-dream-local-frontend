@@ -23,6 +23,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { getImageSrc, handleImageError } from "../utils/imageUtils";
+import { openLoginModal } from "../utils/openLoginModal";
 import Image from "next/image";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -439,7 +440,7 @@ export default function OrdersPage() {
   }, [orderStats, totalOrders]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+    <div className="theme-scope min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
       <Notification
         message={notification.message}
         type={notification.type}
@@ -457,12 +458,18 @@ export default function OrdersPage() {
         {!authLoading && !user ? (
           <div className="mt-8 bg-white rounded-2xl shadow p-8 text-center">
             <p className="text-gray-700 mb-4">Please login to view your orders.</p>
-            <Link
-              href="/login"
+            <button
+              type="button"
+              onClick={() =>
+                openLoginModal({
+                  source: "orders-page",
+                  redirect: "/orders",
+                })
+              }
               className="inline-flex items-center px-4 py-2 rounded-lg bg-pink-500 text-white hover:bg-pink-600"
             >
-              Go to Login
-            </Link>
+              Login to Continue
+            </button>
           </div>
         ) : (
           <>

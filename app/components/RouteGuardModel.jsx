@@ -21,7 +21,7 @@ const ROUTE_POLICIES = [
   { prefix: "/account", mode: PROTECTION.LOGIN_ONLY },
 ];
 
-const EXCLUDED_PREFIXES = ["/login", "/auth", "/admin"];
+const EXCLUDED_PREFIXES = ["/auth", "/admin"];
 
 function getRoutePolicy(pathname) {
   if (!pathname) return null;
@@ -72,6 +72,16 @@ export default function RouteGuardModel({ children }) {
     if (authLoading) return;
     setIsLoginModalOpen(shouldRequireLogin && !user);
   }, [authLoading, shouldRequireLogin, user]);
+
+  useEffect(() => {
+    const handleOpenLoginModal = () => {
+      setIsLoginModalOpen(true);
+    };
+
+    window.addEventListener("open-login-modal", handleOpenLoginModal);
+    return () =>
+      window.removeEventListener("open-login-modal", handleOpenLoginModal);
+  }, []);
 
   return (
     <>
