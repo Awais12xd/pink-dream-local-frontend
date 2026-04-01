@@ -26,6 +26,22 @@ import {
 } from "@/app/utils/imageUtils";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const pageSurfaceStyle = {
+  backgroundColor: "var(--color-bg-page)",
+};
+const cardSurfaceStyle = {
+  backgroundColor: "var(--color-bg-card)",
+  border: "1px solid var(--color-border-default)",
+};
+const softPanelStyle = {
+  backgroundColor:
+    "color-mix(in srgb, var(--color-bg-card) 85%, var(--color-bg-section) 15%)",
+  border: "1px solid var(--color-border-default)",
+};
+const brandGradientStyle = {
+  backgroundImage:
+    "linear-gradient(90deg, var(--color-brand-gradient-from), var(--color-brand-gradient-to))",
+};
 
 export default function BlogDetail() {
   const params = useParams();
@@ -48,6 +64,10 @@ export default function BlogDetail() {
   const [replyingTo, setReplyingTo] = useState(null); // commentId currently replying to
   const [replyText, setReplyText] = useState("");
   const [replyLoading, setReplyLoading] = useState(false);
+  const COMMENTS_PAGE_SIZE = 6;
+  const [visibleCommentsCount, setVisibleCommentsCount] = useState(
+    COMMENTS_PAGE_SIZE,
+  );
   // new state (add near other useState declarations)
   const [openReplies, setOpenReplies] = useState({}); // { [commentId]: true }
   const toggleReplies = (commentId) => {
@@ -72,6 +92,10 @@ export default function BlogDetail() {
     // Update document title when blog loads
     if (blog?.title) document.title = `${blog.title} | My Blog`;
   }, [blog]);
+
+  useEffect(() => {
+    setVisibleCommentsCount(COMMENTS_PAGE_SIZE);
+  }, [blogId, blog?.comments?.length]);
 
   useEffect(() => {
     // reading progress
@@ -262,7 +286,7 @@ export default function BlogDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen theme-scope" style={pageSurfaceStyle}>
         <Header />
         <div className="flex items-center justify-center min-h-[60vh] px-4">
           <div className="text-center">
@@ -277,7 +301,7 @@ export default function BlogDetail() {
 
   if (error || !blog) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen theme-scope" style={pageSurfaceStyle}>
         <Header />
         <div className="flex items-center justify-center min-h-[60vh] px-4">
           <div className="text-center">
@@ -290,7 +314,8 @@ export default function BlogDetail() {
             </p>
             <Link
               href="/blog"
-              className="bg-pink-600 text-white px-6 py-2 rounded-lg hover:bg-pink-700 transition-colors text-sm sm:text-base"
+              className="text-white px-6 py-2 rounded-lg transition-colors text-sm sm:text-base hover:opacity-95"
+              style={brandGradientStyle}
             >
               Back to Blog
             </Link>
@@ -324,9 +349,11 @@ export default function BlogDetail() {
     { width: 112, height: 112, crop: "fill", quality: "auto" },
     AVATAR_FALLBACK_IMAGE,
   );
+  const visibleComments = comments.slice(0, visibleCommentsCount);
+  const hasMoreComments = comments.length > visibleCommentsCount;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen theme-scope" style={pageSurfaceStyle}>
       <Header />
 
       {/* Reading progress bar */}
@@ -340,7 +367,7 @@ export default function BlogDetail() {
         </div>
       </div>
 
-      <div className="bg-white border-b">
+      <div className="bg-white border-b" style={cardSurfaceStyle}>
         <div className="container mx-auto px-4 py-3 sm:py-4">
           <nav className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600 overflow-x-auto">
             <Link href="/" className="hover:text-pink-600 whitespace-nowrap">
@@ -365,7 +392,10 @@ export default function BlogDetail() {
         <div className=" container mx-auto ">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:px-2">
             {/* Main content */}
-            <article className="lg:col-span-8 bg-white rounded-lg shadow-sm overflow-hidden">
+            <article
+              className="lg:col-span-8 bg-white rounded-lg shadow-sm overflow-hidden"
+              style={cardSurfaceStyle}
+            >
               {/* Hero */}
               <div className="relative">
                 <div className="relative overflow-hidden w-full h-64 sm:h-80 md:h-96">
@@ -410,7 +440,10 @@ export default function BlogDetail() {
                         }}
                        width={1200} height={1200} sizes="100vw"/>
                     </div> */}
-                    <div className="relative rounded-full overflow-hidden bg-gray-100 w-9 h-9">
+                    <div
+                      className="relative rounded-full overflow-hidden bg-gray-100 w-9 h-9"
+                      style={{ backgroundColor: "var(--color-bg-section)" }}
+                    >
                       <Image
                         src={authorAvatarSrc}
                         alt={author?.name || "Author"}
@@ -441,6 +474,7 @@ export default function BlogDetail() {
                       onClick={handleLike}
                       disabled={isLiking}
                       className="flex items-center space-x-1 px-2 py-1 border rounded-md hover:border-pink-500"
+                      style={{ borderColor: "var(--color-border-default)" }}
                     >
                       <Heart className="w-4 h-4 text-red-500" />
                       <span className="text-sm">{localLikes}</span>
@@ -449,6 +483,7 @@ export default function BlogDetail() {
                       aria-label="Share"
                       onClick={handleShare}
                       className="p-2 border rounded-md"
+                      style={{ borderColor: "var(--color-border-default)" }}
                     >
                       <Share2 className="w-4 h-4" />
                     </button>
@@ -509,6 +544,11 @@ export default function BlogDetail() {
                         onChange={(e) => setCommentText(e.target.value)}
                         placeholder="Write your comment..."
                         className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
+                        style={{
+                          backgroundColor: "var(--color-bg-card)",
+                          color: "var(--color-text-body)",
+                          borderColor: "var(--color-border-default)",
+                        }}
                         rows={3}
                       />
                       <div className="flex items-center justify-between">
@@ -518,14 +558,15 @@ export default function BlogDetail() {
                         <button
                           type="submit"
                           disabled={isSubmittingComment}
-                          className="bg-pink-600 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50"
+                          className="text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50"
+                          style={brandGradientStyle}
                         >
                           {isSubmittingComment ? "Posting..." : "Post Comment"}
                         </button>
                       </div>
                     </form>
                   ) : (
-                    <div className="p-3 bg-gray-50 rounded text-sm text-gray-600">
+                    <div className="p-3 rounded text-sm text-gray-600" style={softPanelStyle}>
                       Comments are disabled for this post.
                     </div>
                   )}
@@ -539,15 +580,19 @@ export default function BlogDetail() {
                     )}
 
                     {!isSubmittingComment &&
-                      comments.map((c) => (
+                      visibleComments.map((c) => (
                         <div
                           key={c._id}
                           className="bg-white border rounded-lg p-3 w-full"
+                          style={cardSurfaceStyle}
                           aria-live="polite"
                         >
                           <div className="flex items-start gap-3">
                             {/* avatar */}
-                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <div
+                              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"
+                              style={{ backgroundColor: "var(--color-bg-section)" }}
+                            >
                               <User className="w-4 h-4 text-gray-500" />
                             </div>
 
@@ -628,13 +673,19 @@ export default function BlogDetail() {
                                     }
                                     placeholder="Write your reply..."
                                     className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
+                                    style={{
+                                      backgroundColor: "var(--color-bg-card)",
+                                      color: "var(--color-text-body)",
+                                      borderColor: "var(--color-border-default)",
+                                    }}
                                     rows={2}
                                   />
                                   <div className="mt-2 flex items-center gap-2">
                                     <button
                                       onClick={() => handleReplySubmit(c._id)}
                                       disabled={replyLoading}
-                                      className="bg-pink-600 text-white px-3 py-1 rounded text-sm disabled:opacity-60"
+                                      className="text-white px-3 py-1 rounded text-sm disabled:opacity-60"
+                                      style={brandGradientStyle}
                                     >
                                       {replyLoading
                                         ? "Posting..."
@@ -681,6 +732,37 @@ export default function BlogDetail() {
                           </div>
                         </div>
                       ))}
+                    {hasMoreComments && (
+                      <div className="flex justify-center pt-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setVisibleCommentsCount((prev) =>
+                              Math.min(prev + COMMENTS_PAGE_SIZE, comments.length),
+                            )
+                          }
+                          className="text-sm text-white px-4 py-2 rounded-lg hover:opacity-95"
+                          style={brandGradientStyle}
+                        >
+                          Load more comments
+                        </button>
+                      </div>
+                    )}
+                    {visibleCommentsCount > COMMENTS_PAGE_SIZE &&
+                      comments.length > 0 && (
+                        <div className="flex justify-center pt-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setVisibleCommentsCount(COMMENTS_PAGE_SIZE)
+                            }
+                            className="text-sm text-gray-600 px-4 py-2 rounded-lg border"
+                            style={{ borderColor: "var(--color-border-default)" }}
+                          >
+                            Show fewer comments
+                          </button>
+                        </div>
+                      )}
                   </div>
                 </div>
               </div>
@@ -689,7 +771,7 @@ export default function BlogDetail() {
             {/* Right sidebar (meta) */}
             <aside className="lg:col-span-4">
               <div className="sticky top-36 space-y-4">
-                <div className="bg-white border rounded-lg p-4 shadow-sm">
+                <div className="bg-white border rounded-lg p-4 shadow-sm" style={cardSurfaceStyle}>
                   <div className="flex flex-col items-center space-y-4">
                     {/* <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100">
                       <Image
@@ -702,7 +784,10 @@ export default function BlogDetail() {
                         }}
                        width={1200} height={1200} sizes="100vw"/>
                     </div> */}
-                    <div className="relative rounded-full overflow-hidden bg-gray-100 w-14 h-14">
+                    <div
+                      className="relative rounded-full overflow-hidden bg-gray-100 w-14 h-14"
+                      style={{ backgroundColor: "var(--color-bg-section)" }}
+                    >
                       <Image
                         src={authorAvatarSrc}
                         alt={author?.name || "Author"}
@@ -753,12 +838,14 @@ export default function BlogDetail() {
                       onClick={handleLike}
                       disabled={isLiking}
                       className="flex-1 flex items-center justify-center px-3 py-2 border rounded-md hover:border-pink-500"
+                      style={{ borderColor: "var(--color-border-default)" }}
                     >
                       <Heart className="w-4 h-4 text-red-500 mr-2" /> Like
                     </button>
                     <button
                       onClick={handleShare}
                       className="p-2 border rounded-md"
+                      style={{ borderColor: "var(--color-border-default)" }}
                       aria-label="Share"
                     >
                       <Share2 className="w-4 h-4" />
@@ -767,7 +854,7 @@ export default function BlogDetail() {
                 </div>
 
                 {/* category & tags */}
-                <div className="bg-white border rounded-lg p-4 shadow-sm">
+                <div className="bg-white border rounded-lg p-4 shadow-sm" style={cardSurfaceStyle}>
                   <div className="text-xs text-gray-500">Category</div>
                   <div className="mt-1 font-medium text-gray-800 flex items-center space-x-2">
                     <FileText className="w-4 h-4" />{" "}
@@ -791,7 +878,7 @@ export default function BlogDetail() {
                 </div>
 
                 {/* quick nav */}
-                <div className="bg-white border rounded-lg p-4 shadow-sm">
+                <div className="bg-white border rounded-lg p-4 shadow-sm" style={cardSurfaceStyle}>
                   <div className="text-sm font-semibold text-gray-800">
                     Quick actions
                   </div>
@@ -801,6 +888,7 @@ export default function BlogDetail() {
                         window.scrollTo({ top: 0, behavior: "smooth" })
                       }
                       className="text-sm flex items-center gap-2 px-3 py-2 border rounded-md"
+                      style={{ borderColor: "var(--color-border-default)" }}
                     >
                       {" "}
                       <ArrowUp className="w-4 h-4" /> Back to top
@@ -808,6 +896,7 @@ export default function BlogDetail() {
                     <Link
                       href="/blog"
                       className="text-sm flex items-center gap-2 px-3 py-2 border rounded-md"
+                      style={{ borderColor: "var(--color-border-default)" }}
                     >
                       {" "}
                       <ChevronRight className="w-4 h-4" /> Browse all posts

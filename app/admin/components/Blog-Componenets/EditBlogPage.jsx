@@ -33,6 +33,9 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
     shortDescription: "",
     category: "",
     image: "",
+    authorName: "",
+    authorProfileImage: "",
+    bio: "",
     content: "",
     status: "draft",
     featured: false,
@@ -49,9 +52,14 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
   const [hasChanges, setHasChanges] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState(blog?.image);
+  const [uploadingAuthorImage, setUploadingAuthorImage] = useState(false);
+  const [authorImagePreview, setAuthorImagePreview] = useState(
+    blog?.author?.profileImage || "",
+  );
   const [blogCategories, setBlogCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const imagePreviewRef = useRef(null);
+  const authorPreviewRef = useRef(null);
   const isBlobUrl = (url) => typeof url === "string" && url.startsWith("blob:");
   const revokeObjectUrl = (url) => {
     if (!isBlobUrl(url)) return;
@@ -62,6 +70,7 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
     }
   };
   const blogHero = getImageDimensions("blogHero");
+  const authorAvatar = getImageDimensions("avatar");
 
 
   const categories = ["Fashion", "Beauty"];
@@ -120,6 +129,9 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         shortDescription: blog.shortDescription || "",
         content: blog.content || "",
         image: blog.image || "",
+        authorName: blog.author?.name || "",
+        authorProfileImage: blog.author?.profileImage || "",
+        bio: blog.author?.bio || "",
         status: blog.status,
         category: blog.category ,
         featured: blog.featured,
@@ -127,6 +139,9 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         commentsEnabled: blog.commentsEnabled,
       };
       setFormData(blogData);
+      setBlogContent(blog.content || "");
+      setImagePreview(blog.image || "");
+      setAuthorImagePreview(blog.author?.profileImage || "");
       setHasChanges(false);
     }
   }, [blog]);
@@ -136,8 +151,13 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
   }, [imagePreview]);
 
   useEffect(() => {
+    authorPreviewRef.current = authorImagePreview;
+  }, [authorImagePreview]);
+
+  useEffect(() => {
     return () => {
       revokeObjectUrl(imagePreviewRef.current);
+      revokeObjectUrl(authorPreviewRef.current);
     };
   }, []);
 
@@ -153,7 +173,10 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         formData.trending !== blog.trending ||
         formData.commentsEnabled !== blog.commentsEnabled ||
         formData.status !== blog.status || 
-        formData.image !== blog.image
+        formData.image !== blog.image ||
+        formData.authorName !== (blog.author?.name || "") ||
+        formData.authorProfileImage !== (blog.author?.profileImage || "") ||
+        formData.bio !== (blog.author?.bio || "")
 
       setHasChanges(hasDataChanged);
     }
@@ -168,6 +191,12 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
 
     if (!formData.image) {
       newErrors.image = "At least one blog image is required";
+    }
+    if (!formData.authorName?.trim()) {
+      newErrors.authorName = "Author name is required";
+    }
+    if (!formData.bio?.trim()) {
+      newErrors.bio = "Author bio is required";
     }
 
     setErrors(newErrors);
@@ -262,6 +291,78 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
     setImagePreview(null);
   };
 
+  // Handle author image upload
+  const handleAuthorImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+    if (!validTypes.includes(file.type)) {
+      alert("Please upload a valid image file (JPEG, PNG, WEBP, or GIF)");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB");
+      return;
+    }
+
+    const previousRemote = formData.authorProfileImage;
+    const tempUrl = URL.createObjectURL(file);
+    revokeObjectUrl(authorImagePreview);
+    setAuthorImagePreview(tempUrl);
+    setUploadingAuthorImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("authorProfileImage", file);
+
+      const response = await fetch(`${API_BASE}/upload/author-profile-image`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFormData((prev) => ({
+          ...prev,
+          authorProfileImage: data.imageUrl,
+        }));
+        setAuthorImagePreview(data.imageUrl);
+      } else {
+        setAuthorImagePreview(previousRemote || "");
+        alert(data.message || "Failed to upload author image");
+      }
+    } catch (error) {
+      console.error("Error uploading author image:", error);
+      setAuthorImagePreview(previousRemote || "");
+      alert("Failed to upload author image");
+    } finally {
+      revokeObjectUrl(tempUrl);
+      setUploadingAuthorImage(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemoveAuthorImage = () => {
+    revokeObjectUrl(authorImagePreview);
+    setFormData((prev) => ({
+      ...prev,
+      authorProfileImage: "",
+    }));
+    setAuthorImagePreview("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -279,6 +380,9 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         shortDescription: formData.shortDescription,
         content: formData.content,
         image: formData.image,
+        authorName: formData.authorName,
+        authorProfileImage: formData.authorProfileImage,
+        bio: formData.bio,
         featured: formData.featured,
         trending: formData.trending,
         commentsEnabled: formData.commentsEnabled,
@@ -319,12 +423,18 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
         shortDescription: blog.shortDescription || "",
         content: blog.content || "",
         image: blog.image,
+        authorName: blog.author?.name || "",
+        authorProfileImage: blog.author?.profileImage || "",
+        bio: blog.author?.bio || "",
         featured: blog.featured,
         trending: blog.trending,
         status: blog.status,
+        commentsEnabled: blog.commentsEnabled,
       };
       setFormData(productData);
+      setBlogContent(blog.content || "");
       setImagePreview(blog.image || null);
+      setAuthorImagePreview(blog.author?.profileImage || "");
       setErrors({});
       setHasChanges(false);
     }
@@ -634,6 +744,129 @@ const EditBlogPage = ({ blog, onSave, onCancel }) => {
           <p className="text-xs text-gray-500 mt-2">
             Recommended: 1200×800 px, Max 5MB (JPEG, PNG, WEBP, GIF)
           </p>
+        </div>
+
+        {/* Author Section */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-pink-100">
+          <h2 className="text-lg font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent mb-4 flex items-center">
+            <Camera className="w-5 h-5 mr-2 text-pink-600" />
+            Author Details
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 items-start">
+            <div>
+              {authorImagePreview ? (
+                <div className="relative w-40 h-40 rounded-full overflow-hidden border-2 border-pink-200">
+                  <Image
+                    src={
+                      isBlobUrl(authorImagePreview)
+                        ? authorImagePreview
+                        : getOptimizedImageSrc(authorImagePreview, "avatar")
+                    }
+                    alt="Author preview"
+                    className="w-full h-full object-cover"
+                    width={authorAvatar.width}
+                    height={authorAvatar.height}
+                    sizes={authorAvatar.sizes}
+                    quality={75}
+                    unoptimized={isBlobUrl(authorImagePreview)}
+                  />
+                  {isBlobUrl(authorImagePreview) && (
+                    <div className="absolute inset-0 bg-white/55 flex items-center justify-center">
+                      <Loader className="w-5 h-5 text-pink-600 animate-spin" />
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleRemoveAuthorImage}
+                    className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-40 h-40 rounded-full border-2 border-dashed border-pink-300 bg-pink-50 flex items-center justify-center">
+                  <ImageIcon className="w-8 h-8 text-pink-400" />
+                </div>
+              )}
+
+              <label className="mt-4 inline-block w-full">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAuthorImageUpload}
+                  className="hidden"
+                  disabled={uploadingAuthorImage}
+                />
+                <div
+                  className={`flex items-center justify-center space-x-2 px-3 py-2 border-2 border-dashed border-pink-300 rounded-lg cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-all ${
+                    uploadingAuthorImage
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                >
+                  {uploadingAuthorImage ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin text-pink-600" />
+                      <span className="text-pink-600 text-sm">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 text-pink-600" />
+                      <span className="text-pink-600 text-sm">
+                        {authorImagePreview ? "Change Image" : "Upload Image"}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </label>
+              <p className="text-xs text-gray-500 mt-2">
+                Recommended: 400x400 px, Max 5MB
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  name="authorName"
+                  value={formData.authorName}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
+                    errors.authorName ? "border-red-300" : "border-gray-300"
+                  }`}
+                  placeholder="Author name"
+                />
+                {errors.authorName && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.authorName}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bio *
+                </label>
+                <textarea
+                  name="bio"
+                  value={formData.bio}
+                  onChange={handleInputChange}
+                  rows="3"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
+                    errors.bio ? "border-red-300" : "border-gray-300"
+                  }`}
+                  placeholder="Short author bio"
+                />
+                {errors.bio && (
+                  <p className="mt-1 text-sm text-red-600">{errors.bio}</p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Action Buttons */}

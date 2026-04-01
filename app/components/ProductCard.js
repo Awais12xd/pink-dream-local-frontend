@@ -148,10 +148,24 @@ const ProductCard = ({ product, priority = false }) => {
                 }}
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-pink-50 to-rose-50 flex items-center justify-center">
+              <div
+                className="w-full h-full flex items-center justify-center"
+                style={{
+                  background:
+                    "linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-card) 88%), color-mix(in srgb, var(--color-secondary) 12%, var(--color-bg-section) 88%))",
+                }}
+              >
                 <div className="text-center">
-                  <ShoppingBag className="w-12 h-12 text-pink-300 mx-auto mb-2" />
-                  <span className="text-pink-400 text-sm font-medium">No Image Available</span>
+                  <ShoppingBag
+                    className="w-12 h-12 mx-auto mb-2"
+                    style={{ color: "var(--color-primary)" }}
+                  />
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    No Image Available
+                  </span>
                 </div>
               </div>
             )}
