@@ -24,6 +24,10 @@ import {
   Twitter,
   Mail,
   Youtube,
+  KeyRound,
+  ShieldCheck,
+  RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import Image from "next/image";
@@ -83,6 +87,7 @@ const EMPTY_META = {
 
 const TABS = [
   { id: "general", label: "General", icon: Settings },
+  { id: "license", label: "License", icon: ShieldCheck },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "payment", label: "Payment", icon: CreditCard },
   { id: "seo", label: "SEO", icon: SearchIcon },
@@ -258,6 +263,87 @@ const APPEARANCE_PRESETS = [
     },
   },
 ];
+
+const HelpHint = ({ text, className = "" }) => {
+  const [open, setOpen] = useState(false);
+  const [supportsHover, setSupportsHover] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const syncHoverCapability = () => setSupportsHover(mediaQuery.matches);
+
+    syncHoverCapability();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", syncHoverCapability);
+      return () =>
+        mediaQuery.removeEventListener("change", syncHoverCapability);
+    }
+
+    mediaQuery.addListener(syncHoverCapability);
+    return () => mediaQuery.removeListener(syncHoverCapability);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event) => {
+      if (containerRef.current?.contains(event.target)) return;
+      setOpen(false);
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
+
+  const handleClick = (event) => {
+    if (supportsHover) return;
+    event.preventDefault();
+    setOpen((prev) => !prev);
+  };
+
+  return (
+    <span
+      ref={containerRef}
+      className={`relative inline-flex items-center ${className}`}
+      onMouseEnter={() => supportsHover && setOpen(true)}
+      onMouseLeave={() => supportsHover && setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={handleClick}
+        onFocus={() => setOpen(true)}
+        onBlur={() => supportsHover && setOpen(false)}
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
+        aria-label="Show field help"
+      >
+        ?
+      </button>
+
+      {open && (
+        <span
+          role="tooltip"
+          className="absolute left-1/2 top-[calc(100%+8px)] z-50 w-64 -translate-x-1/2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-[11px] leading-5 text-white shadow-xl"
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 const AppearanceColorField = ({ label, value, onChange }) => {
   const [open, setOpen] = useState(false);
@@ -446,10 +532,10 @@ const buildApiPayload = (uiSettings, secretsDraft) => {
   };
 };
 
-const SettingsManager = () => {
+const SettingsManager = ({ initialTab = "general" }) => {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [settings, setSettings] = useState(EMPTY_UI_SETTINGS);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -466,7 +552,21 @@ const SettingsManager = () => {
     stripe: false,
     paypal: false,
   });
-
+  const [licenseLoading, setLicenseLoading] = useState(true);
+  const [licenseActionLoading, setLicenseActionLoading] = useState({
+    activate: false,
+    validate: false,
+    deactivate: false,
+  });
+  const [licenseState, setLicenseState] = useState(null);
+  const [licenseAuditLoading, setLicenseAuditLoading] = useState(false);
+  const [licenseAudit, setLicenseAudit] = useState([]);
+  const [licenseForm, setLicenseForm] = useState({
+    licenseKey: "",
+    domain: "",
+    instanceId: "",
+    environment: "production",
+  });
   const siteLogoRef = useRef(null);
   const adminLogoRef = useRef(null);
   const faviconRef = useRef(null);
@@ -508,8 +608,147 @@ const SettingsManager = () => {
     }
   };
 
+  const loadLicenseStatus = async () => {
+    setLicenseLoading(true);
+    try {
+      const res = await adminFetch(`${API_BASE}/admin/license/status`, {
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to load license status");
+      }
+      setLicenseState(
+        data.state
+          ? {
+              ...data.state,
+              compatibleEnvironment: data?.compatibleEnvironment !== false,
+            }
+          : null,
+      );
+      setLicenseForm((prev) => ({
+        ...prev,
+        domain: data?.state?.domain || prev.domain,
+        instanceId: data?.state?.instanceId || prev.instanceId,
+        environment: data?.appEnvironment || data?.state?.environment || prev.environment,
+      }));
+    } catch (err) {
+      setLicenseState(null);
+      showNotification(err.message || "Failed to load license status", "error");
+    } finally {
+      setLicenseLoading(false);
+    }
+  };
+
+  const loadLicenseAudit = async () => {
+    setLicenseAuditLoading(true);
+    try {
+      const res = await adminFetch(`${API_BASE}/admin/license/audit?limit=12`, {
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to load license audit");
+      }
+      setLicenseAudit(Array.isArray(data.items) ? data.items : []);
+    } catch (err) {
+      setLicenseAudit([]);
+      showNotification(err.message || "Failed to load license audit", "error");
+    } finally {
+      setLicenseAuditLoading(false);
+    }
+  };
+
+  const runLicenseAction = async (action) => {
+    if (
+      action === "deactivate" &&
+      typeof window !== "undefined" &&
+      !window.confirm("Deactivate this installation license?")
+    ) {
+      return;
+    }
+    setLicenseActionLoading((prev) => ({ ...prev, [action]: true }));
+    try {
+      const body =
+        action === "activate"
+          ? {
+              licenseKey: licenseForm.licenseKey.trim(),
+              domain: licenseForm.domain.trim() || undefined,
+              instanceId: licenseForm.instanceId.trim() || undefined,
+            }
+          : {
+              domain: licenseForm.domain.trim() || undefined,
+              instanceId: licenseForm.instanceId.trim() || undefined,
+            };
+
+      if (action === "activate" && !body.licenseKey) {
+        throw new Error("License key is required to activate.");
+      }
+
+      const force = action === "validate" ? "?force=1" : "";
+      const res = await adminFetch(`${API_BASE}/admin/license/${action}${force}`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        if (res.status === 404) {
+          throw new Error(
+            "License endpoints are unavailable on this backend. Verify server is updated and restarted.",
+          );
+        }
+        throw new Error(data?.reason || data?.message || `Failed to ${action} license`);
+      }
+
+      if (action === "activate") {
+        setLicenseForm((prev) => ({ ...prev, licenseKey: "" }));
+      }
+      const nextState = data?.state
+        ? {
+            ...data.state,
+            compatibleEnvironment: data?.compatibleEnvironment !== false,
+          }
+        : null;
+      setLicenseState(nextState);
+      setLicenseForm((prev) => ({
+        ...prev,
+        environment:
+          data?.appEnvironment ||
+          nextState?.environment ||
+          prev.environment,
+      }));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("admin-license-state", {
+            detail: { status: nextState?.status || "inactive" },
+          }),
+        );
+      }
+      await loadLicenseAudit();
+      showNotification(data?.message || `License ${action} successful`, "success");
+    } catch (err) {
+      showNotification(err.message || `Failed to ${action} license`, "error");
+    } finally {
+      setLicenseActionLoading((prev) => ({ ...prev, [action]: false }));
+    }
+  };
+
+  const LICENSE_STATUS_STYLES = {
+    active: "bg-emerald-100 text-emerald-700",
+    grace: "bg-amber-100 text-amber-700",
+    inactive: "bg-gray-100 text-gray-700",
+    invalid: "bg-red-100 text-red-700",
+    expired: "bg-red-100 text-red-700",
+    revoked: "bg-red-100 text-red-700",
+    suspended: "bg-yellow-100 text-yellow-700",
+    deactivated: "bg-gray-100 text-gray-700",
+  };
+
   useEffect(() => {
     loadAdminSettings();
+    loadLicenseStatus();
+    loadLicenseAudit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1146,6 +1385,229 @@ const SettingsManager = () => {
           )}
 
           {/* ═══ PAYMENT TAB ══════════════════════════════════════ */}
+          {activeTab === "license" && (
+            <div className="space-y-6">
+              {licenseLoading ? (
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Loader className="w-4 h-4 animate-spin" />
+                  Loading license status...
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
+                      <p className="text-xs uppercase tracking-wide text-gray-500">
+                        Status
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            LICENSE_STATUS_STYLES[licenseState?.status] ||
+                            "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {licenseState?.status || "inactive"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
+                      <p className="text-xs uppercase tracking-wide text-gray-500">
+                        Domain
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-gray-800 break-all">
+                        {licenseState?.domain || "Not set"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
+                      <p className="text-xs uppercase tracking-wide text-gray-500">
+                        Environment
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-gray-800">
+                        {licenseState?.environment || "Not set"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
+                      <p className="text-xs uppercase tracking-wide text-gray-500">
+                        Last Validation
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-gray-800">
+                        {licenseState?.lastValidatedAt
+                          ? new Date(licenseState.lastValidatedAt).toLocaleString()
+                          : "Never"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {licenseState?.lastValidationError && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-900 text-sm flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>
+                        Last validation error: <strong>{licenseState.lastValidationError}</strong>
+                      </span>
+                    </div>
+                  )}
+
+                  {licenseState?.compatibleEnvironment === false && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-900 text-sm flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>
+                        Active key environment does not match this installation config.
+                        Click <strong>Activate</strong> again to re-bind license using server environment.
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
+                    <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                      <KeyRound className="w-4 h-4 text-pink-600" />
+                      <span>Activation</span>
+                    </h4>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                          <span>License Key</span>
+                          <HelpHint text="Paste the license key issued from your license authority." />
+                        </label>
+                        <input
+                          type="text"
+                          value={licenseForm.licenseKey}
+                          onChange={(e) =>
+                            setLicenseForm((p) => ({
+                              ...p,
+                              licenseKey: e.target.value,
+                            }))
+                          }
+                          placeholder="PDRM-XXXX-XXXX-XXXX-XXXX"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => runLicenseAction("activate")}
+                        disabled={licenseActionLoading.activate}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:from-pink-600 hover:to-rose-600 disabled:opacity-50"
+                      >
+                        {licenseActionLoading.activate ? (
+                          <Loader className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <KeyRound className="w-4 h-4" />
+                        )}
+                        Activate
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => runLicenseAction("validate")}
+                        disabled={licenseActionLoading.validate}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        {licenseActionLoading.validate ? (
+                          <Loader className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4" />
+                        )}
+                        Validate Now
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => runLicenseAction("deactivate")}
+                        disabled={licenseActionLoading.deactivate}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                      >
+                        {licenseActionLoading.deactivate ? (
+                          <Loader className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <X className="w-4 h-4" />
+                        )}
+                        Deactivate
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-sm font-semibold text-gray-800">
+                        Recent License Audit
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={loadLicenseAudit}
+                        disabled={licenseAuditLoading}
+                        className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        {licenseAuditLoading ? (
+                          <Loader className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        )}
+                        Refresh
+                      </button>
+                    </div>
+
+                    {licenseAuditLoading ? (
+                      <div className="text-sm text-gray-500 flex items-center gap-2">
+                        <Loader className="w-4 h-4 animate-spin" />
+                        Loading audit logs...
+                      </div>
+                    ) : licenseAudit.length === 0 ? (
+                      <p className="text-sm text-gray-500">No audit logs found yet.</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-gray-200">
+                              <th className="py-2 pr-3">Time</th>
+                              <th className="py-2 pr-3">Event</th>
+                              <th className="py-2 pr-3">Outcome</th>
+                              <th className="py-2 pr-3">Reason</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {licenseAudit.map((item) => (
+                              <tr key={item._id} className="border-b border-gray-100">
+                                <td className="py-2 pr-3 text-gray-700 whitespace-nowrap">
+                                  {item.createdAt
+                                    ? new Date(item.createdAt).toLocaleString()
+                                    : "--"}
+                                </td>
+                                <td className="py-2 pr-3 text-gray-700">
+                                  {item.event || "--"}
+                                </td>
+                                <td className="py-2 pr-3">
+                                  <span
+                                    className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                      item.outcome === "allow"
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : "bg-red-100 text-red-700"
+                                    }`}
+                                  >
+                                    {item.outcome || "--"}
+                                  </span>
+                                </td>
+                                <td className="py-2 pr-3 text-gray-600 max-w-[300px] truncate">
+                                  {item.reason || "--"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                </>
+              )}
+            </div>
+          )}
+
           {activeTab === "appearance" && (
             <div className="space-y-6">
               <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 space-y-4">
@@ -1919,27 +2381,29 @@ const SettingsManager = () => {
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="bg-white rounded-lg shadow p-4 flex flex-col sm:flex-row justify-end gap-3">
-        <button
-          onClick={loadAdminSettings}
-          disabled={saving}
-          className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all disabled:opacity-50 text-sm font-medium shadow"
-        >
-          {saving ? (
-            <Loader className="w-4 h-4 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
-      </div>
+      {activeTab !== "license" && (
+        <div className="bg-white rounded-lg shadow p-4 flex flex-col sm:flex-row justify-end gap-3">
+          <button
+            onClick={loadAdminSettings}
+            disabled={saving}
+            className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all disabled:opacity-50 text-sm font-medium shadow"
+          >
+            {saving ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

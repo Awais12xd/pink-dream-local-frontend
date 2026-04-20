@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
 import Link from "next/link";
 import {
+  AlertTriangle,
   Plus,
   Edit,
   Trash2,
@@ -139,6 +140,7 @@ const AdminPanel = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminData, setAdminData] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [licenseNeedsActivation, setLicenseNeedsActivation] = useState(false);
 
   // Existing states
   const [selectedProductForEdit, setSelectedProductForEdit] = useState(null);
@@ -190,11 +192,43 @@ const AdminPanel = () => {
     }
   };
 
+  const handleLicenseRequiredResponse = useCallback(async (response) => {
+    if (!response || response.status !== 403) return false;
+    try {
+      const payload = await response.clone().json();
+      if (payload?.error === "LICENSE_REQUIRED") {
+        setLicenseNeedsActivation(true);
+        setActiveTab("settings");
+        return true;
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return false;
+  }, []);
+
+  const refreshLicenseGate = useCallback(async () => {
+    try {
+      const response = await adminFetch("/admin/license/status");
+      const data = await response.json();
+      if (!response.ok || !data?.success) return;
+      const status = String(data?.state?.status || "inactive").toLowerCase();
+      const needsActivation = !["active", "grace"].includes(status);
+      setLicenseNeedsActivation(needsActivation);
+      if (needsActivation) {
+        setActiveTab("settings");
+      }
+    } catch {
+      // noop
+    }
+  }, []);
+
   // ALL CALLBACKS AND FUNCTIONS - Before useEffect hooks
   // Fetch dashboard stats
   const fetchStats = useCallback(async () => {
     try {
       const response = await adminFetch("/dashboard/stats");
+      if (await handleLicenseRequiredResponse(response)) return;
       const data = await response.json();
 
       if (data.success) {
@@ -203,7 +237,7 @@ const AdminPanel = () => {
     } catch (error) {
       console.error("Error fetching stats:", error);
     }
-  }, []);
+  }, [handleLicenseRequiredResponse]);
 
   // Fetch analytics data
   const fetchAnalytics = useCallback(async () => {
@@ -213,6 +247,7 @@ const AdminPanel = () => {
       const salesResponse = await adminFetch(
         `/analytics/sales-overview?period=${analyticsPeriod}&year=${analyticsYear}`,
       );
+      if (await handleLicenseRequiredResponse(salesResponse)) return;
       const salesData = await salesResponse.json();
       if (salesData.success) {
         setSalesData(salesData.data);
@@ -222,6 +257,7 @@ const AdminPanel = () => {
       const productResponse = await adminFetch(
         `/analytics/product-performance?year=${analyticsYear}&month=${analyticsMonth}`,
       );
+      if (await handleLicenseRequiredResponse(productResponse)) return;
       const productData = await productResponse.json();
       if (productData.success) {
         setProductPerformance(productData.data);
@@ -231,6 +267,7 @@ const AdminPanel = () => {
       const categoryResponse = await adminFetch(
         `/analytics/category-performance?year=${analyticsYear}`,
       );
+      if (await handleLicenseRequiredResponse(categoryResponse)) return;
       const categoryData = await categoryResponse.json();
       if (categoryData.success) {
         setCategoryPerformance(categoryData.data);
@@ -238,6 +275,7 @@ const AdminPanel = () => {
 
       // Revenue Metrics
       const revenueResponse = await adminFetch("/analytics/revenue-metrics");
+      if (await handleLicenseRequiredResponse(revenueResponse)) return;
       const revenueData = await revenueResponse.json();
       if (revenueData.success) {
         setRevenueMetrics(revenueData.metrics);
@@ -247,7 +285,12 @@ const AdminPanel = () => {
     } finally {
       setAnalyticsLoading(false);
     }
-  }, [analyticsPeriod, analyticsYear, analyticsMonth]);
+  }, [
+    analyticsPeriod,
+    analyticsYear,
+    analyticsMonth,
+    handleLicenseRequiredResponse,
+  ]);
 
   // Generate sample data
   const generateSampleData = useCallback(async () => {
@@ -258,6 +301,7 @@ const AdminPanel = () => {
           "Content-Type": "application/json",
         },
       });
+      if (await handleLicenseRequiredResponse(response)) return;
       const data = await response.json();
 
       if (data.success) {
@@ -270,7 +314,7 @@ const AdminPanel = () => {
       console.error("Error generating sample data:", error);
       alert("Error generating sample data");
     }
-  }, [fetchAnalytics]);
+  }, [fetchAnalytics, handleLicenseRequiredResponse]);
 
   // Check if admin is authenticated
   const checkAuthStatus = useCallback(async () => {
@@ -280,6 +324,7 @@ const AdminPanel = () => {
       if (!storedStaffUser) {
         setIsAuthenticated(false);
         setAdminData(null);
+        setLicenseNeedsActivation(false);
         return;
       }
 
@@ -290,20 +335,23 @@ const AdminPanel = () => {
         setIsAuthenticated(true);
         setAdminData(data.staffUser);
         setStoredStaffUser(data.staffUser || null);
+        await refreshLicenseGate();
       } else {
         clearStoredStaffAuth();
         setIsAuthenticated(false);
         setAdminData(null);
+        setLicenseNeedsActivation(false);
       }
     } catch (error) {
       console.error("Auth check error:", error);
       clearStoredStaffAuth();
       setIsAuthenticated(false);
       setAdminData(null);
+      setLicenseNeedsActivation(false);
     } finally {
       setAuthLoading(false);
     }
-  }, []);
+  }, [refreshLicenseGate]);
 
   // Handle successful login
   const handleLoginSuccess = useCallback((admin) => {
@@ -311,7 +359,10 @@ const AdminPanel = () => {
     setIsAuthenticated(true);
     setAdminData(admin);
     setActiveTab("dashboard");
-  }, []);
+    setTimeout(() => {
+      refreshLicenseGate();
+    }, 0);
+  }, [refreshLicenseGate]);
 
   // Handle logout
   const handleLogout = useCallback(async () => {
@@ -324,6 +375,7 @@ const AdminPanel = () => {
       clearStoredStaffAuth();
       setIsAuthenticated(false);
       setAdminData(null);
+      setLicenseNeedsActivation(false);
       setActiveTab("dashboard");
       window.dispatchEvent(new Event("staff-auth-changed"));
     }
@@ -455,6 +507,51 @@ const AdminPanel = () => {
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const onLicenseState = (event) => {
+      const status = String(event?.detail?.status || "").toLowerCase();
+      const needsActivation = !["active", "grace"].includes(status);
+      setLicenseNeedsActivation(needsActivation);
+      if (needsActivation) {
+        setActiveTab("settings");
+      }
+    };
+    window.addEventListener("admin-license-state", onLicenseState);
+    return () => window.removeEventListener("admin-license-state", onLicenseState);
+  }, []);
+
+  // Poll license status every 5 seconds for real-time updates
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isAuthenticated) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await adminFetch("/admin/license/status");
+        const data = await response.json();
+        if (!response.ok || !data?.success) return;
+        const status = String(data?.state?.status || "inactive").toLowerCase();
+        const needsActivation = !["active", "grace"].includes(status);
+        if (needsActivation !== licenseNeedsActivation) {
+          setLicenseNeedsActivation(needsActivation);
+          if (needsActivation) {
+            setActiveTab("settings");
+          }
+        }
+        window.dispatchEvent(
+          new CustomEvent("admin-license-state", {
+            detail: { status },
+          }),
+        );
+      } catch {
+        // noop
+      }
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
+  }, [isAuthenticated, licenseNeedsActivation]);
 
   // Transition layer: while on admin panel, force cookie-based auth for API calls
   // so legacy component fetches keep working during migration away from localStorage tokens.
@@ -1451,6 +1548,18 @@ const AdminPanel = () => {
 
         {/* Content */}
         <main className="p-2 sm:p-6 ">
+          {licenseNeedsActivation && (
+            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-sm flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">License activation required</p>
+                <p className="text-xs mt-0.5">
+                  You can sign in normally, then activate your license from
+                  <span className="font-semibold"> Settings → License</span>. Other protected modules stay locked until activation.
+                </p>
+              </div>
+            </div>
+          )}
           {activeTab === "dashboard" && <Dashboard />}
 
           {activeTab === "products" && (
@@ -1479,7 +1588,9 @@ const AdminPanel = () => {
 
           {activeTab === "blog-categories" && <BlogCategoriesPage />}
 
-          {activeTab === "settings" && <SettingsManager />}
+          {activeTab === "settings" && (
+            <SettingsManager initialTab={licenseNeedsActivation ? "license" : "general"} />
+          )}
 
           {activeTab === "add-blog" && <AddBlogPage />}
 

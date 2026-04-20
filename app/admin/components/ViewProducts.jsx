@@ -264,21 +264,48 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
 
   // Product Image Display Component
   const ProductImageDisplay = ({ product }) => {
-     
+    let imageCount = 0;
+    if (product.images && Array.isArray(product.images)) {
+      imageCount = product.images.filter((img) => img && img.trim() !== "").length;
+    } else if (product.image) {
+      imageCount = 1;
+    }
+
+    const canViewImages = imageCount > 0;
 
     return (
       <div className="flex items-center mr-3">
         <div className="relative">
-          <Image
-            src={getOptimizedImageSrc(product?.image, "adminTableThumb")}
-            alt={product.name}
-            className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
-            width={40}
-            height={40}
-            quality={72}
-            onError={handleImageError}
-            sizes="40px"
-          />
+          <button
+            type="button"
+            onClick={() => handleViewImages(product)}
+            disabled={!canViewImages}
+            title={
+              canViewImages
+                ? `View ${imageCount} Image${imageCount > 1 ? "s" : ""}`
+                : "No Images"
+            }
+            className={`relative rounded transition-opacity ${
+              canViewImages
+                ? "cursor-pointer hover:opacity-80"
+                : "cursor-not-allowed opacity-75"
+            }`}
+          >
+            <Image
+              src={getOptimizedImageSrc(product?.image, "adminTableThumb")}
+              alt={product.name}
+              className="w-10 h-10 rounded object-cover"
+              width={40}
+              height={40}
+              quality={72}
+              onError={handleImageError}
+              sizes="40px"
+            />
+
+            <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-pink-600 text-white text-[10px] leading-[18px] font-semibold text-center shadow-sm">
+              {imageCount}
+            </span>
+          </button>
         </div>
       </div>
     );
@@ -1249,9 +1276,6 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
                   Product
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Images
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Category
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1291,16 +1315,6 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
                 </tr>
               ) : (
                 products.map((product) => {
-                  // Calculate number of images
-                  let imageCount = 0;
-                  if (product.images && Array.isArray(product.images)) {
-                    imageCount = product.images.filter(
-                      (img) => img && img.trim() !== "",
-                    ).length;
-                  } else if (product.image) {
-                    imageCount = 1;
-                  }
-
                   return (
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-4 py-4">
@@ -1330,20 +1344,6 @@ const ViewProducts = ({ onEditProduct, onViewProduct, onDeleteProduct }) => {
                             )}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleViewImages(product)}
-                          className="flex items-center gap-2 px-3 py-1 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 transition-colors"
-                          disabled={imageCount === 0}
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span className="text-sm">
-                            {imageCount > 0
-                              ? `View ${imageCount} Image${imageCount > 1 ? "s" : ""}`
-                              : "No Images"}
-                          </span>
-                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="px-2 py-1 text-xs font-medium bg-pink-50 text-pink-600 rounded-full">
